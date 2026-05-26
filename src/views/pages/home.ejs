@@ -283,4 +283,51 @@
   </div>
 </section>
 
+<!-- Partners & Affiliates Section -->
+<% if (typeof partners !== 'undefined' && partners && partners.length > 0) { %>
+  <section class="bg-slate-50/50 border-t border-slate-150 py-16">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center max-w-2xl mx-auto mb-12">
+        <span class="text-xs font-extrabold uppercase tracking-widest text-brand-600">Alianzas y Respaldo</span>
+        <h2 class="display-font text-3xl font-extrabold text-slate-900 mt-2">Nuestros Socios & Afiliados</h2>
+        <p class="text-slate-500 text-sm mt-3 leading-relaxed">
+          Trabajamos codo a codo con productores locales, marcas líderes y redes de distribución para ofrecerte productos frescos al mejor precio del mercado.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6 items-stretch justify-center">
+        <% partners.forEach(partner => { %>
+          <div class="bg-white border border-slate-200/60 rounded-3xl p-5 flex flex-col items-center justify-between transition-all duration-300 hover:shadow-md hover:border-slate-300 group relative">
+            
+            <!-- Type badge -->
+            <span class="absolute top-3 right-3 text-[8.5px] font-extrabold uppercase px-2 py-0.5 rounded-full border 
+              <%= partner.type === 'socio' ? 'bg-indigo-50 text-indigo-700 border-indigo-100' : 'bg-teal-50 text-teal-700 border-teal-100' %>">
+              <%= partner.type === 'socio' ? 'Socio' : 'Afiliado' %>
+            </span>
+
+            <!-- Logo -->
+            <div class="w-20 h-20 flex items-center justify-center p-1 mt-3">
+              <img src="<%= partner.logo %>" alt="<%= partner.name %>" 
+                class="max-w-full max-h-full object-contain grayscale group-hover:grayscale-0 transition-all duration-300">
+            </div>
+
+            <!-- Info -->
+            <div class="text-center mt-4 w-full">
+              <h4 class="font-bold text-sm text-slate-800 truncate"><%= partner.name %></h4>
+              <% if (partner.website) { %>
+                <a href="<%= partner.website %>" target="_blank" 
+                  class="inline-flex items-center gap-1 text-[10px] text-brand-650 hover:text-brand-700 font-bold mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  Visitar sitio <i class="fa-solid fa-arrow-up-right-from-square text-[8px]"></i>
+                </a>
+              <% } else { %>
+                <span class="text-[10px] text-slate-400 block mt-1">Colaborador local</span>
+              <% } %>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+    </div>
+  </section>
+<% } %>
+
 <%- include('../partials/footer') %>

@@ -1,5 +1,6 @@
 const Product = require('../models/Product');
 const Category = require('../models/Category');
+const Partner = require('../models/Partner');
 const formatPrice = require('../utils/formatPrice');
 
 const getHome = async (req, res, next) => {
@@ -18,11 +19,15 @@ const getHome = async (req, res, next) => {
       .populate('category')
       .limit(4);
 
+    // Fetch active partners & affiliates
+    const partners = await Partner.find({ active: true }).sort({ createdAt: -1 });
+
     res.render('pages/home', {
       title: 'Inicio',
       categories,
       featuredProducts,
       latestProducts,
+      partners,
       formatPrice
     });
   } catch (error) {

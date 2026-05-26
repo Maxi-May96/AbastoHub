@@ -27,8 +27,8 @@
   <% } %>
 
   <!-- Tab selectors -->
-  <div class="border-b border-slate-200 mb-8">
-    <nav class="flex gap-6 text-sm font-semibold">
+  <div class="border-b border-slate-200 mb-8 overflow-x-auto">
+    <nav class="flex gap-6 text-sm font-semibold min-w-max pb-1">
       <button onclick="switchTab('products-list-tab', this)" class="tab-btn pb-4 border-b-2 border-brand-650 text-brand-650" id="default-tab-btn">
         <i class="fa-solid fa-list-check mr-1.5 text-xs"></i>
         Productos & Stock
@@ -43,6 +43,17 @@
         <% if (orders && orders.length > 0) { %>
           <span class="ml-1 bg-slate-100 text-slate-600 text-[10px] px-2 py-0.5 rounded-full font-bold"><%= orders.length %></span>
         <% } %>
+      </button>
+      <button onclick="switchTab('partners-tab', this)" class="tab-btn pb-4 border-b-2 border-transparent text-slate-400 hover:text-slate-600">
+        <i class="fa-solid fa-handshake mr-1.5 text-xs"></i>
+        Socios & Afiliados
+        <% if (partners && partners.length > 0) { %>
+          <span class="ml-1 bg-slate-100 text-slate-600 text-[10px] px-2 py-0.5 rounded-full font-bold"><%= partners.length %></span>
+        <% } %>
+      </button>
+      <button onclick="switchTab('new-partner-tab', this)" class="tab-btn pb-4 border-b-2 border-transparent text-slate-400 hover:text-slate-600">
+        <i class="fa-solid fa-user-plus mr-1.5 text-xs"></i>
+        Nuevo Socio/Afiliado
       </button>
     </nav>
   </div>
@@ -361,6 +372,126 @@
             </tbody>
           </table>
         </div>
+      </div>
+    </div>
+
+    <!-- Tab 4: Partners List -->
+    <div id="partners-tab" class="tab-panel hidden space-y-6">
+      <div class="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
+        <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <h2 class="text-lg font-bold text-slate-800">Socios & Afiliados</h2>
+            <p class="text-xs text-slate-400">Listado de marcas, socios y afiliados estratégicos de la tienda.</p>
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold text-xs">
+                <th class="px-6 py-4">Logo</th>
+                <th class="px-6 py-4">Nombre</th>
+                <th class="px-6 py-4">Tipo</th>
+                <th class="px-6 py-4">Enlace Web</th>
+                <th class="px-6 py-4 text-center">Acciones</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <% if (partners && partners.length > 0) { %>
+                <% partners.forEach(partner => { %>
+                  <tr class="hover:bg-slate-50/50 transition-colors">
+                    <td class="px-6 py-4">
+                      <div class="w-12 h-12 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center p-1.5 overflow-hidden">
+                        <img src="<%= partner.logo %>" alt="<%= partner.name %>" class="w-full h-full object-contain">
+                      </div>
+                    </td>
+                    <td class="px-6 py-4 font-bold text-slate-800">
+                      <%= partner.name %>
+                    </td>
+                    <td class="px-6 py-4">
+                      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border capitalize 
+                        <%= partner.type === 'socio' ? 'bg-indigo-50 text-indigo-700 border-indigo-100' : 'bg-teal-50 text-teal-700 border-teal-100' %>">
+                        <%= partner.type %>
+                      </span>
+                    </td>
+                    <td class="px-6 py-4 text-xs font-mono text-slate-500">
+                      <% if (partner.website) { %>
+                        <a href="<%= partner.website %>" target="_blank" class="text-brand-650 hover:underline"><%= partner.website %></a>
+                      <% } else { %>
+                        <span class="text-slate-400 font-sans">Sin enlace</span>
+                      <% } %>
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                      <form action="/admin/partners/<%= partner._id %>/delete" method="POST" class="inline" onsubmit="return confirm('¿Estás seguro de que deseas eliminar este socio/afiliado?')">
+                        <button type="submit" class="px-3 py-1.5 rounded-xl border border-red-100 hover:bg-red-50 text-red-600 text-xs font-bold transition-all">
+                          <i class="fa-solid fa-trash-can mr-1"></i>Eliminar
+                        </button>
+                      </form>
+                    </td>
+                  </tr>
+                <% }); %>
+              <% } else { %>
+                <tr>
+                  <td colspan="5" class="px-6 py-12 text-center text-slate-400">
+                    No se registran socios ni afiliados activos.
+                  </td>
+                </tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 5: New Partner/Affiliate Form -->
+    <div id="new-partner-tab" class="tab-panel hidden space-y-6">
+      <div class="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm">
+        <h2 class="text-lg font-bold text-slate-800 mb-2">Nuevo Socio o Afiliado</h2>
+        <p class="text-xs text-slate-400 mb-6">Agrega un nuevo socio comercial o afiliado estratégico para mostrar en el catálogo y página principal.</p>
+
+        <form action="/admin/partners" method="POST" enctype="multipart/form-data" class="space-y-5">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Name -->
+            <div>
+              <label for="partner-name" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Nombre del Socio/Afiliado *</label>
+              <input type="text" id="partner-name" name="name" required placeholder="E.g. Banco Provincia, Cooperativa Frutihortícola"
+                class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-sm">
+            </div>
+
+            <!-- Type -->
+            <div>
+              <label for="partner-type" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Tipo *</label>
+              <select id="partner-type" name="type" required
+                class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-sm">
+                <option value="socio">Socio Comercial / Sponsor</option>
+                <option value="afiliado">Afiliado / Proveedor Oficial</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Website -->
+          <div>
+            <label for="partner-website" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Enlace del Sitio Web (Opcional)</label>
+            <input type="url" id="partner-website" name="website" placeholder="https://www.ejemplo.com"
+              class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-sm">
+          </div>
+
+          <!-- Logo Image -->
+          <div>
+            <label for="partner-logo" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Imagen del Logo *</label>
+            <input type="file" id="partner-logo" name="logo" required accept="image/*"
+              class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-sm">
+            <span class="text-[10px] text-slate-400 mt-1 block">Sube un logo con fondo transparente o blanco en formato PNG/JPG/SVG.</span>
+          </div>
+
+          <div class="pt-4 border-t border-slate-100 flex justify-end gap-3">
+            <button type="reset" class="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-650 hover:bg-slate-50 text-xs font-bold transition-all">
+              Limpiar Campos
+            </button>
+            <button type="submit" class="px-5 py-2.5 rounded-xl bg-brand-650 hover:bg-brand-700 text-white text-xs font-bold transition-all shadow-sm">
+              Agregar Socio / Afiliado
+            </button>
+          </div>
+        </form>
       </div>
     </div>
 

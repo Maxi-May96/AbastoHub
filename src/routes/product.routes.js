@@ -18,4 +18,8 @@ router.post('/admin/products/:id/discount', isAuthenticated, isAdmin, productCon
 router.post('/admin/products/:id/delete', isAuthenticated, isAdmin, productController.deleteProduct);
 router.get('/admin/orders/:id/pdf', isAuthenticated, isAdmin, productController.generatePDFTicket);
 
+// Admin partner management routes
+router.post('/admin/partners', isAuthenticated, isAdmin, upload.single('logo'), productController.createPartner);
+router.post('/admin/partners/:id/delete', isAuthenticated, isAdmin, productController.deletePartner);
+
 module.exports = router;

@@ -1,6 +1,7 @@
 const Product = require('../models/Product');
 const Category = require('../models/Category');
 const Order = require('../models/Order');
+const Partner = require('../models/Partner');
 const { uploadImage } = require('../services/firebase.service');
 const formatPrice = require('../utils/formatPrice');
 const PDFDocument = require('pdfkit');
@@ -116,12 +117,14 @@ const getAdminPanel = async (req, res, next) => {
     const categories = await Category.find({});
     // Load orders with populated user info
     const orders = await Order.find({}).populate('user').sort({ createdAt: -1 });
+    const partners = await Partner.find({}).sort({ createdAt: -1 });
 
     res.render('pages/admin', {
       title: 'Panel de Control',
       products,
       categories,
       orders,
+      partners,
       formatPrice,
       success: req.query.success || null,
       error: req.query.error || null
@@ -446,6 +449,51 @@ const generatePDFTicket = async (req, res, next) => {
   }
 };
 
+// POST Create Partner/Affiliate Action (Admin Only)
+const createPartner = async (req, res, next) => {
+  try {
+    const { name, type, website } = req.body;
+    
+    if (!name || !req.file) {
+      return res.redirect('/admin?error=' + encodeURIComponent('El nombre y el logo son campos obligatorios.'));
+    }
+
+    // Upload logo image to Firebase
+    const logoUrl = await uploadImage(req.file, 'partners');
+    if (!logoUrl) {
+      return res.redirect('/admin?error=' + encodeURIComponent('Error al subir la imagen del logo.'));
+    }
+
+    const newPartner = new Partner({
+      name,
+      type,
+      website: website || '',
+      logo: logoUrl,
+      active: true
+    });
+
+    await newPartner.save();
+    res.redirect('/admin?success=' + encodeURIComponent('Socio/Afiliado creado exitosamente.'));
+  } catch (error) {
+    console.error('Create partner error:', error.message);
+    res.redirect('/admin?error=' + encodeURIComponent('Error al agregar el socio/afiliado: ' + error.message));
+  }
+};
+
+// POST Delete Partner/Affiliate Action (Admin Only)
+const deletePartner = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const partner = await Partner.findByIdAndDelete(id);
+    if (!partner) {
+      return res.redirect('/admin?error=' + encodeURIComponent('Socio/Afiliado no encontrado.'));
+    }
+    res.redirect('/admin?success=' + encodeURIComponent('Socio/Afiliado eliminado exitosamente.'));
+  } catch (error) {
+    res.redirect('/admin?error=' + encodeURIComponent('Error al eliminar el socio/afiliado: ' + error.message));
+  }
+};
+
 module.exports = {
   getProducts,
   getProductBySlug,
@@ -456,5 +504,7 @@ module.exports = {
   toggleFeatured,
   updateDiscount,
   deleteProduct,
-  generatePDFTicket
+  generatePDFTicket,
+  createPartner,
+  deletePartner
 };
