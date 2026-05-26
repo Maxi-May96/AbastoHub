@@ -1,0 +1,178 @@
+<%- include('../partials/header') %>
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  
+  <!-- Breadcrumbs -->
+  <nav class="flex text-xs text-slate-400 gap-1.5 items-center mb-8">
+    <a href="/" class="hover:text-slate-655">Inicio</a>
+    <i class="fa-solid fa-chevron-right text-[8px]"></i>
+    <a href="/products" class="hover:text-slate-655">Catálogo</a>
+    <i class="fa-solid fa-chevron-right text-[8px]"></i>
+    <% if (product.category) { %>
+      <a href="/products?category=<%= product.category.slug %>" class="hover:text-slate-655"><%= product.category.name %></a>
+      <i class="fa-solid fa-chevron-right text-[8px]"></i>
+    <% } %>
+    <span class="text-brand-650 font-bold truncate max-w-[200px]"><%= product.title %></span>
+  </nav>
+
+  <!-- Product Details Card Grid -->
+  <div class="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm mb-12">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 p-6 sm:p-10">
+      
+      <!-- Left: Image Showcase -->
+      <div class="space-y-4">
+        <div class="aspect-[4/3] bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-center p-6 overflow-hidden">
+          <% if (product.images && product.images.length > 0) { %>
+            <img src="<%= product.images[0] %>" alt="<%= product.title %>" class="w-full h-full object-contain hover:scale-105 transition-transform duration-300">
+          <% } else { %>
+            <i class="fa-regular fa-image text-6xl text-slate-300"></i>
+          <% } %>
+        </div>
+        
+        <!-- Multi-image gallery carousel thumbnails (optional MVP feature) -->
+        <% if (product.images && product.images.length > 1) { %>
+          <div class="flex gap-3 overflow-x-auto pb-2 custom-scrollbar">
+            <% product.images.forEach(img => { %>
+              <div class="w-20 h-16 border border-slate-200 rounded-lg overflow-hidden p-1 bg-slate-50 cursor-pointer hover:border-brand-500 transition-colors flex-shrink-0">
+                <img src="<%= img %>" alt="Thumbnail" class="w-full h-full object-contain">
+              </div>
+            <% }); %>
+          </div>
+        <% } %>
+      </div>
+
+      <!-- Right: Product Info & Order Form -->
+      <div class="flex flex-col justify-between">
+        <div class="space-y-4">
+          <!-- Badges -->
+          <div class="flex flex-wrap items-center gap-2">
+            <% if (product.category) { %>
+              <a href="/products?category=<%= product.category.slug %>" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold px-3 py-1 rounded-full transition-colors"><%= product.category.name %></a>
+            <% } %>
+            
+            <% if (product.stock > 0) { %>
+              <span class="bg-emerald-50 text-emerald-700 border border-emerald-100 text-xs font-semibold px-3 py-1 rounded-full">En Stock (<%= product.stock %> <%= product.unit %>)</span>
+            <% } else { %>
+              <span class="bg-rose-50 text-rose-700 border border-rose-100 text-xs font-semibold px-3 py-1 rounded-full">Sin Stock</span>
+            <% } %>
+          </div>
+
+          <h1 class="display-font text-2xl sm:text-3xl font-extrabold text-slate-950 tracking-tight leading-snug">
+            <%= product.title %>
+          </h1>
+          <p class="text-sm text-slate-500 leading-relaxed"><%= product.description || 'Este producto no contiene una descripción detallada por el momento.' %></p>
+          
+          <hr class="border-slate-100">
+
+          <!-- Pricing Panel -->
+          <div class="bg-slate-50 rounded-2xl border border-slate-150 p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="space-y-0.5">
+              <span class="text-xs text-slate-400 font-bold uppercase tracking-wider block">Precio Minorista</span>
+              <p class="text-xl font-extrabold text-slate-800"><%= formatPrice(product.price) %></p>
+              <span class="text-[10px] text-slate-450">Por <%= product.unit %></span>
+            </div>
+            
+            <div class="space-y-0.5 sm:border-l sm:border-slate-200 sm:pl-6 bg-brand-50/20 p-2 sm:bg-transparent rounded-xl">
+              <span class="text-xs text-brand-600 font-extrabold uppercase tracking-wider block flex items-center gap-1">
+                Mayorista
+                <span class="text-[10px] bg-brand-600 text-white px-1.5 py-0.5 rounded-full font-bold">Ahorras</span>
+              </span>
+              <p class="text-2xl font-black text-brand-700 display-font"><%= formatPrice(product.wholesalePrice) %></p>
+              <span class="text-[10px] text-brand-600 font-semibold block">Al comprar 6 <%= product.unit %> o más</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Add to Cart Form -->
+        <div class="mt-8 pt-6 border-t border-slate-100">
+          <% if (product.stock > 0) { %>
+            <form action="/cart/add" method="POST" class="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+              <input type="hidden" name="productId" value="<%= product._id %>">
+              
+              <!-- Quantity selector -->
+              <div class="w-32 flex items-center border border-slate-250 rounded-xl overflow-hidden self-start">
+                <button type="button" onclick="decrementQty()" class="px-3.5 py-2.5 bg-slate-50 text-slate-500 hover:bg-slate-100 font-bold transition-colors">-</button>
+                <input type="number" id="quantity" name="quantity" min="1" max="<%= product.stock %>" value="1" 
+                  class="w-full text-center bg-white text-slate-850 font-bold outline-none py-2 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none">
+                <button type="button" onclick="incrementQty()" class="px-3.5 py-2.5 bg-slate-50 text-slate-500 hover:bg-slate-100 font-bold transition-colors">+</button>
+              </div>
+
+              <!-- Submit button -->
+              <button type="submit" class="flex-grow py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm shadow-md hover:shadow-lg shadow-brand-500/10 flex items-center justify-center gap-2 transition-all">
+                <i class="fa-solid fa-cart-plus text-sm"></i>
+                Agregar al Carrito
+              </button>
+            </form>
+            <p class="text-[11px] text-slate-400 mt-2.5">
+              💡 Si seleccionas 6 unidades o más, el descuento mayorista se aplicará automáticamente en tu carrito.
+            </p>
+          <% } else { %>
+            <button disabled class="w-full py-3.5 rounded-xl bg-slate-100 text-slate-400 font-bold text-sm border border-slate-200 cursor-not-allowed">
+              Producto Temporalmente sin Stock
+            </button>
+          <% } %>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Related Products -->
+  <% if (relatedProducts && relatedProducts.length > 0) { %>
+    <section class="border-t border-slate-200 pt-12">
+      <h2 class="display-font text-2xl font-extrabold tracking-tight text-slate-900 mb-6">Productos Relacionados</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+        <% relatedProducts.forEach(prod => { %>
+          <div class="bg-white rounded-3xl border border-slate-200/80 overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col h-full group">
+            
+            <a href="/products/<%= prod.slug %>" class="block relative aspect-[4/3] bg-slate-50 overflow-hidden">
+              <% if (prod.images && prod.images.length > 0) { %>
+                <img src="<%= prod.images[0] %>" alt="<%= prod.title %>" class="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-300">
+              <% } else { %>
+                <div class="w-full h-full flex items-center justify-center text-slate-350"><i class="fa-regular fa-image text-3xl"></i></div>
+              <% } %>
+              <span class="absolute bottom-2.5 right-2.5 bg-slate-900/60 backdrop-blur-sm text-white text-[9px] font-semibold px-2 py-0.5 rounded-md">Por <%= prod.unit %></span>
+            </a>
+
+            <div class="p-4 flex flex-col flex-grow">
+              <a href="/products/<%= prod.slug %>" class="block mb-2 group-hover:text-brand-600 transition-colors">
+                <h3 class="display-font text-sm font-bold text-slate-900 leading-snug line-clamp-2"><%= prod.title %></h3>
+              </a>
+              <div class="flex items-baseline gap-1.5 mb-3 flex-grow">
+                <span class="text-xs text-slate-400">Min.</span>
+                <span class="text-sm font-bold text-slate-800"><%= formatPrice(prod.price) %></span>
+              </div>
+              <a href="/products/<%= prod.slug %>" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-colors">
+                Ver Detalles
+              </a>
+            </div>
+            
+          </div>
+        <% }); %>
+      </div>
+    </section>
+  <% } %>
+
+</div>
+
+<!-- Quantity adjustment script helpers -->
+<script>
+  const qtyInput = document.getElementById('quantity');
+  const maxStock = <%= product.stock || 1 %>;
+
+  function incrementQty() {
+    let currentVal = parseInt(qtyInput.value) || 1;
+    if (currentVal < maxStock) {
+      qtyInput.value = currentVal + 1;
+    }
+  }
+
+  function decrementQty() {
+    let currentVal = parseInt(qtyInput.value) || 1;
+    if (currentVal > 1) {
+      qtyInput.value = currentVal - 1;
+    }
+  }
+</script>
+
+<%- include('../partials/footer') %>

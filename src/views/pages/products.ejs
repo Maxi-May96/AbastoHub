@@ -1,0 +1,189 @@
+<%- include('../partials/header') %>
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  
+  <!-- Breadcrumbs & Heading -->
+  <div class="mb-8">
+    <nav class="flex text-xs text-slate-400 gap-1.5 items-center mb-2">
+      <a href="/" class="hover:text-slate-650">Inicio</a>
+      <i class="fa-solid fa-chevron-right text-[8px]"></i>
+      <span class="text-slate-600 font-medium">Catálogo</span>
+      <% if (activeCategory) { %>
+        <i class="fa-solid fa-chevron-right text-[8px]"></i>
+        <span class="text-brand-650 font-bold"><%= activeCategory.name %></span>
+      <% } %>
+    </nav>
+    <h1 class="display-font text-3xl font-extrabold tracking-tight text-slate-900">
+      <%= activeCategory ? activeCategory.name : 'Catálogo de Alimentos' %>
+    </h1>
+    <p class="text-sm text-slate-500 mt-1">
+      <% if (products.length === 0) { %>
+        No encontramos productos que coincidan con tu búsqueda.
+      <% } else if (products.length === 1) { %>
+        Se encontró 1 producto.
+      <% } else { %>
+        Se encontraron <%= products.length %> productos disponibles.
+      <% } %>
+    </p>
+  </div>
+
+  <div class="flex flex-col lg:flex-row gap-8">
+    
+    <!-- Sidebar Filters (Desktop) / Collapse Panel (Mobile) -->
+    <aside class="w-full lg:w-64 flex-shrink-0">
+      <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm sticky top-24 space-y-6">
+        
+        <!-- Search bar input nested inside filters for completeness -->
+        <div>
+          <h3 class="display-font text-xs font-bold uppercase tracking-wider text-slate-450 mb-3">Buscar</h3>
+          <form action="/products" method="GET" class="relative">
+            <% if (activeCategory) { %>
+              <input type="hidden" name="category" value="<%= activeCategory.slug %>">
+            <% } %>
+            <input type="text" name="search" placeholder="Escribe aquí..." value="<%= search %>"
+              class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 pl-3 pr-8 py-2 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-xs">
+            <button type="submit" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-brand-600">
+              <i class="fa-solid fa-magnifying-glass text-xs"></i>
+            </button>
+          </form>
+        </div>
+
+        <hr class="border-slate-100">
+
+        <!-- Categories List -->
+        <div>
+          <h3 class="display-font text-xs font-bold uppercase tracking-wider text-slate-450 mb-3">Categorías</h3>
+          <ul class="space-y-1.5 text-sm">
+            <li>
+              <a href="/products<%= search ? `?search=${search}` : '' %>" 
+                class="flex items-center justify-between px-2.5 py-1.5 rounded-lg font-medium <%= !activeCategory ? 'text-brand-600 bg-brand-50/50' : 'text-slate-600 hover:bg-slate-50' %>">
+                <span>Todas</span>
+                <i class="fa-solid fa-chevron-right text-[9px] opacity-40"></i>
+              </a>
+            </li>
+            <% categories.forEach(category => { %>
+              <li>
+                <a href="/products?category=<%= category.slug %><%= search ? `&search=${search}` : '' %>" 
+                  class="flex items-center justify-between px-2.5 py-1.5 rounded-lg font-medium <%= activeCategory && activeCategory.slug === category.slug ? 'text-brand-600 bg-brand-50/50 font-bold' : 'text-slate-600 hover:bg-slate-50' %>">
+                  <span class="truncate"><%= category.name %></span>
+                  <i class="fa-solid fa-chevron-right text-[9px] opacity-40"></i>
+                </a>
+              </li>
+            <% }); %>
+          </ul>
+        </div>
+
+        <hr class="border-slate-100">
+
+        <!-- Sorting -->
+        <div>
+          <h3 class="display-font text-xs font-bold uppercase tracking-wider text-slate-450 mb-3">Ordenar Por</h3>
+          <form action="/products" method="GET" id="sort-form">
+            <% if (activeCategory) { %>
+              <input type="hidden" name="category" value="<%= activeCategory.slug %>">
+            <% } %>
+            <% if (search) { %>
+              <input type="hidden" name="search" value="<%= search %>">
+            <% } %>
+            <select name="sort" onchange="this.form.submit()" 
+              class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-700 outline-none focus:border-brand-500/40 focus:ring-4 focus:ring-brand-500/10">
+              <option value="" <%= sort === '' ? 'selected' : '' %>>Más recientes</option>
+              <option value="price_asc" <%= sort === 'price_asc' ? 'selected' : '' %>>Precio: Menor a Mayor</option>
+              <option value="price_desc" <%= sort === 'price_desc' ? 'selected' : '' %>>Precio: Mayor a Menor</option>
+              <option value="title_asc" <%= sort === 'title_asc' ? 'selected' : '' %>>Nombre: A - Z</option>
+            </select>
+          </form>
+        </div>
+
+        <!-- Reset Button -->
+        <% if (activeCategory || search || sort) { %>
+          <div class="pt-2">
+            <a href="/products" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-colors">
+              <i class="fa-solid fa-filter-circle-xmark"></i>
+              Limpiar Filtros
+            </a>
+          </div>
+        <% } %>
+
+      </div>
+    </aside>
+
+    <!-- Products Catalog Grid -->
+    <div class="flex-grow">
+      <% if (products && products.length > 0) { %>
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+          <% products.forEach(product => { %>
+            <div class="bg-white rounded-3xl border border-slate-200/80 overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-250 flex flex-col h-full group">
+              
+              <!-- Image Frame -->
+              <a href="/products/<%= product.slug %>" class="block relative aspect-[4/3] bg-slate-50 overflow-hidden">
+                <% if (product.images && product.images.length > 0) { %>
+                  <img src="<%= product.images[0] %>" alt="<%= product.title %>" class="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-300">
+                <% } else { %>
+                  <div class="w-full h-full flex items-center justify-center text-slate-350"><i class="fa-regular fa-image text-4xl"></i></div>
+                <% } %>
+                
+                <!-- Category Badge -->
+                <% if (product.category) { %>
+                  <span class="absolute top-3 left-3 bg-white/95 backdrop-blur-sm border border-slate-200 text-slate-700 text-[10px] font-bold px-2.5 py-0.5 rounded-full"><%= product.category.name %></span>
+                <% } %>
+
+                <!-- Unit Badge -->
+                <span class="absolute bottom-3 right-3 bg-slate-900/70 backdrop-blur-sm text-white text-[10px] font-semibold px-2 py-0.5 rounded-md">Por <%= product.unit %></span>
+              </a>
+
+              <!-- Info Container -->
+              <div class="p-5 flex flex-col flex-grow">
+                <a href="/products/<%= product.slug %>" class="block mb-1.5 group-hover:text-brand-600 transition-colors">
+                  <h3 class="display-font text-base font-bold text-slate-900 leading-snug line-clamp-2"><%= product.title %></h3>
+                </a>
+                <p class="text-xs text-slate-400 line-clamp-2 mb-4 flex-grow"><%= product.description || 'Sin descripción adicional.' %></p>
+                
+                <!-- Pricing table breakdown -->
+                <div class="bg-slate-50 rounded-2xl p-3 border border-slate-100 space-y-2 mb-4">
+                  <div class="flex items-center justify-between">
+                    <span class="text-[10px] text-slate-500 uppercase font-semibold">Precio Minorista</span>
+                    <span class="text-sm font-bold text-slate-800"><%= formatPrice(product.price) %></span>
+                  </div>
+                  <div class="flex items-center justify-between border-t border-slate-200/50 pt-2">
+                    <span class="text-[10px] text-brand-600 uppercase font-bold">Mayorista (6+ u.)</span>
+                    <span class="text-base font-extrabold text-brand-650"><%= formatPrice(product.wholesalePrice) %></span>
+                  </div>
+                </div>
+
+                <!-- Action button -->
+                <form action="/cart/add" method="POST" class="w-full">
+                  <input type="hidden" name="productId" value="<%= product._id %>">
+                  <input type="hidden" name="quantity" value="1">
+                  
+                  <% if (product.stock > 0) { %>
+                    <button type="submit" class="w-full py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm shadow-sm hover:shadow shadow-brand-500/10 flex items-center justify-center gap-2 transition-all">
+                      <i class="fa-solid fa-cart-plus text-xs"></i>
+                      Añadir al Carrito
+                    </button>
+                  <% } else { %>
+                    <button type="button" disabled class="w-full py-2.5 rounded-xl bg-slate-100 text-slate-400 font-bold text-sm border border-slate-200 cursor-not-allowed">
+                      Sin Stock
+                    </button>
+                  <% } %>
+                </form>
+              </div>
+
+            </div>
+          <% }); %>
+        </div>
+      <% } else { %>
+        <div class="py-16 text-center text-slate-400 bg-white rounded-3xl border border-slate-200/70 shadow-sm">
+          <div class="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center mx-auto mb-4 text-slate-400">
+            <i class="fa-solid fa-box-open text-2xl"></i>
+          </div>
+          <h3 class="display-font text-lg font-bold text-slate-800">No hay productos</h3>
+          <p class="text-sm mt-1 text-slate-500">Prueba quitando filtros o realizando otra búsqueda.</p>
+        </div>
+      <% } %>
+    </div>
+
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

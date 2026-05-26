@@ -1,0 +1,19 @@
+const express = require('express');
+const router = express.Router();
+const productController = require('../controllers/product.controller');
+const { isAuthenticated, isAdmin } = require('../middlewares/auth.middleware');
+const upload = require('../middlewares/upload.middleware');
+
+// Public catalog routes
+router.get('/products', productController.getProducts);
+router.get('/products/:slug', productController.getProductBySlug);
+
+// Admin product management routes
+router.get('/admin', isAuthenticated, isAdmin, productController.getAdminPanel);
+router.post('/admin/products', isAuthenticated, isAdmin, upload.array('images', 3), productController.createProduct);
+router.post('/admin/products/:id/stock', isAuthenticated, isAdmin, productController.updateStock);
+router.post('/admin/products/:id/toggle', isAuthenticated, isAdmin, productController.toggleActive);
+router.post('/admin/products/:id/delete', isAuthenticated, isAdmin, productController.deleteProduct);
+router.get('/admin/orders/:id/pdf', isAuthenticated, isAdmin, productController.generatePDFTicket);
+
+module.exports = router;

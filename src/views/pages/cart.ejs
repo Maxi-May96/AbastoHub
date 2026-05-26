@@ -1,0 +1,167 @@
+<%- include('../partials/header') %>
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  
+  <div class="mb-8">
+    <h1 class="display-font text-3xl font-extrabold tracking-tight text-slate-900">Carrito de Compras</h1>
+    <p class="text-sm text-slate-500 mt-1">Revisa tus productos y cantidades antes de proceder al pago.</p>
+  </div>
+
+  <% if (cart && cart.products && cart.products.length > 0) { %>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+      
+      <!-- Cart Items List (Col span 2) -->
+      <div class="lg:col-span-2 space-y-4">
+        <% cart.products.forEach(item => { %>
+          <% if (item.product) { %>
+            <div class="bg-white border border-slate-200/80 rounded-3xl p-5 shadow-sm flex flex-col sm:flex-row items-center gap-5 group">
+              
+              <!-- Thumbnail Frame -->
+              <div class="w-24 h-20 bg-slate-50 border border-slate-100 rounded-2xl flex-shrink-0 flex items-center justify-center p-2 overflow-hidden">
+                <% if (item.product.images && item.product.images.length > 0) { %>
+                  <img src="<%= item.product.images[0] %>" alt="<%= item.product.title %>" class="w-full h-full object-contain">
+                <% } else { %>
+                  <i class="fa-regular fa-image text-2xl text-slate-350"></i>
+                <% } %>
+              </div>
+
+              <!-- Product Info -->
+              <div class="flex-grow text-center sm:text-left space-y-1 min-w-0">
+                <div class="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                  <h3 class="display-font text-base font-bold text-slate-900 truncate max-w-[250px]"><%= item.product.title %></h3>
+                  
+                  <% if (item.wholesaleActive) { %>
+                    <span class="bg-brand-50 text-brand-700 border border-brand-100 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <i class="fa-solid fa-tags text-[9px]"></i>
+                      Precio Mayorista Aplicado
+                    </span>
+                  <% } %>
+                </div>
+                <p class="text-xs text-slate-400">Precio unitario: <%= formatPrice(item.activePrice) %> / <%= item.product.unit %></p>
+              </div>
+
+              <!-- Quantity Adjuster Form -->
+              <div class="flex items-center gap-2 flex-shrink-0">
+                
+                <!-- Decrease Qty Form -->
+                <form action="/cart/update" method="POST" class="inline">
+                  <input type="hidden" name="productId" value="<%= item.product._id %>">
+                  <input type="hidden" name="quantity" value="<%= item.quantity - 1 %>">
+                  <button type="submit" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold transition-colors flex items-center justify-center">-</button>
+                </form>
+
+                <!-- Current quantity input readout -->
+                <form action="/cart/update" method="POST" class="inline">
+                  <input type="hidden" name="productId" value="<%= item.product._id %>">
+                  <input type="number" name="quantity" min="1" max="<%= item.product.stock %>" value="<%= item.quantity %>" 
+                    onchange="this.form.submit()"
+                    class="w-12 text-center bg-slate-50 border border-slate-200 rounded-lg text-slate-800 font-bold py-1 text-sm outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none">
+                </form>
+
+                <!-- Increase Qty Form -->
+                <form action="/cart/update" method="POST" class="inline">
+                  <input type="hidden" name="productId" value="<%= item.product._id %>">
+                  <input type="hidden" name="quantity" value="<%= item.quantity + 1 %>">
+                  <button type="submit" <%= item.quantity >= item.product.stock ? 'disabled' : '' %> 
+                    class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-650 font-bold disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center">+</button>
+                </form>
+              </div>
+
+              <!-- Price Subtotal Display & Delete -->
+              <div class="flex items-center gap-4 justify-between sm:justify-end w-full sm:w-auto border-t sm:border-t-0 pt-3 sm:pt-0">
+                <div class="text-right">
+                  <p class="text-xs text-slate-400 uppercase font-semibold">Subtotal</p>
+                  <p class="text-base font-extrabold text-slate-800"><%= formatPrice(item.activePrice * item.quantity) %></p>
+                </div>
+                
+                <form action="/cart/remove" method="POST" class="inline">
+                  <input type="hidden" name="productId" value="<%= item.product._id %>">
+                  <button type="submit" class="p-2.5 rounded-lg text-slate-350 hover:bg-rose-50 hover:text-rose-600 transition-all" title="Eliminar del carrito">
+                    <i class="fa-solid fa-trash-can text-base"></i>
+                  </button>
+                </form>
+              </div>
+
+            </div>
+          <% } %>
+        <% }); %>
+      </div>
+
+      <!-- Order Summary Card -->
+      <div class="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm space-y-6 lg:sticky lg:top-24">
+        <h3 class="display-font text-lg font-bold text-slate-900 border-b border-slate-100 pb-3">Resumen de Compra</h3>
+        
+        <div class="space-y-3.5 text-sm">
+          <div class="flex justify-between">
+            <span class="text-slate-500">Subtotal de productos</span>
+            <span class="font-semibold text-slate-850"><%= formatPrice(cart.total) %></span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-500">Envío / Flete</span>
+            <span class="font-semibold text-emerald-600">A coordinar / Retiro</span>
+          </div>
+          
+          <!-- Dynamic savings visual helper if wholesale prices are present in cart -->
+          <% 
+            let potentialSavings = 0;
+            cart.products.forEach(item => {
+              if (item.product && item.quantity > 0) {
+                // If not wholesale, show what they COULD save
+                if (!item.wholesaleActive) {
+                  potentialSavings += (item.product.price - item.product.wholesalePrice) * item.quantity;
+                }
+              }
+            });
+          %>
+
+          <% if (potentialSavings > 0) { %>
+            <div class="bg-amber-50 border border-amber-100 rounded-xl p-3 text-[11px] text-amber-700 leading-normal flex gap-1.5 items-start">
+              <i class="fa-solid fa-circle-info mt-0.5 text-amber-600"></i>
+              <span>
+                ¡Tip de Ahorro! Agregando más unidades hasta llegar a 6 en tus productos, podrías ahorrar un extra de <strong><%= formatPrice(potentialSavings) %></strong> en esta compra.
+              </span>
+            </div>
+          <% } %>
+        </div>
+
+        <hr class="border-slate-100">
+
+        <div class="flex justify-between items-baseline">
+          <span class="display-font text-base font-extrabold text-slate-900">Total</span>
+          <span class="display-font text-2xl font-black text-brand-700"><%= formatPrice(cart.total) %></span>
+        </div>
+
+        <div class="space-y-2 pt-2">
+          <a href="/checkout" class="w-full py-3.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm shadow-md hover:shadow-lg shadow-brand-500/10 transition-all flex items-center justify-center gap-2">
+            Continuar Compra
+            <i class="fa-solid fa-credit-card text-xs"></i>
+          </a>
+          <a href="/products" class="w-full py-3 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 font-semibold text-xs border border-slate-200 transition-colors flex items-center justify-center gap-1.5">
+            <i class="fa-solid fa-arrow-left"></i>
+            Seguir Comprando
+          </a>
+        </div>
+      </div>
+
+    </div>
+  <% } else { %>
+    <!-- Empty Cart State -->
+    <div class="max-w-md mx-auto text-center py-16 px-4">
+      <div class="w-20 h-20 bg-slate-100 border border-slate-200/50 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-400 shadow-inner">
+        <i class="fa-solid fa-cart-shopping text-3xl"></i>
+      </div>
+      <h2 class="display-font text-xl font-bold text-slate-900">Tu carrito está vacío</h2>
+      <p class="text-slate-500 text-sm mt-2 leading-relaxed">Explora nuestro catálogo y agrega productos frescos de la mejor calidad al por mayor y menor.</p>
+      
+      <div class="mt-6">
+        <a href="/products" class="inline-flex justify-center items-center gap-2 px-6 py-3 rounded-full font-bold text-white bg-brand-600 hover:bg-brand-700 shadow-md shadow-brand-500/10 hover:shadow-lg transition-all text-sm">
+          Explorar Productos
+          <i class="fa-solid fa-chevron-right text-xs"></i>
+        </a>
+      </div>
+    </div>
+  <% } %>
+
+</div>
+
+<%- include('../partials/footer') %>

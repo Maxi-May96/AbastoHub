@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full bg-slate-50 text-slate-900">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= typeof title !== 'undefined' ? `${title} | AbastoHub` : 'AbastoHub — Mercado Mayorista & Minorista' %></title>
+  
+  <!-- Favicon / Brand Icons -->
+  <link rel="shortcut icon" href="/img/logo.ico" type="image/x-icon">
+  <link rel="icon" href="/img/logo.png" type="image/png">
+  
+  <!-- SEO Meta Tags -->
+  <meta name="description" content="Encuentra productos frescos, abarrotes y artículos al por mayor y menor con precios escalables en AbastoHub. Compra directa, rápida y segura.">
+  <meta name="keywords" content="marketplace, mayorista, minorista, productos, comida, abasto, mercadopago">
+  
+  <!-- Fonts: Outfit (Header) & Inter (Body) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS Play CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['Outfit', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              200: '#bbf7d0',
+              300: '#86efac',
+              400: '#4ade80',
+              500: '#22c55e', // Emerald brand green
+              600: '#16a34a',
+              700: '#15803d',
+              800: '#166534',
+              900: '#14532d',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  
+  <!-- Heroicons CDN for easy standard SVG icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    .glass-nav {
+      background-color: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(12px);
+    }
+    .display-font {
+      font-family: 'Outfit', sans-serif;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+<body class="flex flex-col h-full font-sans antialiased bg-slate-50">
+
+  <!-- Responsive Navigation -->
+  <header class="sticky top-0 z-50 w-full border-b border-slate-200/80 glass-nav transition-all duration-300">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16 sm:h-20">
+        
+        <!-- Logo -->
+        <div class="flex items-center flex-shrink-0">
+          <a href="/" class="flex items-center gap-2 group">
+            <img src="/img/logo.png" alt="AbastoHub Logo" class="w-10 h-10 object-contain group-hover:scale-105 transition-transform">
+            <span class="display-font text-2xl font-extrabold tracking-tight bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent group-hover:opacity-85 transition-opacity">
+              Abasto<span class="text-brand-600">Hub</span>
+            </span>
+          </a>
+        </div>
+
+        <!-- Search Bar (Desktop) -->
+        <div class="hidden md:flex flex-1 max-w-lg mx-8">
+          <form action="/products" method="GET" class="w-full relative">
+            <div class="relative">
+              <input type="text" name="search" placeholder="Buscar productos, frutas, verduras, lácteos..." 
+                value="<%= typeof search !== 'undefined' ? search : '' %>"
+                class="w-full bg-slate-100 hover:bg-slate-200/60 focus:bg-white text-slate-800 placeholder-slate-400 pl-11 pr-4 py-2.5 rounded-full border border-transparent focus:border-brand-500/40 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all duration-200 text-sm">
+              <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+                <i class="fa-solid fa-magnifying-glass text-sm"></i>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-center gap-2 sm:gap-4">
+          <!-- Cart Icon -->
+          <a href="/cart" class="relative p-2 text-slate-600 hover:text-brand-600 transition-colors" id="cart-nav-btn">
+            <i class="fa-solid fa-cart-shopping text-xl"></i>
+            <% if (typeof cartCount !== 'undefined' && cartCount > 0) { %>
+              <span class="absolute top-0.5 right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-brand-600 text-[10px] font-bold text-white ring-2 ring-white">
+                <%= cartCount %>
+              </span>
+            <% } %>
+          </a>
+
+          <!-- Desktop Navigation -->
+          <nav class="hidden md:flex items-center gap-4 sm:gap-6">
+            <a href="/products" class="text-sm font-semibold text-slate-600 hover:text-brand-600 transition-colors">Catálogo</a>
+            
+            <% if (user && user.role === 'admin') { %>
+              <a href="/admin" class="text-sm font-semibold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-100 hover:bg-emerald-100 transition-colors flex items-center gap-1.5">
+                <i class="fa-solid fa-user-shield text-xs"></i>
+                Panel Admin
+              </a>
+            <% } %>
+
+            <!-- Auth States -->
+            <% if (user) { %>
+              <div class="relative flex items-center gap-3 border-l border-slate-200 pl-4">
+                <div class="text-right">
+                  <p class="text-xs text-slate-400">Hola,</p>
+                  <p class="text-sm font-bold text-slate-800 max-w-[120px] truncate"><%= user.name %></p>
+                </div>
+                <a href="/logout" class="p-2 text-slate-400 hover:text-rose-600 transition-colors" title="Cerrar sesión">
+                  <i class="fa-solid fa-right-from-bracket text-lg"></i>
+                </a>
+              </div>
+            <% } else { %>
+              <div class="flex items-center gap-2 border-l border-slate-200 pl-4">
+                <a href="/login" class="text-sm font-semibold text-slate-600 hover:text-brand-600 transition-colors">Entrar</a>
+                <a href="/register" class="inline-flex text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 px-4 py-2 rounded-full shadow-sm shadow-brand-500/10 transition-all duration-200">
+                  Registrarse
+                </a>
+              </div>
+            <% } %>
+          </nav>
+
+          <!-- Mobile Menu Button -->
+          <button id="mobile-menu-btn" class="md:hidden p-2 text-slate-600 hover:text-brand-600 focus:outline-none transition-colors" aria-label="Abrir menú">
+            <i class="fa-solid fa-bars text-xl" id="mobile-menu-icon"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Mobile Search Bar (always visible below brand line on mobile) -->
+      <div class="md:hidden pb-3">
+        <form action="/products" method="GET" class="w-full relative">
+          <div class="relative">
+            <input type="text" name="search" placeholder="Buscar productos..." 
+              value="<%= typeof search !== 'undefined' ? search : '' %>"
+              class="w-full bg-slate-100 focus:bg-white text-slate-800 placeholder-slate-400 pl-11 pr-4 py-2 rounded-full border border-transparent focus:border-brand-500/40 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all duration-200 text-sm">
+            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+              <i class="fa-solid fa-magnifying-glass text-sm"></i>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <!-- Mobile Menu Dropdown (toggled via JS) -->
+      <div id="mobile-menu" class="hidden md:hidden border-t border-slate-200/60 pb-4 pt-3 space-y-3">
+        <a href="/products" class="block px-3 py-2 rounded-xl text-base font-semibold text-slate-700 hover:bg-slate-100 hover:text-brand-600 transition-all">Catálogo</a>
+        
+        <% if (user && user.role === 'admin') { %>
+          <a href="/admin" class="block px-3 py-2 rounded-xl text-base font-semibold text-emerald-700 hover:bg-emerald-50 transition-all">
+            <i class="fa-solid fa-user-shield mr-2"></i>Panel Admin
+          </a>
+        <% } %>
+
+        <div class="border-t border-slate-100 pt-3">
+          <% if (user) { %>
+            <div class="px-3 py-2 flex items-center justify-between">
+              <div>
+                <p class="text-xs text-slate-400">Sesión iniciada como</p>
+                <p class="text-sm font-bold text-slate-800"><%= user.name %> <%= user.lastname %></p>
+              </div>
+              <a href="/logout" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-100 text-rose-600 font-semibold text-sm hover:bg-rose-50 transition-all">
+                <i class="fa-solid fa-right-from-bracket"></i> Salir
+              </a>
+            </div>
+          <% } else { %>
+            <div class="flex flex-col gap-2 px-3">
+              <a href="/login" class="flex justify-center text-sm font-semibold text-slate-600 hover:bg-slate-100 py-2.5 rounded-xl border border-slate-200 transition-all">Entrar</a>
+              <a href="/register" class="flex justify-center text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 py-2.5 rounded-xl shadow-sm transition-all">
+                Registrarse
+              </a>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const btn = document.getElementById('mobile-menu-btn');
+      const menu = document.getElementById('mobile-menu');
+      const icon = document.getElementById('mobile-menu-icon');
+
+      if (btn && menu && icon) {
+        btn.addEventListener('click', () => {
+          menu.classList.toggle('hidden');
+          const isHidden = menu.classList.contains('hidden');
+          icon.className = isHidden ? 'fa-solid fa-bars text-xl' : 'fa-solid fa-xmark text-xl';
+        });
+      }
+    });
+  </script>
+
+  <main class="flex-grow">

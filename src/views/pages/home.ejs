@@ -1,0 +1,271 @@
+<%- include('../partials/header') %>
+
+<!-- Hero Banner -->
+<section class="relative bg-slate-900 overflow-hidden">
+  <!-- Subtle decorative light gradients -->
+  <div class="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(34,197,94,0.12),transparent)] pointer-events-none"></div>
+  <div class="absolute right-0 bottom-0 w-1/3 h-full bg-[radial-gradient(circle_at_80%_80%,rgba(74,222,128,0.1),transparent)] pointer-events-none"></div>
+  
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 relative z-10">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+      
+      <!-- Text content -->
+      <div class="space-y-6 text-center lg:text-left">
+        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-500/10 border border-brand-500/20 text-brand-400 text-xs font-semibold uppercase tracking-wider">
+          <i class="fa-solid fa-sparkles"></i>
+          Precios Mayoristas a tu Alcance
+        </div>
+        <h1 class="display-font text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white tracking-tight leading-tight">
+          El abasto para tu<br>
+          <span class="bg-gradient-to-r from-brand-400 to-emerald-300 bg-clip-text text-transparent">Hogar o Negocio</span>
+        </h1>
+        <p class="text-slate-400 text-base sm:text-lg max-w-lg mx-auto lg:mx-0">
+          Comprá directo del productor. Precios minoristas competitivos y descuentos mayoristas automáticos al llevar 6 unidades o más de cualquier producto.
+        </p>
+        
+        <div class="flex flex-wrap gap-4 justify-center lg:justify-start">
+          <a href="/products" class="px-8 py-3.5 rounded-full font-bold text-white bg-brand-600 hover:bg-brand-700 shadow-lg shadow-brand-500/20 hover:shadow-brand-500/30 hover:-translate-y-0.5 transition-all text-base flex items-center gap-2">
+            Ver Catálogo
+            <i class="fa-solid fa-arrow-right text-sm"></i>
+          </a>
+          <a href="/register" class="px-8 py-3.5 rounded-full font-bold text-slate-200 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-650 transition-all text-base">
+            Crear Cuenta Gratis
+          </a>
+        </div>
+
+        <!-- Trust Stats -->
+        <div class="pt-8 border-t border-slate-800 grid grid-cols-3 gap-4 max-w-md mx-auto lg:mx-0">
+          <div>
+            <p class="text-2xl sm:text-3xl font-extrabold text-white display-font">100%</p>
+            <p class="text-xs text-slate-500 uppercase tracking-wider font-semibold">Fresco & Seguro</p>
+          </div>
+          <div>
+            <p class="text-2xl sm:text-3xl font-extrabold text-white display-font">+100</p>
+            <p class="text-xs text-slate-500 uppercase tracking-wider font-semibold">Productos</p>
+          </div>
+          <div>
+            <p class="text-2xl sm:text-3xl font-extrabold text-white display-font">-25%</p>
+            <p class="text-xs text-slate-500 uppercase tracking-wider font-semibold">En Mayorista</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Right Graphic Mockup -->
+      <div class="hidden lg:block relative justify-self-center">
+        <!-- Stylized floating card elements -->
+        <div class="w-80 h-96 rounded-3xl bg-slate-800/80 border border-slate-700/50 p-6 flex flex-col justify-between shadow-2xl relative">
+          <!-- Top Category tags -->
+          <div class="flex justify-between items-center">
+            <span class="text-xs bg-slate-700 text-slate-300 font-semibold px-2.5 py-1 rounded-md">Frutería</span>
+            <span class="text-brand-400 font-bold text-sm"><i class="fa-solid fa-star text-xs mr-1"></i>Destacado</span>
+          </div>
+          <!-- Centered mockup image frame -->
+          <div class="w-48 h-32 rounded-2xl bg-gradient-to-tr from-brand-600 to-emerald-500 flex items-center justify-center mx-auto shadow-md">
+            <i class="fa-solid fa-lemon text-white text-5xl animate-pulse"></i>
+          </div>
+          <!-- Bottom pricing description -->
+          <div class="space-y-3">
+            <h4 class="display-font text-lg font-bold text-white leading-tight">Limón Premium seleccionado</h4>
+            <div class="flex items-center justify-between border-t border-slate-700 pt-3">
+              <div>
+                <p class="text-[10px] text-slate-500 uppercase font-semibold">Precio Minorista</p>
+                <p class="text-sm font-bold text-slate-300">$ 380,00 / kg</p>
+              </div>
+              <div class="text-right">
+                <p class="text-[10px] text-brand-400 uppercase font-bold">Precio Mayorista (6+)</p>
+                <p class="text-base font-extrabold text-brand-450">$ 290,00 / kg</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Float badge 1 -->
+        <div class="absolute -top-6 -left-12 bg-white text-slate-900 border border-slate-200/85 p-3 rounded-2xl shadow-xl flex items-center gap-3 animate-bounce">
+          <div class="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-600">
+            <i class="fa-solid fa-wallet"></i>
+          </div>
+          <div>
+            <p class="text-[10px] text-slate-400 font-bold leading-none">Ahorras más</p>
+            <p class="text-xs font-extrabold text-slate-800 leading-tight">Precios Directos</p>
+          </div>
+        </div>
+
+        <!-- Float badge 2 -->
+        <div class="absolute -bottom-4 -right-12 bg-slate-900 text-white border border-slate-850 p-4 rounded-2xl shadow-2xl flex items-center gap-3">
+          <div class="w-9 h-9 rounded-full bg-brand-500 flex items-center justify-center text-white">
+            <i class="fa-solid fa-truck-fast"></i>
+          </div>
+          <div>
+            <p class="text-xs font-extrabold leading-tight">Entrega Rápida</p>
+            <p class="text-[10px] text-slate-400 font-medium">Envíos coordinados</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- Categories Grid -->
+<section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+  <div class="flex items-end justify-between mb-8">
+    <div>
+      <h2 class="display-font text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-950">Explora Categorías</h2>
+      <p class="text-sm text-slate-500">Selecciona una categoría para filtrar tus productos.</p>
+    </div>
+    <a href="/products" class="text-sm font-bold text-brand-600 hover:text-brand-700 hover:underline flex items-center gap-1 transition-colors">
+      Ver todo
+      <i class="fa-solid fa-chevron-right text-[10px]"></i>
+    </a>
+  </div>
+
+  <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+    <% if (categories && categories.length > 0) { %>
+      <% categories.forEach(category => { %>
+        <a href="/products?category=<%= category.slug %>" class="group bg-white border border-slate-200 hover:border-brand-500/30 rounded-2xl p-4 text-center shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-200">
+          <div class="w-16 h-16 rounded-2xl bg-slate-50 group-hover:bg-brand-50 flex items-center justify-center mx-auto mb-3 transition-colors overflow-hidden">
+            <% if (category.image && (category.image.startsWith('/') || category.image.startsWith('http'))) { %>
+              <img src="<%= category.image %>" alt="<%= category.name %>" class="w-12 h-12 object-contain group-hover:scale-110 transition-transform">
+            <% } else { %>
+              <i class="fa-solid fa-apple-whole text-brand-500 text-2xl group-hover:scale-110 transition-transform"></i>
+            <% } %>
+          </div>
+          <span class="text-sm font-bold text-slate-800 group-hover:text-brand-600 transition-colors block truncate"><%= category.name %></span>
+        </a>
+      <% }); %>
+    <% } else { %>
+      <div class="col-span-full py-8 text-center text-slate-400">
+        No hay categorías registradas.
+      </div>
+    <% } %>
+  </div>
+</section>
+
+<!-- Featured Products Section -->
+<section id="ofertas" class="bg-slate-100/50 border-y border-slate-200 py-16">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    
+    <div class="flex flex-col sm:flex-row sm:items-end justify-between mb-8 gap-4">
+      <div>
+        <h2 class="display-font text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-950 flex items-center gap-2">
+          <span class="text-brand-600"><i class="fa-solid fa-fire"></i></span>
+          Productos Destacados
+        </h2>
+        <p class="text-sm text-slate-500">Seleccionados por calidad y precio.</p>
+      </div>
+      <a href="/products" class="inline-flex items-center justify-center px-5 py-2.5 rounded-full bg-white border border-slate-200 shadow-sm hover:bg-slate-50 font-semibold text-slate-700 text-sm transition-all duration-200">
+        Ver todo el catálogo
+      </a>
+    </div>
+
+    <!-- Products Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+      <% if (featuredProducts && featuredProducts.length > 0) { %>
+        <% featuredProducts.forEach(product => { %>
+          <div class="bg-white rounded-3xl border border-slate-200/80 overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-250 flex flex-col h-full group">
+            
+            <!-- Image Frame -->
+            <a href="/products/<%= product.slug %>" class="block relative aspect-[4/3] bg-slate-50 overflow-hidden">
+              <% if (product.images && product.images.length > 0) { %>
+                <img src="<%= product.images[0] %>" alt="<%= product.title %>" class="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-300">
+              <% } else { %>
+                <div class="w-full h-full flex items-center justify-center text-slate-350"><i class="fa-regular fa-image text-4xl"></i></div>
+              <% } %>
+              
+              <!-- Tag Category -->
+              <% if (product.category) { %>
+                <span class="absolute top-3 left-3 bg-white/90 backdrop-blur-sm border border-slate-200 text-slate-700 text-[10px] font-bold px-2.5 py-0.5 rounded-full"><%= product.category.name %></span>
+              <% } %>
+
+              <!-- Unit Badge -->
+              <span class="absolute bottom-3 right-3 bg-slate-900/70 backdrop-blur-sm text-white text-[10px] font-semibold px-2 py-0.5 rounded-md">Venta por <%= product.unit %></span>
+            </a>
+
+            <!-- Info Container -->
+            <div class="p-5 flex flex-col flex-grow">
+              <a href="/products/<%= product.slug %>" class="block mb-2 group-hover:text-brand-600 transition-colors">
+                <h3 class="display-font text-base font-bold text-slate-900 leading-snug line-clamp-2"><%= product.title %></h3>
+              </a>
+              <p class="text-xs text-slate-400 line-clamp-2 mb-4 flex-grow"><%= product.description || 'Sin descripción adicional.' %></p>
+              
+              <!-- Pricing breakdown -->
+              <div class="bg-slate-50 rounded-2xl p-3 border border-slate-100 space-y-2 mb-4">
+                <div class="flex items-center justify-between">
+                  <span class="text-[10px] text-slate-500 uppercase font-semibold">Precio Minorista</span>
+                  <span class="text-sm font-bold text-slate-800"><%= formatPrice(product.price) %></span>
+                </div>
+                <div class="flex items-center justify-between border-t border-slate-200/50 pt-2">
+                  <span class="text-[10px] text-brand-600 uppercase font-bold">Mayorista (6+ u.)</span>
+                  <span class="text-base font-extrabold text-brand-650"><%= formatPrice(product.wholesalePrice) %></span>
+                </div>
+              </div>
+
+              <!-- Action button -->
+              <form action="/cart/add" method="POST" class="w-full">
+                <input type="hidden" name="productId" value="<%= product._id %>">
+                <input type="hidden" name="quantity" value="1">
+                
+                <% if (product.stock > 0) { %>
+                  <button type="submit" class="w-full py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm shadow-sm hover:shadow shadow-brand-500/10 flex items-center justify-center gap-2 transition-all">
+                    <i class="fa-solid fa-cart-plus text-xs"></i>
+                    Añadir al Carrito
+                  </button>
+                <% } else { %>
+                  <button type="button" disabled class="w-full py-2.5 rounded-xl bg-slate-100 text-slate-400 font-bold text-sm border border-slate-200 cursor-not-allowed">
+                    Sin Stock
+                  </button>
+                <% } %>
+              </form>
+            </div>
+            
+          </div>
+        <% }); %>
+      <% } else { %>
+        <div class="col-span-full py-12 text-center text-slate-400 bg-white rounded-3xl border border-slate-200/70 shadow-sm">
+          <i class="fa-solid fa-box-open text-4xl mb-3 text-slate-300"></i>
+          <p class="font-medium text-sm">No hay productos destacados por el momento.</p>
+        </div>
+      <% } %>
+    </div>
+
+  </div>
+</section>
+
+<!-- Promotional Grid Section -->
+<section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+    <!-- Promo Card 1 -->
+    <div class="bg-gradient-to-tr from-brand-800 to-emerald-600 text-white p-8 rounded-3xl relative overflow-hidden shadow-lg group">
+      <div class="absolute right-0 bottom-0 w-1/3 h-full bg-[radial-gradient(circle_at_80%_80%,rgba(255,255,255,0.15),transparent)] pointer-events-none"></div>
+      <div class="max-w-md space-y-4 relative z-10">
+        <span class="text-xs uppercase font-extrabold tracking-wider bg-white/20 backdrop-blur px-3 py-1 rounded-full">Mercado Fresco</span>
+        <h3 class="display-font text-3xl font-extrabold leading-tight">Frutas y Verduras de Estación</h3>
+        <p class="text-brand-100 text-sm leading-relaxed">Directo de las quintas. Seleccionadas con la máxima higiene y empaque seguro. Compra por cajón para acceder a tarifas mayoristas de flete.</p>
+        <a href="/products?category=frutas" class="inline-flex items-center gap-1.5 text-white font-bold text-sm bg-white/10 hover:bg-white/20 px-5 py-2.5 rounded-xl border border-white/10 transition-colors">
+          Explorar Quinta
+          <i class="fa-solid fa-chevron-right text-xs"></i>
+        </a>
+      </div>
+      <!-- Decorative icon floating -->
+      <div class="absolute -right-6 -bottom-6 text-white/10 text-9xl group-hover:scale-110 transition-transform duration-300"><i class="fa-solid fa-carrot"></i></div>
+    </div>
+
+    <!-- Promo Card 2 -->
+    <div class="bg-gradient-to-tr from-slate-900 to-slate-800 text-white p-8 rounded-3xl relative overflow-hidden shadow-lg group">
+      <div class="absolute right-0 bottom-0 w-1/3 h-full bg-[radial-gradient(circle_at_80%_80%,rgba(255,255,255,0.05),transparent)] pointer-events-none"></div>
+      <div class="max-w-md space-y-4 relative z-10">
+        <span class="text-xs uppercase font-extrabold tracking-wider bg-brand-500/20 text-brand-400 border border-brand-500/20 px-3 py-1 rounded-full">Para tu Negocio</span>
+        <h3 class="display-font text-3xl font-extrabold leading-tight">Abastece tu Despensa o Comercio</h3>
+        <p class="text-slate-400 text-sm leading-relaxed">¿Tenés un autoservicio, verdulería o restaurante? Creamos AbastoHub para simplificar tu logística. Carga tu carrito mayorista online y ahorra tiempo.</p>
+        <a href="/products" class="inline-flex items-center gap-1.5 text-white font-bold text-sm bg-slate-800 hover:bg-slate-750 px-5 py-2.5 rounded-xl border border-slate-700 hover:border-slate-650 transition-colors">
+          Comenzar Compra
+          <i class="fa-solid fa-chevron-right text-xs"></i>
+        </a>
+      </div>
+      <!-- Decorative icon floating -->
+      <div class="absolute -right-6 -bottom-6 text-white/5 text-9xl group-hover:scale-110 transition-transform duration-300"><i class="fa-solid fa-boxes-packing"></i></div>
+    </div>
+  </div>
+</section>
+
+<%- include('../partials/footer') %>

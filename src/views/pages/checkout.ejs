@@ -1,0 +1,227 @@
+<%- include('../partials/header') %>
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  
+  <div class="mb-8">
+    <h1 class="display-font text-3xl font-extrabold tracking-tight text-slate-900">Checkout</h1>
+    <p class="text-sm text-slate-500 mt-1">Completa los datos de envío para finalizar tu compra con MercadoPago.</p>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+    
+    <!-- Delivery Details Form (Col Span 2) -->
+    <div class="lg:col-span-2">
+      <form action="/checkout" method="POST" id="checkout-form" class="space-y-6">
+        
+        <!-- Section 1: Customer Contact Details -->
+        <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
+          <h2 class="display-font text-lg font-bold text-slate-950 flex items-center gap-2 border-b border-slate-100 pb-3">
+            <span class="text-brand-600"><i class="fa-solid fa-address-card"></i></span>
+            Datos del Destinatario
+          </h2>
+          
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label for="name" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Nombre Completo</label>
+              <input type="text" id="name" name="name" required placeholder="Juan Pérez"
+                value="<%= user ? `${user.name} ${user.lastname}` : '' %>"
+                class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-sm">
+            </div>
+            <div>
+              <label for="phone" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Teléfono de Contacto</label>
+              <input type="text" id="phone" name="phone" required placeholder="+541155550199"
+                value="<%= user ? user.phone : '' %>"
+                class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-sm">
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 2: Delivery Type Selector -->
+        <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
+          <h2 class="display-font text-lg font-bold text-slate-950 flex items-center gap-2 border-b border-slate-100 pb-3">
+            <span class="text-brand-600"><i class="fa-solid fa-truck"></i></span>
+            Método de Entrega
+          </h2>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Delivery Option Card -->
+            <label class="relative flex items-center justify-between p-4 border border-brand-500/35 bg-brand-50/20 rounded-2xl cursor-pointer hover:bg-slate-50/10 transition-all" id="opt-delivery-label">
+              <div class="flex items-center gap-3">
+                <input type="radio" name="deliveryType" value="delivery" checked onchange="toggleDeliveryMode('delivery')" 
+                  class="h-4.5 w-4.5 text-brand-600 border-slate-300 focus:ring-brand-500/20">
+                <div>
+                  <span class="block text-sm font-bold text-slate-850">Envío a Domicilio</span>
+                  <span class="block text-xs text-slate-500">Recibe en tu casa o comercio</span>
+                </div>
+              </div>
+              <i class="fa-solid fa-house-chimney text-brand-600 text-lg"></i>
+            </label>
+
+            <!-- Pickup Option Card -->
+            <label class="relative flex items-center justify-between p-4 border border-slate-200 rounded-2xl cursor-pointer hover:bg-slate-50 transition-all" id="opt-pickup-label">
+              <div class="flex items-center gap-3">
+                <input type="radio" name="deliveryType" value="pickup" onchange="toggleDeliveryMode('pickup')" 
+                  class="h-4.5 w-4.5 text-brand-600 border-slate-300 focus:ring-brand-500/20">
+                <div>
+                  <span class="block text-sm font-bold text-slate-850">Retiro por Sucursal</span>
+                  <span class="block text-xs text-slate-500">Retira gratis en nuestro abasto</span>
+                </div>
+              </div>
+              <i class="fa-solid fa-store text-slate-400 text-lg"></i>
+            </label>
+          </div>
+        </div>
+
+        <!-- Section 3: Shipping Address (Collapsible based on Delivery Mode) -->
+        <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4 transition-all duration-300" id="address-section">
+          <h2 class="display-font text-lg font-bold text-slate-950 flex items-center gap-2 border-b border-slate-100 pb-3">
+            <span class="text-brand-600"><i class="fa-solid fa-map-location-dot"></i></span>
+            Dirección de Envío
+          </h2>
+          
+          <div class="space-y-4">
+            <div>
+              <label for="street" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Calle y Número</label>
+              <input type="text" id="street" name="street" placeholder="Av. Cabildo 2340, Piso 3A"
+                value="<%= defaultAddress ? defaultAddress.street : '' %>"
+                class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-sm">
+            </div>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label for="city" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Localidad / Ciudad</label>
+                <input type="text" id="city" name="city" placeholder="Belgrano, CABA"
+                  value="<%= defaultAddress ? defaultAddress.city : '' %>"
+                  class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-sm">
+              </div>
+              <div>
+                <label for="zipCode" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Código Postal</label>
+                <input type="text" id="zipCode" name="zipCode" placeholder="C1428"
+                  value="<%= defaultAddress ? defaultAddress.zipCode : '' %>"
+                  class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-sm">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 4: Notes -->
+        <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
+          <h2 class="display-font text-lg font-bold text-slate-950 flex items-center gap-2 border-b border-slate-100 pb-3">
+            <span class="text-brand-600"><i class="fa-solid fa-message"></i></span>
+            Notas Adicionales
+          </h2>
+          <div>
+            <label for="notes" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Instrucciones para la entrega (Opcional)</label>
+            <textarea id="notes" name="notes" rows="3" placeholder="Tocar timbre en el portón verde. Dejar en recepción..."
+              class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-sm resize-none"></textarea>
+          </div>
+        </div>
+
+      </form>
+    </div>
+
+    <!-- Order Review Card (Col Span 1) -->
+    <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-6 lg:sticky lg:top-24">
+      <h3 class="display-font text-lg font-bold text-slate-900 border-b border-slate-100 pb-3">Resumen del Pedido</h3>
+      
+      <!-- Mini Cart Items List -->
+      <div class="space-y-3.5 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
+        <% cart.products.forEach(item => { %>
+          <% if (item.product) { %>
+            <div class="flex items-center gap-3 justify-between text-xs">
+              <div class="truncate flex-grow">
+                <p class="font-bold text-slate-800 truncate"><%= item.product.title %></p>
+                <p class="text-slate-400">Cantidad: <%= item.quantity %> <%= item.product.unit %></p>
+              </div>
+              <span class="font-semibold text-slate-700 text-right"><%= formatPrice(item.activePrice * item.quantity) %></span>
+            </div>
+          <% } %>
+        <% }); %>
+      </div>
+
+      <hr class="border-slate-100">
+
+      <div class="space-y-2 text-xs">
+        <div class="flex justify-between text-slate-500">
+          <span>Subtotal</span>
+          <span><%= formatPrice(total) %></span>
+        </div>
+        <div class="flex justify-between text-slate-500">
+          <span>Envío</span>
+          <span id="summary-shipping-cost" class="font-medium text-emerald-600">A coordinar</span>
+        </div>
+      </div>
+
+      <hr class="border-slate-100">
+
+      <div class="flex justify-between items-baseline">
+        <span class="display-font text-base font-extrabold text-slate-900">Total</span>
+        <span class="display-font text-2xl font-black text-brand-700"><%= formatPrice(total) %></span>
+      </div>
+
+      <!-- Secure check outline info -->
+      <div class="bg-slate-50 border border-slate-150 p-3.5 rounded-2xl flex gap-3 items-start text-[11px] text-slate-500 leading-normal">
+        <i class="fa-solid fa-shield-halved text-brand-600 text-base mt-0.5"></i>
+        <span>
+          Serás redirigido a <strong>MercadoPago</strong> de forma 100% segura para abonar tu orden. Aceptamos tarjetas de débito/crédito y dinero en cuenta.
+        </span>
+      </div>
+
+      <!-- Action Button -->
+      <button type="submit" form="checkout-form" class="w-full py-4 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm shadow-md hover:shadow-lg shadow-brand-500/10 hover:shadow-brand-500/20 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2">
+        <span>Proceder al Pago</span>
+        <i class="fa-solid fa-chevron-right text-[11px]"></i>
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- Scripts for address toggling -->
+<script>
+  function toggleDeliveryMode(mode) {
+    const addressSection = document.getElementById('address-section');
+    const streetInput = document.getElementById('street');
+    const cityInput = document.getElementById('city');
+    const zipInput = document.getElementById('zipCode');
+    const summaryShipping = document.getElementById('summary-shipping-cost');
+    
+    const deliveryLabel = document.getElementById('opt-delivery-label');
+    const pickupLabel = document.getElementById('opt-pickup-label');
+
+    if (mode === 'delivery') {
+      // Show and enable fields
+      addressSection.style.opacity = '1';
+      addressSection.style.pointerEvents = 'auto';
+      streetInput.required = true;
+      cityInput.required = true;
+      zipInput.required = true;
+      summaryShipping.innerText = 'A coordinar';
+      summaryShipping.className = 'font-medium text-emerald-600';
+      
+      // Styling highlight
+      deliveryLabel.className = "relative flex items-center justify-between p-4 border border-brand-500/35 bg-brand-50/20 rounded-2xl cursor-pointer hover:bg-slate-50/10 transition-all";
+      pickupLabel.className = "relative flex items-center justify-between p-4 border border-slate-200 rounded-2xl cursor-pointer hover:bg-slate-50 transition-all";
+    } else {
+      // Hide / Disable fields
+      addressSection.style.opacity = '0.4';
+      addressSection.style.pointerEvents = 'none';
+      streetInput.required = false;
+      cityInput.required = false;
+      zipInput.required = false;
+      summaryShipping.innerText = 'Sin Cargo';
+      summaryShipping.className = 'font-bold text-brand-600';
+      
+      // Styling highlight
+      deliveryLabel.className = "relative flex items-center justify-between p-4 border border-slate-200 rounded-2xl cursor-pointer hover:bg-slate-50 transition-all";
+      pickupLabel.className = "relative flex items-center justify-between p-4 border border-brand-500/35 bg-brand-50/20 rounded-2xl cursor-pointer hover:bg-slate-50/10 transition-all";
+    }
+  }
+
+  // Run on startup to set street required values since delivery is default checked
+  window.onload = function() {
+    toggleDeliveryMode('delivery');
+  };
+</script>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,374 @@
+<%- include('../partials/header') %>
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  
+  <!-- Dashboard Heading -->
+  <div class="mb-8">
+    <div class="flex items-center gap-2 mb-2 text-emerald-600">
+      <i class="fa-solid fa-user-shield text-xl"></i>
+      <span class="text-xs font-bold uppercase tracking-wider">Panel Administrativo Protegido</span>
+    </div>
+    <h1 class="display-font text-3xl font-extrabold tracking-tight text-slate-900">Panel de Control</h1>
+    <p class="text-sm text-slate-500 mt-1">Crea productos, modifica stocks, activa/desactiva catálogo y visualiza los datos de compras y clientes.</p>
+  </div>
+
+  <!-- Messages Feedback -->
+  <% if (success) { %>
+    <div class="mb-6 bg-emerald-50 border border-emerald-100 text-emerald-700 p-4 rounded-2xl text-sm flex gap-2 items-center">
+      <i class="fa-solid fa-circle-check text-base"></i>
+      <span><%= success %></span>
+    </div>
+  <% } %>
+  <% if (error) { %>
+    <div class="mb-6 bg-rose-50 border border-rose-100 text-rose-700 p-4 rounded-2xl text-sm flex gap-2 items-center">
+      <i class="fa-solid fa-circle-exclamation text-base"></i>
+      <span><%= error %></span>
+    </div>
+  <% } %>
+
+  <!-- Tab selectors -->
+  <div class="border-b border-slate-200 mb-8">
+    <nav class="flex gap-6 text-sm font-semibold">
+      <button onclick="switchTab('products-list-tab', this)" class="tab-btn pb-4 border-b-2 border-brand-650 text-brand-650" id="default-tab-btn">
+        <i class="fa-solid fa-list-check mr-1.5 text-xs"></i>
+        Productos & Stock
+      </button>
+      <button onclick="switchTab('new-product-tab', this)" class="tab-btn pb-4 border-b-2 border-transparent text-slate-400 hover:text-slate-600">
+        <i class="fa-solid fa-circle-plus mr-1.5 text-xs"></i>
+        Nuevo Producto
+      </button>
+      <button onclick="switchTab('orders-tab', this)" class="tab-btn pb-4 border-b-2 border-transparent text-slate-400 hover:text-slate-600">
+        <i class="fa-solid fa-receipt mr-1.5 text-xs"></i>
+        Pedidos & Datos Clientes
+        <% if (orders && orders.length > 0) { %>
+          <span class="ml-1 bg-slate-100 text-slate-600 text-[10px] px-2 py-0.5 rounded-full font-bold"><%= orders.length %></span>
+        <% } %>
+      </button>
+    </nav>
+  </div>
+
+  <!-- Content Panels -->
+  <div>
+    
+    <!-- Tab 1: Products List & Stock Editing -->
+    <div id="products-list-tab" class="tab-panel space-y-6">
+      <div class="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
+        <div class="overflow-x-auto custom-scrollbar">
+          <table class="w-full text-left border-collapse text-sm">
+            <thead>
+              <tr class="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold text-xs">
+                <th class="px-6 py-4">Producto</th>
+                <th class="px-6 py-4">Categoría</th>
+                <th class="px-6 py-4">Precio Minorista / Mayorista</th>
+                <th class="px-6 py-4">Stock Actual</th>
+                <th class="px-6 py-4">Estado</th>
+                <th class="px-6 py-4 text-center">Acciones</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <% if (products && products.length > 0) { %>
+                <% products.forEach(prod => { %>
+                  <tr class="hover:bg-slate-50/50 transition-colors">
+                    
+                    <!-- Thumbnail & Title -->
+                    <td class="px-6 py-4">
+                      <div class="flex items-center gap-3">
+                        <div class="w-12 h-10 bg-slate-50 border border-slate-100 rounded-lg flex items-center justify-center p-1 overflow-hidden flex-shrink-0">
+                          <% if (prod.images && prod.images.length > 0) { %>
+                            <img src="<%= prod.images[0] %>" alt="<%= prod.title %>" class="w-full h-full object-contain">
+                          <% } else { %>
+                            <i class="fa-regular fa-image text-slate-350 text-base"></i>
+                          <% } %>
+                        </div>
+                        <div>
+                          <p class="font-bold text-slate-800 line-clamp-1"><%= prod.title %></p>
+                          <p class="text-[10px] text-slate-400">Venta por <%= prod.unit %></p>
+                        </div>
+                      </div>
+                    </td>
+
+                    <!-- Category -->
+                    <td class="px-6 py-4 text-xs font-semibold text-slate-600">
+                      <%= prod.category ? prod.category.name : 'N/A' %>
+                    </td>
+
+                    <!-- Pricing -->
+                    <td class="px-6 py-4 text-xs font-semibold">
+                      <span class="text-slate-800"><%= formatPrice(prod.price) %></span>
+                      <span class="text-slate-300 mx-1">/</span>
+                      <span class="text-brand-650 font-bold" title="Mayorista (6+ u.)"><%= formatPrice(prod.wholesalePrice) %></span>
+                    </td>
+
+                    <!-- Stock Inline Editor -->
+                    <td class="px-6 py-4">
+                      <form action="/admin/products/<%= prod._id %>/stock" method="POST" class="flex items-center gap-1.5">
+                        <input type="number" name="stock" min="0" value="<%= prod.stock %>"
+                          class="w-16 bg-slate-150 border border-slate-200 rounded-lg text-slate-800 font-bold px-2 py-1 text-xs text-center outline-none focus:border-brand-500/40 focus:bg-white focus:ring-4 focus:ring-brand-500/10">
+                        <button type="submit" class="p-1 rounded-md text-slate-400 hover:text-brand-650 hover:bg-slate-100 transition-all" title="Guardar stock">
+                          <i class="fa-solid fa-floppy-disk text-sm"></i>
+                        </button>
+                      </form>
+                    </td>
+
+                    <!-- Status Active -->
+                    <td class="px-6 py-4">
+                      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border <%= prod.active ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-slate-100 text-slate-500 border-slate-200' %>">
+                        <%= prod.active ? 'Activo' : 'Pausado' %>
+                      </span>
+                      <% if (prod.featured) { %>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-100 ml-1">
+                          ★ Destacado
+                        </span>
+                      <% } %>
+                    </td>
+
+                    <!-- Toggle & Delete Actions -->
+                    <td class="px-6 py-4 text-center">
+                      <div class="flex items-center justify-center gap-2">
+                        <form action="/admin/products/<%= prod._id %>/toggle" method="POST" class="inline">
+                          <button type="submit" class="px-3 py-1.5 rounded-xl border text-xs font-bold transition-all <%= prod.active ? 'border-rose-100 hover:bg-rose-50 text-rose-600' : 'border-emerald-100 hover:bg-emerald-50 text-emerald-600' %>">
+                            <%= prod.active ? 'Desactivar' : 'Activar' %>
+                          </button>
+                        </form>
+                        <form action="/admin/products/<%= prod._id %>/delete" method="POST" class="inline" onsubmit="return confirm('¿Estás seguro de que deseas eliminar permanentemente este producto del catálogo?')">
+                          <button type="submit" class="px-3 py-1.5 rounded-xl border border-red-100 hover:bg-red-50 text-red-600 text-xs font-bold transition-all">
+                            <i class="fa-solid fa-trash-can mr-1"></i>Eliminar
+                          </button>
+                        </form>
+                      </div>
+                    </td>
+
+                  </tr>
+                <% }); %>
+              <% } else { %>
+                <tr>
+                  <td colspan="6" class="px-6 py-12 text-center text-slate-400">
+                    No hay productos creados aún.
+                  </td>
+                </tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 2: New Product Creation -->
+    <div id="new-product-tab" class="tab-panel hidden max-w-2xl">
+      <div class="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm">
+        
+        <form action="/admin/products" method="POST" enctype="multipart/form-data" class="space-y-5">
+          
+          <!-- Title -->
+          <div>
+            <label for="title" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Nombre del Producto *</label>
+            <input type="text" id="title" name="title" required placeholder="E.g. Manzana Roja Selección"
+              class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-sm">
+          </div>
+
+          <!-- Description -->
+          <div>
+            <label for="description" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Descripción (Opcional)</label>
+            <textarea id="description" name="description" rows="3" placeholder="Detalla procedencia, tamaño, estado..."
+              class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-sm resize-none"></textarea>
+          </div>
+
+          <!-- Pricing Grid -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label for="price" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Precio Minorista * ($ ARS)</label>
+              <input type="number" step="0.01" min="0" id="price" name="price" required placeholder="1250"
+                class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-sm">
+            </div>
+            <div>
+              <label for="wholesalePrice" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Precio Mayorista ($ ARS, opcional)</label>
+              <input type="number" step="0.01" min="0" id="wholesalePrice" name="wholesalePrice" placeholder="980"
+                class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-sm">
+              <span class="text-[10px] text-slate-400 mt-1 block">Si queda vacío, se usará el precio minorista.</span>
+            </div>
+          </div>
+
+          <!-- Stock, Unit, Category Grid -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label for="stock" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Stock Inicial *</label>
+              <input type="number" min="0" id="stock" name="stock" required placeholder="50"
+                class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-sm">
+            </div>
+            
+            <div>
+              <label for="unit" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Unidad de Medida</label>
+              <select id="unit" name="unit" 
+                class="w-full bg-slate-50 border border-slate-200 text-slate-800 px-3 py-2.5 rounded-xl outline-none focus:border-brand-500/40 focus:ring-4 focus:ring-brand-500/10 text-sm">
+                <option value="unidades">Unidades</option>
+                <option value="kg">Kilos (kg)</option>
+                <option value="cajón">Cajón</option>
+                <option value="bolsa">Bolsa</option>
+                <option value="pack">Pack</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="categoryId" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Categoría *</label>
+              <select id="categoryId" name="categoryId" required
+                class="w-full bg-slate-50 border border-slate-200 text-slate-800 px-3 py-2.5 rounded-xl outline-none focus:border-brand-500/40 focus:ring-4 focus:ring-brand-500/10 text-sm">
+                <% categories.forEach(cat => { %>
+                  <option value="<%= cat._id %>"><%= cat.name %></option>
+                <% }); %>
+              </select>
+            </div>
+          </div>
+
+          <!-- Image upload multi selector -->
+          <div>
+            <label for="images" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5 font-sans">Imágenes del Producto</label>
+            <input type="file" id="images" name="images" multiple accept="image/*"
+              class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-500 bg-slate-50 outline-none file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 transition-all">
+            <span class="text-[10px] text-slate-400 mt-1 block">Puedes seleccionar hasta 3 fotos. Formatos JPG/PNG de menos de 5MB.</span>
+          </div>
+
+          <!-- Checkboxes featured -->
+          <div class="flex items-center">
+            <input type="checkbox" id="featured" name="featured" value="true"
+              class="h-4.5 w-4.5 text-brand-650 border-slate-350 focus:ring-brand-500/20 rounded">
+            <label for="featured" class="ml-2 text-sm text-slate-650 font-medium">
+              Destacar producto en la página de inicio
+            </label>
+          </div>
+
+          <!-- Submit -->
+          <div class="pt-2">
+            <button type="submit" class="w-full py-3.5 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl shadow-md hover:shadow-lg shadow-brand-500/10 transition-all text-sm flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-plus text-xs"></i>
+              Crear Producto
+            </button>
+          </div>
+
+        </form>
+
+      </div>
+    </div>
+
+    <!-- Tab 3: Customer Orders & Contacts log -->
+    <div id="orders-tab" class="tab-panel hidden space-y-6">
+      <div class="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
+        <div class="overflow-x-auto custom-scrollbar">
+          <table class="w-full text-left border-collapse text-sm">
+            <thead>
+              <tr class="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold text-xs">
+                <th class="px-6 py-4">ID Pedido / Fecha</th>
+                <th class="px-6 py-4">Cliente / Contacto</th>
+                <th class="px-6 py-4">Artículos Comprados</th>
+                <th class="px-6 py-4">Total</th>
+                <th class="px-6 py-4">Método / Dirección</th>
+                <th class="px-6 py-4">Pago</th>
+                <th class="px-6 py-4 text-center">Acciones</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <% if (orders && orders.length > 0) { %>
+                <% orders.forEach(order => { %>
+                  <tr class="hover:bg-slate-50/50 transition-colors">
+                    
+                    <!-- ID & Date -->
+                    <td class="px-6 py-4">
+                      <p class="font-bold text-slate-800">#<%= order._id.toString().substring(12) %></p>
+                      <p class="text-[10px] text-slate-400 mt-0.5"><%= order.createdAt.toLocaleString('es-AR') %></p>
+                    </td>
+
+                    <!-- Customer Info -->
+                    <td class="px-6 py-4">
+                      <% if (order.user) { %>
+                        <p class="font-bold text-slate-800"><%= order.shippingDetails.name || `${order.user.name} ${order.user.lastname}` %></p>
+                        <p class="text-[10px] text-slate-400 font-medium"><%= order.user.email %></p>
+                        <p class="text-[10px] text-slate-400 mt-0.5"><i class="fa-solid fa-phone text-[9px] mr-1"></i><%= order.shippingDetails.phone || order.user.phone %></p>
+                      <% } else { %>
+                        <p class="font-bold text-rose-600">Usuario Eliminado</p>
+                      <% } %>
+                    </td>
+
+                    <!-- Items snapshot -->
+                    <td class="px-6 py-4">
+                      <div class="space-y-0.5 max-w-xs text-xs text-slate-600">
+                        <% order.products.forEach(item => { %>
+                          <p class="truncate"><%= item.quantity %> × <%= item.title %> (<%= formatPrice(item.price) %>)</p>
+                        <% }); %>
+                      </div>
+                    </td>
+
+                    <!-- Total -->
+                    <td class="px-6 py-4 font-black text-slate-800">
+                      <%= formatPrice(order.total) %>
+                    </td>
+
+                    <!-- Delivery & Address -->
+                    <td class="px-6 py-4 text-xs text-slate-600">
+                      <p class="font-semibold"><%= order.deliveryType === 'delivery' ? 'Envío domicilio' : 'Retiro local' %></p>
+                      <% if (order.deliveryType === 'delivery') { %>
+                        <p class="text-[10px] text-slate-400 mt-1 line-clamp-2" title="<%= order.shippingDetails.address %>"><%= order.shippingDetails.address %></p>
+                      <% } %>
+                    </td>
+
+                    <!-- Payment state badge -->
+                    <td class="px-6 py-4">
+                      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border 
+                        <% if (order.paymentStatus === 'paid') { %> bg-emerald-50 text-emerald-700 border-emerald-100 
+                        <% } else if (order.paymentStatus === 'pending') { %> bg-amber-50 text-amber-700 border-amber-100 
+                        <% } else { %> bg-rose-50 text-rose-700 border-rose-100 <% } %>">
+                        <%= order.paymentStatus.toUpperCase() %>
+                      </span>
+                      <% if (order.paymentId) { %>
+                        <p class="text-[9px] text-slate-400 font-mono mt-1">MP: <%= order.paymentId.substring(0, 15) %>...</p>
+                      <% } %>
+                    </td>
+
+                    <!-- Acciones (Ticket PDF) -->
+                    <td class="px-6 py-4 text-center">
+                      <a href="/admin/orders/<%= order._id %>/pdf" target="_blank" 
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-brand-100 hover:bg-brand-50 text-brand-650 text-xs font-bold transition-all" 
+                        title="Imprimir Ticket de Preparación (PDF)">
+                        <i class="fa-solid fa-file-pdf text-sm"></i> Ticket PDF
+                      </a>
+                    </td>
+
+                  </tr>
+                <% }); %>
+              <% } else { %>
+                <tr>
+                  <td colspan="7" class="px-6 py-12 text-center text-slate-400">
+                    No se registran transacciones.
+                  </td>
+                </tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- Tab switcher javascript logic -->
+<script>
+  function switchTab(tabId, buttonElement) {
+    // Hide all panels
+    const panels = document.querySelectorAll('.tab-panel');
+    panels.forEach(p => p.classList.add('hidden'));
+
+    // Show selected panel
+    document.getElementById(tabId).classList.remove('hidden');
+
+    // Reset button styles
+    const buttons = document.querySelectorAll('.tab-btn');
+    buttons.forEach(btn => {
+      btn.className = "tab-btn pb-4 border-b-2 border-transparent text-slate-400 hover:text-slate-600";
+    });
+
+    // Highlight clicked button
+    buttonElement.className = "tab-btn pb-4 border-b-2 border-brand-650 text-brand-650 font-bold";
+  }
+</script>
+
+<%- include('../partials/footer') %>

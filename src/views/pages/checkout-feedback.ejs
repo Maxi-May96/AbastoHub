@@ -1,0 +1,128 @@
+<%- include('../partials/header') %>
+
+<div class="max-w-3xl mx-auto px-4 py-12">
+  
+  <div class="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
+    
+    <!-- Top banner status styling -->
+    <% if (status === 'success' || status === 'approved') { %>
+      <div class="bg-emerald-600 text-white p-8 text-center space-y-3">
+        <div class="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center mx-auto text-white text-3xl">
+          <i class="fa-solid fa-circle-check"></i>
+        </div>
+        <h1 class="display-font text-2xl sm:text-3xl font-extrabold tracking-tight">¡Pago Aprobado con Éxito!</h1>
+        <p class="text-emerald-105 text-sm max-w-md mx-auto">
+          Gracias por confiar en AbastoHub. Registramos tu compra y ya estamos preparando tus productos frescos.
+        </p>
+      </div>
+    <% } else if (status === 'pending' || status === 'in_process') { %>
+      <div class="bg-amber-500 text-white p-8 text-center space-y-3">
+        <div class="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center mx-auto text-white text-3xl">
+          <i class="fa-solid fa-clock"></i>
+        </div>
+        <h1 class="display-font text-2xl sm:text-3xl font-extrabold tracking-tight">Pago en Proceso</h1>
+        <p class="text-amber-105 text-sm max-w-md mx-auto">
+          Tu pago está siendo procesado por MercadoPago. En cuanto se acredite, recibirás la confirmación de envío.
+        </p>
+      </div>
+    <% } else { %>
+      <div class="bg-rose-600 text-white p-8 text-center space-y-3">
+        <div class="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center mx-auto text-white text-3xl">
+          <i class="fa-solid fa-circle-xmark"></i>
+        </div>
+        <h1 class="display-font text-2xl sm:text-3xl font-extrabold tracking-tight">El Pago ha Fallado</h1>
+        <p class="text-rose-105 text-sm max-w-md mx-auto">
+          No pudimos procesar la transacción. Por favor, verifica el límite de tu tarjeta o intenta con otro medio de pago.
+        </p>
+      </div>
+    <% } %>
+
+    <!-- Invoice Details -->
+    <div class="p-6 sm:p-10 space-y-6">
+      
+      <!-- Metadata Grid -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs bg-slate-50 border border-slate-100 p-4 rounded-2xl">
+        <div>
+          <p class="text-slate-400 font-bold uppercase">Nº de Pedido</p>
+          <p class="font-extrabold text-slate-800 mt-1 truncate" title="<%= order._id %>"><%= order._id.toString().substring(0, 12) %>...</p>
+        </div>
+        <div>
+          <p class="text-slate-400 font-bold uppercase">Fecha de Orden</p>
+          <p class="font-extrabold text-slate-800 mt-1"><%= order.createdAt.toLocaleDateString('es-AR') %></p>
+        </div>
+        <div>
+          <p class="text-slate-400 font-bold uppercase">Medio de Pago</p>
+          <p class="font-extrabold text-slate-800 mt-1">MercadoPago</p>
+        </div>
+        <div>
+          <p class="text-slate-400 font-bold uppercase">ID de Pago MP</p>
+          <p class="font-extrabold text-slate-850 mt-1 truncate" title="<%= order.paymentId %>"><%= order.paymentId || 'N/A' %></p>
+        </div>
+      </div>
+
+      <!-- Products Summary List -->
+      <div class="space-y-4">
+        <h3 class="display-font text-base font-bold text-slate-900 border-b border-slate-100 pb-2">Artículos del Pedido</h3>
+        <div class="divide-y divide-slate-100">
+          <% order.products.forEach(item => { %>
+            <div class="py-3 flex justify-between items-center text-sm gap-4">
+              <div>
+                <p class="font-bold text-slate-850"><%= item.title %></p>
+                <p class="text-xs text-slate-400"><%= item.quantity %> <%= item.unit %> × <%= formatPrice(item.price) %></p>
+              </div>
+              <span class="font-bold text-slate-700"><%= formatPrice(item.price * item.quantity) %></span>
+            </div>
+          <% }); %>
+        </div>
+      </div>
+
+      <!-- Address / Shipping breakdown -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 border-t border-slate-100 pt-6">
+        <div>
+          <h4 class="display-font text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Detalles del Envío</h4>
+          <p class="text-sm font-semibold text-slate-800"><%= order.shippingDetails.name %></p>
+          <p class="text-xs text-slate-500 mt-0.5"><%= order.shippingDetails.phone %></p>
+          <p class="text-xs text-slate-500 mt-2">
+            <strong>Tipo:</strong> <%= order.deliveryType === 'delivery' ? 'Envío a domicilio' : 'Retiro por sucursal' %>
+          </p>
+          <% if (order.deliveryType === 'delivery') { %>
+            <p class="text-xs text-slate-500 mt-1">
+              <strong>Dirección:</strong> <%= order.shippingDetails.address %>, <%= order.shippingDetails.city %> (CP <%= order.shippingDetails.zipCode %>)
+            </p>
+          <% } %>
+        </div>
+        
+        <div class="flex flex-col justify-between items-end bg-slate-50 border border-slate-100 p-4 rounded-2xl">
+          <div class="text-right w-full">
+            <span class="text-xs text-slate-450 uppercase font-bold">Total Abonado</span>
+            <p class="text-3xl font-black text-brand-700 display-font mt-1"><%= formatPrice(order.total) %></p>
+          </div>
+          
+          <span class="text-[9px] bg-slate-200 text-slate-600 px-2 py-0.5 rounded font-bold uppercase mt-2">
+            Estado: <%= order.paymentStatus.toUpperCase() %>
+          </span>
+        </div>
+      </div>
+
+      <% if (order.shippingDetails.notes) { %>
+        <div class="bg-amber-50 border border-amber-100 p-3.5 rounded-2xl text-xs text-amber-700 leading-relaxed">
+          <strong>Notas de entrega:</strong> <%= order.shippingDetails.notes %>
+        </div>
+      <% } %>
+
+      <!-- Return controls -->
+      <div class="border-t border-slate-100 pt-6 flex flex-col sm:flex-row gap-3 justify-center">
+        <a href="/" class="px-6 py-2.5 rounded-full font-bold text-white bg-brand-600 hover:bg-brand-700 shadow-md shadow-brand-500/10 text-center text-sm transition-all">
+          Volver al Inicio
+        </a>
+        <a href="/products" class="px-6 py-2.5 rounded-full font-bold text-slate-650 bg-slate-100 hover:bg-slate-200 text-center text-sm transition-all">
+          Seguir Comprando
+        </a>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<%- include('../partials/footer') %>
