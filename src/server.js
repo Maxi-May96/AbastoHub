@@ -1,9 +1,5 @@
 const app = require('./app');
 const env = require('./config/env');
-const connectDB = require('./config/db');
-
-// Connect to Database
-connectDB();
 
 // Start Server Listening
 const PORT = env.port;

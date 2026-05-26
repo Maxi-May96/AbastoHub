@@ -3,6 +3,10 @@ const path = require('path');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const env = require('./config/env');
+const connectDB = require('./config/db');
+
+// Connect to Database (critical for serverless execution like Vercel)
+connectDB();
 
 // Middleware imports
 const { loadUserSession } = require('./middlewares/auth.middleware');
