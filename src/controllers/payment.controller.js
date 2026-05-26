@@ -117,12 +117,27 @@ const getFeedback = async (req, res, next) => {
       });
     }
 
+    // Normalize status parameter to handle cases where it is parsed as an array due to duplicated query parameters
+    let normalizedStatus = 'failure';
+    if (status) {
+      const statusArray = Array.isArray(status) ? status : [status];
+      if (statusArray.includes('success') || statusArray.includes('approved')) {
+        normalizedStatus = 'success';
+      } else if (statusArray.includes('pending') || statusArray.includes('in_process')) {
+        normalizedStatus = 'pending';
+      }
+    }
+
     // Update payment status from callback parameters
-    if (status === 'success' || status === 'approved') {
+    if (normalizedStatus === 'success') {
       order.paymentStatus = 'paid';
-      order.paymentId = payment_id || order.paymentId || 'MP-' + Date.now();
+      const finalPaymentId = Array.isArray(payment_id) ? payment_id[0] : payment_id;
+      order.paymentId = finalPaymentId || order.paymentId || 'MP-' + Date.now();
       await order.save();
-    } else if (status === 'failure' || status === 'rejected') {
+    } else if (normalizedStatus === 'pending') {
+      order.paymentStatus = 'pending';
+      await order.save();
+    } else {
       order.paymentStatus = 'failed';
       await order.save();
     }
@@ -130,7 +145,7 @@ const getFeedback = async (req, res, next) => {
     res.render('pages/checkout-feedback', {
       title: 'Resultado del Pago',
       order,
-      status,
+      status: normalizedStatus,
       formatPrice
     });
   } catch (error) {
