@@ -4,8 +4,12 @@ const { bucket, firebaseEnabled } = require('../config/firebase');
 
 // Ensure local uploads directory exists
 const localUploadsDir = path.join(__dirname, '../../public/uploads');
-if (!fs.existsSync(localUploadsDir)) {
-  fs.mkdirSync(localUploadsDir, { recursive: true });
+try {
+  if (!fs.existsSync(localUploadsDir)) {
+    fs.mkdirSync(localUploadsDir, { recursive: true });
+  }
+} catch (err) {
+  console.warn('⚠️ Warning: Could not create local uploads directory (this is normal in read-only environments like Vercel):', err.message);
 }
 
 /**
