@@ -134,7 +134,7 @@ const getAdminPanel = async (req, res, next) => {
 // POST Create Product Action (Admin Only)
 const createProduct = async (req, res, next) => {
   try {
-    const { title, description, price, wholesalePrice, stock, categoryId, unit, featured } = req.body;
+    const { title, description, price, wholesalePrice, stock, categoryId, unit, featured, discount } = req.body;
     
     if (!title || !price || !stock || !categoryId) {
       return res.redirect('/admin?error=' + encodeURIComponent('Por favor complete todos los campos obligatorios.'));
@@ -164,6 +164,7 @@ const createProduct = async (req, res, next) => {
       category: categoryId,
       unit: unit || 'unidades',
       featured: featured === 'on' || featured === 'true',
+      discount: discount ? Number(discount) : 0,
       active: true
     });
 
@@ -207,6 +208,46 @@ const toggleActive = async (req, res, next) => {
     res.redirect('/admin?success=' + encodeURIComponent(`Producto ${product.active ? 'activado' : 'desactivado'} exitosamente.`));
   } catch (error) {
     res.redirect('/admin?error=' + encodeURIComponent('Error al cambiar el estado del producto.'));
+  }
+};
+
+// POST Toggle Featured Status Action (Admin Only)
+const toggleFeatured = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const product = await Product.findById(id);
+    if (!product) {
+      return res.redirect('/admin?error=' + encodeURIComponent('Producto no encontrado.'));
+    }
+    
+    product.featured = !product.featured;
+    await product.save();
+    
+    res.redirect('/admin?success=' + encodeURIComponent(`Producto ${product.featured ? 'destacado' : 'quitado de destacados'} exitosamente.`));
+  } catch (error) {
+    res.redirect('/admin?error=' + encodeURIComponent('Error al cambiar el estado destacado del producto.'));
+  }
+};
+
+// POST Update Discount Action (Admin Only)
+const updateDiscount = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { discount } = req.body;
+    
+    if (discount === undefined || discount === '') {
+      return res.redirect('/admin?error=' + encodeURIComponent('Valor de descuento no válido.'));
+    }
+
+    const discountNum = Number(discount);
+    if (isNaN(discountNum) || discountNum < 0 || discountNum >= 100) {
+      return res.redirect('/admin?error=' + encodeURIComponent('El descuento debe ser un número entre 0 y 99.'));
+    }
+
+    await Product.findByIdAndUpdate(id, { discount: discountNum });
+    res.redirect('/admin?success=' + encodeURIComponent('Descuento actualizado exitosamente.'));
+  } catch (error) {
+    res.redirect('/admin?error=' + encodeURIComponent('Error al actualizar el descuento.'));
   }
 };
 
@@ -412,6 +453,8 @@ module.exports = {
   createProduct,
   updateStock,
   toggleActive,
+  toggleFeatured,
+  updateDiscount,
   deleteProduct,
   generatePDFTicket
 };

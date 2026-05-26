@@ -124,12 +124,24 @@
 
                     <!-- Toggle & Delete Actions -->
                     <td class="px-6 py-4 text-center">
-                      <div class="flex items-center justify-center gap-2">
+                      <div class="flex items-center justify-center gap-2 flex-wrap">
                         <form action="/admin/products/<%= prod._id %>/toggle" method="POST" class="inline">
                           <button type="submit" class="px-3 py-1.5 rounded-xl border text-xs font-bold transition-all <%= prod.active ? 'border-rose-100 hover:bg-rose-50 text-rose-600' : 'border-emerald-100 hover:bg-emerald-50 text-emerald-600' %>">
                             <%= prod.active ? 'Desactivar' : 'Activar' %>
                           </button>
                         </form>
+                        <form action="/admin/products/<%= prod._id %>/toggle-featured" method="POST" class="inline">
+                          <button type="submit" class="px-3 py-1.5 rounded-xl border text-xs font-bold transition-all <%= prod.featured ? 'border-amber-250 bg-amber-50 hover:bg-amber-100 text-amber-700' : 'border-slate-200 hover:bg-slate-50 text-slate-650' %>" title="<%= prod.featured ? 'Quitar destacado' : 'Destacar producto' %>">
+                            <i class="fa-star <%= prod.featured ? 'fa-solid text-amber-500' : 'fa-regular' %> mr-1"></i><%= prod.featured ? 'Destacado' : 'Destacar' %>
+                          </button>
+                        </form>
+                        <button type="button" 
+                                onclick="changeDiscount('<%= prod._id %>', '<%= prod.discount || 0 %>')"
+                                class="px-3 py-1.5 rounded-xl border text-xs font-bold transition-all <%= (prod.discount && prod.discount > 0) ? 'border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700' : 'border-slate-200 hover:bg-slate-50 text-slate-650' %>" 
+                                title="Aplicar descuento">
+                          <i class="fa-solid fa-percent mr-1 text-[10px]"></i>
+                          <%= (prod.discount && prod.discount > 0) ? `${prod.discount}% Off` : 'Descuento' %>
+                        </button>
                         <form action="/admin/products/<%= prod._id %>/delete" method="POST" class="inline" onsubmit="return confirm('¿Estás seguro de que deseas eliminar permanentemente este producto del catálogo?')">
                           <button type="submit" class="px-3 py-1.5 rounded-xl border border-red-100 hover:bg-red-50 text-red-600 text-xs font-bold transition-all">
                             <i class="fa-solid fa-trash-can mr-1"></i>Eliminar
@@ -174,17 +186,23 @@
           </div>
 
           <!-- Pricing Grid -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label for="price" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Precio Minorista * ($ ARS)</label>
               <input type="number" step="0.01" min="0" id="price" name="price" required placeholder="1250"
                 class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-sm">
             </div>
             <div>
-              <label for="wholesalePrice" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Precio Mayorista ($ ARS, opcional)</label>
+              <label for="wholesalePrice" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Precio Mayorista ($ ARS)</label>
               <input type="number" step="0.01" min="0" id="wholesalePrice" name="wholesalePrice" placeholder="980"
                 class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-sm">
-              <span class="text-[10px] text-slate-400 mt-1 block">Si queda vacío, se usará el precio minorista.</span>
+              <span class="text-[10px] text-slate-400 mt-1 block">Opcional. Si queda vacío, igual al minorista.</span>
+            </div>
+            <div>
+              <label for="discount" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Descuento (%)</label>
+              <input type="number" min="0" max="99" id="discount" name="discount" placeholder="0"
+                class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-sm">
+              <span class="text-[10px] text-slate-400 mt-1 block">Porcentaje (0-99). Opcional.</span>
             </div>
           </div>
 
@@ -351,6 +369,10 @@
 </div>
 
 <!-- Tab switcher javascript logic -->
+<form id="discount-action-form" method="POST" style="display: none;">
+  <input type="hidden" name="discount" id="discount-form-value">
+</form>
+
 <script>
   function switchTab(tabId, buttonElement) {
     // Hide all panels
@@ -368,6 +390,22 @@
 
     // Highlight clicked button
     buttonElement.className = "tab-btn pb-4 border-b-2 border-brand-650 text-brand-650 font-bold";
+  }
+
+  function changeDiscount(productId, currentDiscount) {
+    const val = prompt('Ingrese el porcentaje de descuento para el producto (0 para quitar el descuento):', currentDiscount);
+    if (val === null) return; // User cancelled
+    
+    const discountNum = parseInt(val);
+    if (isNaN(discountNum) || discountNum < 0 || discountNum >= 100) {
+      alert('Por favor, ingrese un número válido entre 0 y 99.');
+      return;
+    }
+    
+    const form = document.getElementById('discount-action-form');
+    form.action = `/admin/products/${productId}/discount`;
+    document.getElementById('discount-form-value').value = discountNum;
+    form.submit();
   }
 </script>
 

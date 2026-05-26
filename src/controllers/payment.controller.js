@@ -19,7 +19,10 @@ const getCheckout = async (req, res, next) => {
     let total = 0;
     cart.products.forEach(item => {
       const isWholesale = item.quantity >= 6;
-      const priceToUse = isWholesale ? item.product.wholesalePrice : item.product.price;
+      const discountFactor = 1 - (item.product.discount || 0) / 100;
+      const basePrice = item.product.price * discountFactor;
+      const baseWholesalePrice = item.product.wholesalePrice * discountFactor;
+      const priceToUse = isWholesale ? baseWholesalePrice : basePrice;
       item.activePrice = priceToUse;
       total += priceToUse * item.quantity;
     });
@@ -54,7 +57,10 @@ const processCheckout = async (req, res, next) => {
     let total = 0;
     const orderProducts = cart.products.map(item => {
       const isWholesale = item.quantity >= 6;
-      const priceToUse = isWholesale ? item.product.wholesalePrice : item.product.price;
+      const discountFactor = 1 - (item.product.discount || 0) / 100;
+      const basePrice = item.product.price * discountFactor;
+      const baseWholesalePrice = item.product.wholesalePrice * discountFactor;
+      const priceToUse = isWholesale ? baseWholesalePrice : basePrice;
       const subtotal = priceToUse * item.quantity;
       total += subtotal;
 

@@ -11,7 +11,10 @@ const calculateCartTotal = (cart) => {
       if (item.product) {
         // Wholesale trigger: 6 or more units
         const isWholesale = item.quantity >= 6;
-        const priceToUse = isWholesale ? item.product.wholesalePrice : item.product.price;
+        const discountFactor = 1 - (item.product.discount || 0) / 100;
+        const basePrice = item.product.price * discountFactor;
+        const baseWholesalePrice = item.product.wholesalePrice * discountFactor;
+        const priceToUse = isWholesale ? baseWholesalePrice : basePrice;
         
         // Temporarily store dynamic prices for view rendering without mutating mongoose schema values
         item.activePrice = priceToUse;

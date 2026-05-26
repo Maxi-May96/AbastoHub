@@ -192,11 +192,26 @@
               <div class="bg-slate-50 rounded-2xl p-3 border border-slate-100 space-y-2 mb-4">
                 <div class="flex items-center justify-between">
                   <span class="text-[10px] text-slate-500 uppercase font-semibold">Precio Minorista</span>
-                  <span class="text-sm font-bold text-slate-800"><%= formatPrice(product.price) %></span>
+                  <div class="text-right">
+                    <% if (product.discount && product.discount > 0) { %>
+                      <span class="text-[10px] line-through text-slate-400 mr-1"><%= formatPrice(product.price) %></span>
+                      <span class="bg-rose-100 text-rose-700 text-[9px] font-extrabold px-1 rounded-full mr-1">-<%= product.discount %>%</span>
+                      <span class="text-sm font-bold text-slate-800"><%= formatPrice(product.price * (1 - product.discount/100)) %></span>
+                    <% } else { %>
+                      <span class="text-sm font-bold text-slate-800"><%= formatPrice(product.price) %></span>
+                    <% } %>
+                  </div>
                 </div>
                 <div class="flex items-center justify-between border-t border-slate-200/50 pt-2">
                   <span class="text-[10px] text-brand-600 uppercase font-bold">Mayorista (6+ u.)</span>
-                  <span class="text-base font-extrabold text-brand-650"><%= formatPrice(product.wholesalePrice) %></span>
+                  <div class="text-right">
+                    <% if (product.discount && product.discount > 0) { %>
+                      <span class="text-[10px] line-through text-slate-400 mr-1"><%= formatPrice(product.wholesalePrice) %></span>
+                      <span class="text-base font-extrabold text-brand-650"><%= formatPrice(product.wholesalePrice * (1 - product.discount/100)) %></span>
+                    <% } else { %>
+                      <span class="text-base font-extrabold text-brand-650"><%= formatPrice(product.wholesalePrice) %></span>
+                    <% } %>
+                  </div>
                 </div>
               </div>
 

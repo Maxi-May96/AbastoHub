@@ -93,7 +93,15 @@
           <div class="bg-slate-50 rounded-2xl border border-slate-150 p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div class="space-y-0.5">
               <span class="text-xs text-slate-400 font-bold uppercase tracking-wider block">Precio Minorista</span>
-              <p class="text-xl font-extrabold text-slate-800"><%= formatPrice(product.price) %></p>
+              <% if (product.discount && product.discount > 0) { %>
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <span class="text-xs line-through text-slate-400"><%= formatPrice(product.price) %></span>
+                  <span class="bg-rose-100 text-rose-700 text-[10px] font-extrabold px-1.5 py-0.5 rounded-full">-<%= product.discount %>%</span>
+                </div>
+                <p class="text-xl font-extrabold text-slate-800"><%= formatPrice(product.price * (1 - product.discount/100)) %></p>
+              <% } else { %>
+                <p class="text-xl font-extrabold text-slate-800"><%= formatPrice(product.price) %></p>
+              <% } %>
               <span class="text-[10px] text-slate-450">Por <%= product.unit %></span>
             </div>
             
@@ -102,7 +110,14 @@
                 Mayorista
                 <span class="text-[10px] bg-brand-600 text-white px-1.5 py-0.5 rounded-full font-bold">Ahorras</span>
               </span>
-              <p class="text-2xl font-black text-brand-700 display-font"><%= formatPrice(product.wholesalePrice) %></p>
+              <% if (product.discount && product.discount > 0) { %>
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <span class="text-xs line-through text-slate-400"><%= formatPrice(product.wholesalePrice) %></span>
+                </div>
+                <p class="text-2xl font-black text-brand-700 display-font"><%= formatPrice(product.wholesalePrice * (1 - product.discount/100)) %></p>
+              <% } else { %>
+                <p class="text-2xl font-black text-brand-700 display-font"><%= formatPrice(product.wholesalePrice) %></p>
+              <% } %>
               <span class="text-[10px] text-brand-600 font-semibold block">Al comprar 6 <%= product.unit %> o más</span>
             </div>
           </div>

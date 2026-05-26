@@ -13,6 +13,8 @@ router.get('/admin', isAuthenticated, isAdmin, productController.getAdminPanel);
 router.post('/admin/products', isAuthenticated, isAdmin, upload.array('images', 3), productController.createProduct);
 router.post('/admin/products/:id/stock', isAuthenticated, isAdmin, productController.updateStock);
 router.post('/admin/products/:id/toggle', isAuthenticated, isAdmin, productController.toggleActive);
+router.post('/admin/products/:id/toggle-featured', isAuthenticated, isAdmin, productController.toggleFeatured);
+router.post('/admin/products/:id/discount', isAuthenticated, isAdmin, productController.updateDiscount);
 router.post('/admin/products/:id/delete', isAuthenticated, isAdmin, productController.deleteProduct);
 router.get('/admin/orders/:id/pdf', isAuthenticated, isAdmin, productController.generatePDFTicket);
 

@@ -51,6 +51,12 @@ const ProductSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  discount: {
+    type: Number,
+    default: 0,
+    min: [0, 'El descuento no puede ser menor que 0'],
+    max: [99, 'El descuento no puede ser de 100% o más']
+  },
   active: {
     type: Boolean,
     default: true
