@@ -62,6 +62,31 @@
           </h1>
           <p class="text-sm text-slate-500 leading-relaxed"><%= product.description || 'Este producto no contiene una descripción detallada por el momento.' %></p>
           
+          <!-- Share Widget -->
+          <div class="flex items-center gap-3 pt-2">
+            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Compartir:</span>
+            
+            <!-- WhatsApp Share -->
+            <a href="#" 
+               id="share-whatsapp-btn"
+               target="_blank" 
+               class="inline-flex items-center justify-center w-8.5 h-8.5 rounded-xl bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all text-sm shadow-sm hover:scale-105 active:scale-95"
+               title="Compartir por WhatsApp">
+              <i class="fa-brands fa-whatsapp text-base"></i>
+            </a>
+
+            <!-- Copy Link -->
+            <button onclick="copyProductLink()" 
+                    class="relative inline-flex items-center justify-center w-8.5 h-8.5 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all text-sm shadow-sm hover:scale-105 active:scale-95"
+                    title="Copiar enlace">
+              <i class="fa-regular fa-copy text-base" id="copy-icon"></i>
+              <!-- Tooltip toast -->
+              <span id="copy-toast" class="absolute -top-9 left-1/2 -translate-x-1/2 bg-slate-950/90 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg opacity-0 pointer-events-none transition-all duration-200 whitespace-nowrap shadow-md">
+                ¡Enlace copiado!
+              </span>
+            </button>
+          </div>
+
           <hr class="border-slate-100">
 
           <!-- Pricing Panel -->
@@ -155,7 +180,7 @@
 
 </div>
 
-<!-- Quantity adjustment script helpers -->
+<!-- Quantity adjustment and share script helpers -->
 <script>
   const qtyInput = document.getElementById('quantity');
   const maxStock = <%= product.stock || 1 %>;
@@ -172,6 +197,44 @@
     if (currentVal > 1) {
       qtyInput.value = currentVal - 1;
     }
+  }
+
+  // Set up dynamic WhatsApp share link
+  const shareText = encodeURIComponent(`Mira este producto en AbastoHub: *<%= product.title %>*\nPrecio: <%= formatPrice(product.price) %>\n${window.location.href}`);
+  const whatsappBtn = document.getElementById('share-whatsapp-btn');
+  if (whatsappBtn) {
+    whatsappBtn.href = `https://api.whatsapp.com/send?text=${shareText}`;
+  }
+
+  // Copy link functionality with tooltip
+  function copyProductLink() {
+    const url = window.location.href;
+    navigator.clipboard.writeText(url).then(() => {
+      const toast = document.getElementById('copy-toast');
+      const icon = document.getElementById('copy-icon');
+      
+      if (icon) {
+        icon.className = "fa-solid fa-check text-emerald-600";
+      }
+      
+      if (toast) {
+        toast.classList.remove('opacity-0');
+        toast.classList.add('opacity-100');
+      }
+      
+      // Hide toast after 2 seconds
+      setTimeout(() => {
+        if (toast) {
+          toast.classList.remove('opacity-100');
+          toast.classList.add('opacity-0');
+        }
+        if (icon) {
+          icon.className = "fa-regular fa-copy text-base";
+        }
+      }, 2000);
+    }).catch(err => {
+      console.error('Error copying text to clipboard:', err);
+    });
   }
 </script>
 
