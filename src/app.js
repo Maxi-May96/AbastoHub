@@ -20,6 +20,7 @@ const cartRoutes = require('./routes/cart.routes');
 const paymentRoutes = require('./routes/payment.routes');
 
 const app = express();
+app.set('trust proxy', true);
 
 // View engine setup
 app.set('view engine', 'ejs');

@@ -16,24 +16,30 @@ const createOrderPreference = async (order, hostUrl) => {
     currency_id: 'ARS'
   }));
 
+  // Force HTTPS for production callback URLs
+  let secureHostUrl = hostUrl;
+  if (!hostUrl.includes('localhost') && hostUrl.startsWith('http://')) {
+    secureHostUrl = hostUrl.replace('http://', 'https://');
+  }
+
   if (mpEnabled && mpClient) {
     try {
       const preference = new Preference(mpClient);
       const body = {
         items,
         back_urls: {
-          success: `${hostUrl}/payment/feedback?status=success&orderId=${order._id}`,
-          failure: `${hostUrl}/payment/feedback?status=failure&orderId=${order._id}`,
-          pending: `${hostUrl}/payment/feedback?status=pending&orderId=${order._id}`
+          success: `${secureHostUrl}/payment/feedback?status=success&orderId=${order._id}`,
+          failure: `${secureHostUrl}/payment/feedback?status=failure&orderId=${order._id}`,
+          pending: `${secureHostUrl}/payment/feedback?status=pending&orderId=${order._id}`
         },
         // Make sure notification_url uses HTTPS if in production, otherwise MercadoPago webhook won't work.
         // For local development it defaults to feedback page redirects.
-        notification_url: hostUrl.includes('localhost') ? null : `${hostUrl}/payment/webhook`,
+        notification_url: secureHostUrl.includes('localhost') ? null : `${secureHostUrl}/payment/webhook`,
         external_reference: order._id.toString()
       };
 
       // MercadoPago restricts auto_return to secure HTTPS URLs only
-      if (hostUrl.startsWith('https://')) {
+      if (secureHostUrl.startsWith('https://')) {
         body.auto_return = 'approved';
       }
 
