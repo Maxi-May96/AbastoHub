@@ -8,6 +8,17 @@ const loadUserSession = async (req, res, next) => {
   res.locals.cartCount = 0;
   req.user = null;
 
+  // Set default absolute URL helpers and Open Graph metadata for social sharing
+  const protocol = req.protocol;
+  const host = req.get('host');
+  const baseUrl = `${protocol}://${host}`;
+  res.locals.baseUrl = baseUrl;
+  res.locals.ogUrl = `${baseUrl}${req.originalUrl}`;
+  res.locals.ogTitle = 'AbastoHub — Mercado Mayorista & Minorista';
+  res.locals.ogDescription = 'Encuentra productos frescos, abarrotes y artículos al por mayor y menor con precios escalables en AbastoHub. Compra directa, rápida y segura.';
+  res.locals.ogImage = `${baseUrl}/img/logo.png`;
+  res.locals.ogType = 'website';
+
   if (token) {
     const decoded = verifyToken(token);
     if (decoded) {

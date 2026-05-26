@@ -88,11 +88,21 @@ const getProductBySlug = async (req, res, next) => {
       active: true
     }).limit(4);
 
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const ogImage = product.images && product.images.length > 0
+      ? (product.images[0].startsWith('http') ? product.images[0] : `${baseUrl}${product.images[0]}`)
+      : `${baseUrl}/img/logo.png`;
+
     res.render('pages/product-detail', {
       title: product.title,
       product,
       relatedProducts,
-      formatPrice
+      formatPrice,
+      ogTitle: `${product.title} | AbastoHub`,
+      ogDescription: product.description || 'Comprá este excelente producto al mejor precio en AbastoHub.',
+      ogImage,
+      ogUrl: `${baseUrl}/products/${product.slug}`,
+      ogType: 'product'
     });
   } catch (error) {
     next(error);

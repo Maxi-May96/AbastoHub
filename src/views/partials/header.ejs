@@ -10,8 +10,22 @@
   <link rel="icon" href="/img/logo.png" type="image/png">
   
   <!-- SEO Meta Tags -->
-  <meta name="description" content="Encuentra productos frescos, abarrotes y artículos al por mayor y menor con precios escalables en AbastoHub. Compra directa, rápida y segura.">
+  <meta name="description" content="<%= typeof ogDescription !== 'undefined' ? ogDescription : 'Encuentra productos frescos, abarrotes y artículos al por mayor y menor con precios escalables en AbastoHub. Compra directa, rápida y segura.' %>">
   <meta name="keywords" content="marketplace, mayorista, minorista, productos, comida, abasto, mercadopago">
+  
+  <!-- Open Graph / Meta Compartir (WhatsApp, Facebook, LinkedIn, etc.) -->
+  <meta property="og:title" content="<%= typeof ogTitle !== 'undefined' ? ogTitle : (typeof title !== 'undefined' ? `${title} | AbastoHub` : 'AbastoHub — Mercado Mayorista & Minorista') %>">
+  <meta property="og:description" content="<%= typeof ogDescription !== 'undefined' ? ogDescription : 'Encuentra productos frescos, abarrotes y artículos al por mayor y menor con precios escalables en AbastoHub. Compra directa, rápida y segura.' %>">
+  <meta property="og:image" content="<%= typeof ogImage !== 'undefined' ? ogImage : `${baseUrl}/img/logo.png` %>">
+  <meta property="og:url" content="<%= typeof ogUrl !== 'undefined' ? ogUrl : (typeof baseUrl !== 'undefined' ? baseUrl : '') %>">
+  <meta property="og:type" content="<%= typeof ogType !== 'undefined' ? ogType : 'website' %>">
+  <meta property="og:site_name" content="AbastoHub">
+
+  <!-- Twitter Card Meta Tags (X) -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="<%= typeof ogTitle !== 'undefined' ? ogTitle : (typeof title !== 'undefined' ? `${title} | AbastoHub` : 'AbastoHub — Mercado Mayorista & Minorista') %>">
+  <meta name="twitter:description" content="<%= typeof ogDescription !== 'undefined' ? ogDescription : 'Encuentra productos frescos, abarrotes y artículos al por mayor y menor con precios escalables en AbastoHub. Compra directa, rápida y segura.' %>">
+  <meta name="twitter:image" content="<%= typeof ogImage !== 'undefined' ? ogImage : `${baseUrl}/img/logo.png` %>">
   
   <!-- Fonts: Outfit (Header) & Inter (Body) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
