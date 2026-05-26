@@ -64,6 +64,39 @@
     <!-- Tab 1: Products List & Stock Editing -->
     <div id="products-list-tab" class="tab-panel space-y-6">
       <div class="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
+        
+        <!-- Filters Header -->
+        <div class="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-base font-bold text-slate-800">Productos en Catálogo</h2>
+            <p class="text-xs text-slate-400">Edita stock, destaca productos y aplica descuentos directamente.</p>
+          </div>
+          
+          <div class="flex flex-wrap items-center gap-3">
+            <!-- Text Search -->
+            <div class="relative">
+              <input type="text" id="admin-search-input" onkeyup="filterAdminProducts()" placeholder="Buscar producto..." 
+                class="bg-white border border-slate-200 focus:border-brand-500/40 text-slate-800 placeholder-slate-400 px-3.5 py-1.5 pl-8 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-xs w-48">
+              <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[10px]"></i>
+            </div>
+
+            <!-- Stock Range Filter -->
+            <div class="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-600">
+              <span class="font-semibold text-slate-500">Stock:</span>
+              <input type="number" id="admin-stock-min" oninput="filterAdminProducts()" placeholder="Mín" min="0"
+                class="w-12 bg-slate-50 border border-slate-200 rounded-md text-center py-0.5 outline-none focus:bg-white text-slate-700 font-bold">
+              <span class="text-slate-400">-</span>
+              <input type="number" id="admin-stock-max" oninput="filterAdminProducts()" placeholder="Máx" min="0"
+                class="w-12 bg-slate-50 border border-slate-200 rounded-md text-center py-0.5 outline-none focus:bg-white text-slate-700 font-bold">
+            </div>
+
+            <!-- Reset Button -->
+            <button onclick="clearAdminFilters()" class="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-650 hover:text-slate-850 text-xs font-bold transition-all">
+              <i class="fa-solid fa-rotate-left mr-1 text-[10px]"></i>Limpiar
+            </button>
+          </div>
+        </div>
+
         <div class="overflow-x-auto custom-scrollbar">
           <table class="w-full text-left border-collapse text-sm">
             <thead>
@@ -79,7 +112,9 @@
             <tbody class="divide-y divide-slate-100">
               <% if (products && products.length > 0) { %>
                 <% products.forEach(prod => { %>
-                  <tr class="hover:bg-slate-50/50 transition-colors">
+                  <tr class="product-row hover:bg-slate-50/50 transition-colors"
+                      data-title="<%= prod.title.toLowerCase() %>"
+                      data-stock="<%= prod.stock %>">
                     
                     <!-- Thumbnail & Title -->
                     <td class="px-6 py-4">
@@ -537,6 +572,47 @@
     form.action = `/admin/products/${productId}/discount`;
     document.getElementById('discount-form-value').value = discountNum;
     form.submit();
+  }
+
+  function filterAdminProducts() {
+    const searchVal = document.getElementById('admin-search-input').value.toLowerCase().trim();
+    const minVal = parseInt(document.getElementById('admin-stock-min').value);
+    const maxVal = parseInt(document.getElementById('admin-stock-max').value);
+    
+    const rows = document.querySelectorAll('.product-row');
+    
+    rows.forEach(row => {
+      const title = row.getAttribute('data-title') || '';
+      const stock = parseInt(row.getAttribute('data-stock') || '0');
+      
+      let matchesSearch = true;
+      if (searchVal && !title.includes(searchVal)) {
+        matchesSearch = false;
+      }
+      
+      let matchesMin = true;
+      if (!isNaN(minVal) && stock < minVal) {
+        matchesMin = false;
+      }
+      
+      let matchesMax = true;
+      if (!isNaN(maxVal) && stock > maxVal) {
+        matchesMax = false;
+      }
+      
+      if (matchesSearch && matchesMin && matchesMax) {
+        row.classList.remove('hidden');
+      } else {
+        row.classList.add('hidden');
+      }
+    });
+  }
+
+  function clearAdminFilters() {
+    document.getElementById('admin-search-input').value = '';
+    document.getElementById('admin-stock-min').value = '';
+    document.getElementById('admin-stock-max').value = '';
+    filterAdminProducts();
   }
 </script>
 
