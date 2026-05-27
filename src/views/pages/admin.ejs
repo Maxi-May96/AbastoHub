@@ -316,6 +316,38 @@
     <!-- Tab 3: Customer Orders & Contacts log -->
     <div id="orders-tab" class="tab-panel hidden space-y-6">
       <div class="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
+        
+        <!-- Orders Header & Filters -->
+        <div class="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-base font-bold text-slate-800">Registro de Pedidos y Clientes</h2>
+            <p class="text-xs text-slate-400">Visualiza transacciones, filtra por fecha y descarga reportes consolidados.</p>
+          </div>
+          
+          <div class="flex flex-wrap items-center gap-3">
+            <!-- Date range filter -->
+            <div class="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-650 font-medium">
+              <span class="font-bold text-slate-500">Desde:</span>
+              <input type="date" id="admin-orders-start" onchange="filterAdminOrders()"
+                class="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 outline-none focus:bg-white focus:border-brand-500/40 text-slate-700">
+              <span class="font-bold text-slate-500">Hasta:</span>
+              <input type="date" id="admin-orders-end" onchange="filterAdminOrders()"
+                class="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 outline-none focus:bg-white focus:border-brand-500/40 text-slate-700">
+            </div>
+
+            <!-- PDF Download Button -->
+            <a href="/admin/orders/report/pdf" id="download-orders-pdf-btn" target="_blank"
+              class="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm hover:shadow">
+              <i class="fa-solid fa-file-pdf"></i>Descargar Resumen PDF
+            </a>
+
+            <!-- Reset Button -->
+            <button onclick="clearAdminOrdersFilters()" class="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-650 hover:text-slate-850 text-xs font-bold transition-all">
+              <i class="fa-solid fa-rotate-left mr-1 text-[10px]"></i>Limpiar
+            </button>
+          </div>
+        </div>
+
         <div class="overflow-x-auto custom-scrollbar">
           <table class="w-full text-left border-collapse text-sm">
             <thead>
@@ -332,7 +364,7 @@
             <tbody class="divide-y divide-slate-100">
               <% if (orders && orders.length > 0) { %>
                 <% orders.forEach(order => { %>
-                  <tr class="hover:bg-slate-50/50 transition-colors">
+                  <tr class="order-row hover:bg-slate-50/50 transition-colors" data-date="<%= order.createdAt.toISOString() %>">
                     
                     <!-- ID & Date -->
                     <td class="px-6 py-4">
@@ -613,6 +645,56 @@
     document.getElementById('admin-stock-min').value = '';
     document.getElementById('admin-stock-max').value = '';
     filterAdminProducts();
+  }
+
+  function filterAdminOrders() {
+    const startVal = document.getElementById('admin-orders-start').value;
+    const endVal = document.getElementById('admin-orders-end').value;
+    
+    // Update PDF download link with selected dates
+    const pdfBtn = document.getElementById('download-orders-pdf-btn');
+    let pdfUrl = '/admin/orders/report/pdf';
+    const params = [];
+    if (startVal) params.push(`startDate=${startVal}`);
+    if (endVal) params.push(`endDate=${endVal}`);
+    if (params.length > 0) {
+      pdfUrl += '?' + params.join('&');
+    }
+    pdfBtn.href = pdfUrl;
+
+    // Filter table rows
+    const rows = document.querySelectorAll('.order-row');
+    
+    let startDate = startVal ? new Date(startVal + 'T00:00:00') : null;
+    let endDate = endVal ? new Date(endVal + 'T23:59:59') : null;
+    
+    rows.forEach(row => {
+      const dateStr = row.getAttribute('data-date');
+      if (!dateStr) return;
+      
+      const orderDate = new Date(dateStr);
+      let matchesStart = true;
+      if (startDate && orderDate < startDate) {
+        matchesStart = false;
+      }
+      
+      let matchesEnd = true;
+      if (endDate && orderDate > endDate) {
+        matchesEnd = false;
+      }
+      
+      if (matchesStart && matchesEnd) {
+        row.classList.remove('hidden');
+      } else {
+        row.classList.add('hidden');
+      }
+    });
+  }
+
+  function clearAdminOrdersFilters() {
+    document.getElementById('admin-orders-start').value = '';
+    document.getElementById('admin-orders-end').value = '';
+    filterAdminOrders();
   }
 </script>
 

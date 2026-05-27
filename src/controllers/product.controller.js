@@ -577,6 +577,216 @@ const deletePartner = async (req, res, next) => {
   }
 };
 
+// GET Generate PDF Report / Summary of Orders (Admin Only)
+const generateOrdersSummaryPDF = async (req, res, next) => {
+  try {
+    const { startDate, endDate } = req.query;
+    
+    // Build date query
+    const dateQuery = {};
+    if (startDate) {
+      dateQuery.$gte = new Date(startDate + 'T00:00:00');
+    }
+    if (endDate) {
+      dateQuery.$lte = new Date(endDate + 'T23:59:59');
+    }
+    
+    const query = {};
+    if (startDate || endDate) {
+      query.createdAt = dateQuery;
+    }
+    
+    // Find matching orders and populate user
+    const orders = await Order.find(query).populate('user').sort({ createdAt: -1 });
+    
+    const doc = new PDFDocument({ size: 'A4', margin: 40 });
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename=resumen-pedidos.pdf');
+    doc.pipe(res);
+    
+    // Color Palette
+    const primaryColor = '#10b981'; // Emerald Green
+    const darkSlate = '#0f172a'; // Deep slate
+    const textGray = '#475569';  // Slate gray
+    const bgGray = '#f8fafc';    // Soft slate background
+    const borderGray = '#e2e8f0';  // Very light gray border
+    
+    // 1. Decorative Brand Bar
+    doc.rect(40, 40, 515, 5).fill(primaryColor);
+    
+    // Logo & Header Brand
+    const logoPath = path.join(__dirname, '../../public/img/logo.png');
+    let headerTextX = 40;
+    try {
+      doc.image(logoPath, 40, 55, { height: 35 });
+      headerTextX = 90;
+    } catch (err) {
+      headerTextX = 40;
+    }
+    
+    doc.fillColor(darkSlate)
+       .fontSize(18)
+       .font('Helvetica-Bold')
+       .text('AbastoHub', headerTextX, 55)
+       .fontSize(8.5)
+       .font('Helvetica-Bold')
+       .fillColor(textGray)
+       .text('REPORTE CONSOLIDADO DE PEDIDOS Y VENTAS', headerTextX, 76);
+       
+    // Date / Range info
+    let rangeLabel = 'Todos los registros';
+    if (startDate && endDate) {
+      rangeLabel = `Del ${new Date(startDate + 'T00:00:00').toLocaleDateString('es-AR')} al ${new Date(endDate + 'T00:00:00').toLocaleDateString('es-AR')}`;
+    } else if (startDate) {
+      rangeLabel = `Desde el ${new Date(startDate + 'T00:00:00').toLocaleDateString('es-AR')}`;
+    } else if (endDate) {
+      rangeLabel = `Hasta el ${new Date(endDate + 'T00:00:00').toLocaleDateString('es-AR')}`;
+    }
+    
+    doc.fillColor(darkSlate)
+       .fontSize(10)
+       .font('Helvetica-Bold')
+       .text('Período:', 330, 55, { align: 'right', width: 225 })
+       .font('Helvetica')
+       .fontSize(8.5)
+       .fillColor(textGray)
+       .text(rangeLabel, 330, 68, { align: 'right', width: 225 })
+       .text(`Generado: ${new Date().toLocaleString('es-AR')}`, 330, 80, { align: 'right', width: 225 });
+       
+    // 2. Summary Cards / Stats
+    const statsBoxY = 110;
+    doc.rect(40, statsBoxY, 515, 60).fill(bgGray);
+    doc.rect(40, statsBoxY, 515, 60).lineWidth(1).strokeColor(borderGray).stroke();
+    
+    // Calculate stats
+    const totalOrdersCount = orders.length;
+    const totalAmount = orders.reduce((sum, o) => sum + o.total, 0);
+    const paidOrders = orders.filter(o => o.paymentStatus === 'paid');
+    const totalPaidAmount = paidOrders.reduce((sum, o) => sum + o.total, 0);
+    
+    // Column 1: Total Orders
+    doc.fillColor(textGray)
+       .fontSize(8)
+       .font('Helvetica-Bold')
+       .text('PEDIDOS TOTALES', 55, statsBoxY + 15)
+       .fontSize(16)
+       .fillColor(darkSlate)
+       .text(totalOrdersCount.toString(), 55, statsBoxY + 27);
+       
+    // Column 2: Total Revenue (Facturado)
+    doc.fillColor(textGray)
+       .fontSize(8)
+       .font('Helvetica-Bold')
+       .text('MONTO TOTAL REGISTRADO', 200, statsBoxY + 15)
+       .fontSize(16)
+       .fillColor(darkSlate)
+       .text(formatPrice(totalAmount), 200, statsBoxY + 27);
+       
+    // Column 3: Paid Revenue (Cobrado)
+    doc.fillColor(textGray)
+       .fontSize(8)
+       .font('Helvetica-Bold')
+       .text('EFECTIVO COBRADO (PAGADOS)', 380, statsBoxY + 15)
+       .fontSize(16)
+       .fillColor(primaryColor)
+       .text(formatPrice(totalPaidAmount), 380, statsBoxY + 27);
+       
+    // 3. Orders Table Title
+    const tableTitleY = 190;
+    doc.fillColor(darkSlate)
+       .fontSize(10.5)
+       .font('Helvetica-Bold')
+       .text('DETALLE DE TRANSACCIONES', 40, tableTitleY);
+       
+    const tableTop = tableTitleY + 18;
+    
+    // Draw Header Row background
+    doc.rect(40, tableTop, 515, 20).fill('#e2e8f0');
+    
+    // Header labels
+    doc.fillColor(darkSlate)
+       .fontSize(8)
+       .font('Helvetica-Bold')
+       .text('ID PEDIDO', 45, tableTop + 6)
+       .text('FECHA / HORA', 110, tableTop + 6)
+       .text('CLIENTE / CONTACTO', 200, tableTop + 6)
+       .text('METODO', 350, tableTop + 6)
+       .text('ESTADO', 420, tableTop + 6)
+       .text('TOTAL', 485, tableTop + 6, { width: 65, align: 'right' });
+       
+    let currentY = tableTop + 20;
+    
+    orders.forEach((order, index) => {
+      // Manage page breaks
+      if (currentY > 750) {
+        doc.addPage();
+        doc.rect(40, 40, 515, 5).fill(primaryColor);
+        doc.rect(40, 55, 515, 20).fill('#e2e8f0');
+        doc.fillColor(darkSlate)
+           .fontSize(8)
+           .font('Helvetica-Bold')
+           .text('ID PEDIDO', 45, 61)
+           .text('FECHA / HORA', 110, 61)
+           .text('CLIENTE / CONTACTO', 200, 61)
+           .text('METODO', 350, 61)
+           .text('ESTADO', 420, 61)
+           .text('TOTAL', 485, 61, { width: 65, align: 'right' });
+        currentY = 75;
+      }
+      
+      // Zebra backgrounds
+      if (index % 2 === 0) {
+        doc.rect(40, currentY, 515, 22).fill('#f8fafc');
+      } else {
+        doc.rect(40, currentY, 515, 22).fill('#ffffff');
+      }
+      
+      const shortId = order._id.toString().substring(12).toUpperCase();
+      const customerName = order.shippingDetails.name || (order.user ? `${order.user.name} ${order.user.lastname}` : 'Cliente Registrado');
+      const dateStr = order.createdAt.toLocaleDateString('es-AR') + ' ' + order.createdAt.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+      const deliveryMethod = order.deliveryType === 'delivery' ? 'Envío' : 'Retiro';
+      const statusLabel = order.paymentStatus.toUpperCase();
+      
+      doc.fillColor(darkSlate)
+         .font('Helvetica-Bold')
+         .fontSize(8)
+         .text(`#${shortId}`, 45, currentY + 7)
+         .font('Helvetica')
+         .fontSize(7.5)
+         .text(dateStr, 110, currentY + 7)
+         .font('Helvetica')
+         .fontSize(8)
+         .text(customerName, 200, currentY + 7, { width: 145, truncate: true })
+         .text(deliveryMethod, 350, currentY + 7)
+         .font('Helvetica-Bold')
+         .text(statusLabel, 420, currentY + 7)
+         .text(formatPrice(order.total), 485, currentY + 7, { width: 65, align: 'right' });
+         
+      // Divider
+      doc.rect(40, currentY + 22, 515, 0.5).fill('#e2e8f0');
+      currentY += 22;
+    });
+    
+    // 4. Footer Note
+    if (currentY > 740) {
+      doc.addPage();
+      currentY = 40;
+    }
+    
+    const footerY = 780;
+    doc.rect(40, footerY, 515, 0.5).fill(borderGray);
+    doc.fillColor(textGray)
+       .font('Helvetica-Oblique')
+       .fontSize(7.5)
+       .text('Este documento es un reporte consolidado emitido automáticamente por el panel de control de AbastoHub.', 40, footerY + 10, { align: 'center', width: 515 });
+       
+    doc.end();
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getProducts,
   getProductBySlug,
@@ -589,5 +799,6 @@ module.exports = {
   deleteProduct,
   generatePDFTicket,
   createPartner,
-  deletePartner
+  deletePartner,
+  generateOrdersSummaryPDF
 };
