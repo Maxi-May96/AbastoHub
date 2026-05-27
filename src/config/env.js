@@ -19,7 +19,15 @@ const config = {
   firebase: {
     projectId: process.env.FIREBASE_PROJECT_ID || null,
     clientEmail: process.env.FIREBASE_CLIENT_EMAIL || null,
-    privateKey: process.env.FIREBASE_PRIVATE_KEY ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n') : null,
+    privateKey: (() => {
+      let key = process.env.FIREBASE_PRIVATE_KEY;
+      if (!key) return null;
+      key = key.trim();
+      if ((key.startsWith('"') && key.endsWith('"')) || (key.startsWith("'") && key.endsWith("'"))) {
+        key = key.slice(1, -1);
+      }
+      return key.replace(/\\n/g, '\n');
+    })(),
     storageBucket: process.env.FIREBASE_STORAGE_BUCKET || null
   }
 };
