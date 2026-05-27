@@ -1,6 +1,7 @@
 const Cart = require('../models/Cart');
 const Order = require('../models/Order');
 const User = require('../models/User');
+const Product = require('../models/Product');
 const { createOrderPreference } = require('../services/mercadopago.service');
 const { mpClient, mpEnabled } = require('../config/mercadopago');
 const { Payment } = require('mercadopago');
@@ -108,6 +109,35 @@ const processCheckout = async (req, res, next) => {
   }
 };
 
+// Helper function to subtract stock for an order, preventing double subtraction
+const subtractOrderStock = async (order) => {
+  try {
+    if (order.stockSubtracted) {
+      console.log(`ℹ️ Stock already subtracted for order ${order._id}`);
+      return;
+    }
+
+    console.log(`📉 Reducing stock for order ${order._id}...`);
+    for (const item of order.products) {
+      const prod = await Product.findById(item.product);
+      if (prod) {
+        const newStock = Math.max(0, prod.stock - item.quantity);
+        prod.stock = newStock;
+        await prod.save();
+        console.log(`   - Product: ${prod.title}. Previous stock: ${prod.stock + item.quantity}, new stock: ${prod.stock}`);
+      } else {
+        console.warn(`   ⚠️ Product not found when trying to subtract stock: ${item.product}`);
+      }
+    }
+
+    order.stockSubtracted = true;
+    await order.save();
+    console.log(`✅ Stock reduction completed for order ${order._id}`);
+  } catch (error) {
+    console.error('Error subtracting order stock:', error.message);
+  }
+};
+
 // GET Payment Feedback Page (landing redirect from MercadoPago or simulator)
 const getFeedback = async (req, res, next) => {
   try {
@@ -140,6 +170,9 @@ const getFeedback = async (req, res, next) => {
       const finalPaymentId = Array.isArray(payment_id) ? payment_id[0] : payment_id;
       order.paymentId = finalPaymentId || order.paymentId || 'MP-' + Date.now();
       await order.save();
+      
+      // Subtract stock upon successful payment
+      await subtractOrderStock(order);
     } else if (normalizedStatus === 'pending') {
       order.paymentStatus = 'pending';
       await order.save();
@@ -190,6 +223,7 @@ const handleWebhook = async (req, res) => {
             order.paymentStatus = 'paid';
             order.paymentId = paymentId.toString();
             await order.save();
+            await subtractOrderStock(order);
             console.log(`✅ Order ${orderId} marked as PAID via MercadoPago webhook.`);
           } else if (paymentDetails.status === 'rejected' || paymentDetails.status === 'cancelled') {
             order.paymentStatus = 'failed';
@@ -254,6 +288,7 @@ const postSimulateCheckout = async (req, res, next) => {
       order.paymentStatus = 'paid';
       order.paymentId = preferenceId;
       await order.save();
+      await subtractOrderStock(order);
       
       return res.redirect(`/payment/feedback?status=success&orderId=${order._id}&payment_id=${preferenceId}`);
     } else {

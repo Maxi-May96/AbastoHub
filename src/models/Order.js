@@ -57,6 +57,10 @@ const OrderSchema = new mongoose.Schema({
     zipCode: String,
     notes: String
   },
+  stockSubtracted: {
+    type: Boolean,
+    default: false
+  },
   createdAt: {
     type: Date,
     default: Date.now

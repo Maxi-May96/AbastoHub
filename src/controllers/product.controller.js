@@ -285,162 +285,245 @@ const generatePDFTicket = async (req, res, next) => {
     doc.pipe(res);
 
     // Color Palette
-    const primaryColor = '#059669'; // Emerald Green
-    const darkSlate = '#1e293b';
-    const lightGray = '#f8fafc';
-    const borderGray = '#cbd5e1';
+    const primaryColor = '#10b981'; // Emerald Green
+    const darkSlate = '#0f172a'; // Deep slate (almost black)
+    const textGray = '#475569';  // Slate gray
+    const bgGray = '#f8fafc';    // Soft slate background
+    const borderGray = '#e2e8f0';  // Very light gray border
+    const statusGreen = '#ecfdf5';
+    const statusTextGreen = '#047857';
+    const statusAmber = '#fffbeb';
+    const statusTextAmber = '#b45309';
 
-    // 1. Header banner
-    doc.rect(40, 40, 515, 60).fill(primaryColor);
+    // 1. Top Decorative Brand Bar
+    doc.rect(40, 40, 515, 5).fill(primaryColor);
     
-    // Logo & Header Title
+    // Logo & Header Brand
     const logoPath = path.join(__dirname, '../../public/img/logo.png');
+    let headerTextX = 40;
     try {
-      doc.image(logoPath, 55, 48, { height: 44 });
-      
-      doc.fillColor('#ffffff')
-         .fontSize(16)
-         .font('Helvetica-Bold')
-         .text('ABASTOHUB', 115, 52)
-         .fontSize(10)
-         .font('Helvetica')
-         .text('TICKET DE PREPARACIÓN DE PEDIDO', 115, 73);
+      doc.image(logoPath, 40, 55, { height: 35 });
+      headerTextX = 90; // Adjust spacing if logo is present
     } catch (err) {
-      doc.fillColor('#ffffff')
-         .fontSize(16)
-         .font('Helvetica-Bold')
-         .text('ABASTOHUB', 55, 52)
-         .fontSize(10)
-         .font('Helvetica')
-         .text('TICKET DE PREPARACIÓN DE PEDIDO', 55, 73);
+      headerTextX = 40;
     }
-
-    // Order Code & Date Top Right
-    const shortId = order._id.toString().substring(12).toUpperCase();
-    doc.fillColor('#ffffff')
-       .fontSize(10)
+    
+    doc.fillColor(darkSlate)
+       .fontSize(18)
        .font('Helvetica-Bold')
-       .text(`PEDIDO: #${shortId}`, 400, 52, { align: 'right', width: 140 })
+       .text('AbastoHub', headerTextX, 55)
        .fontSize(8.5)
-       .font('Helvetica')
-       .text(order.createdAt.toLocaleString('es-AR'), 400, 73, { align: 'right', width: 140 });
+       .font('Helvetica-Bold')
+       .fillColor(textGray)
+       .text('TICKET DE PREPARACIÓN / HOJA DE RUTA', headerTextX, 76);
 
-    // 2. Customer Card Info Box
-    doc.y = 120;
+    // Order ID & Date (Right Aligned)
+    const shortId = order._id.toString().substring(12).toUpperCase();
     doc.fillColor(darkSlate)
        .fontSize(11)
        .font('Helvetica-Bold')
-       .text('DATOS DE ENTREGA Y CLIENTE', 40, doc.y)
-       .moveDown(0.3);
+       .text(`ORDEN: #${shortId}`, 350, 55, { align: 'right', width: 205 })
+       .fontSize(8.5)
+       .font('Helvetica')
+       .fillColor(textGray)
+       .text(`Fecha: ${order.createdAt.toLocaleString('es-AR')}`, 350, 72, { align: 'right', width: 205 });
 
-    const clientBoxY = doc.y;
-    doc.rect(40, clientBoxY, 515, 75).stroke(borderGray);
+    // Payment Status Badge
+    const isPaid = order.paymentStatus === 'paid';
+    const badgeBg = isPaid ? statusGreen : statusAmber;
+    const badgeTextCol = isPaid ? statusTextGreen : statusTextAmber;
+    const badgeLabel = isPaid ? 'PAGADO' : 'PENDIENTE DE PAGO';
 
-    // Customer details
+    doc.rect(465, 87, 90, 16).fill(badgeBg);
+    doc.fillColor(badgeTextCol)
+       .fontSize(7.5)
+       .font('Helvetica-Bold')
+       .text(badgeLabel, 465, 91, { align: 'center', width: 90 });
+
+    // 2. Client & Delivery Info Card
+    const clientBoxY = 120;
+    
+    // Draw background block
+    doc.rect(40, clientBoxY, 515, 85).fill(bgGray);
+    // Draw left colored indicator border
+    doc.rect(40, clientBoxY, 4, 85).fill(primaryColor);
+    
+    // Title inside card
+    doc.fillColor(darkSlate)
+       .fontSize(9.5)
+       .font('Helvetica-Bold')
+       .text('DATOS DE ENTREGA Y CLIENTE', 55, clientBoxY + 12);
+
     const customerName = order.shippingDetails.name || (order.user ? `${order.user.name} ${order.user.lastname}` : 'Cliente Registrado');
     const customerPhone = order.shippingDetails.phone || (order.user ? order.user.phone : 'N/A');
     const customerEmail = order.user ? order.user.email : 'N/A';
     const deliveryMethod = order.deliveryType === 'delivery' ? 'Envío a Domicilio' : 'Retiro por Local';
 
-    doc.fillColor(darkSlate)
-       .fontSize(9)
+    // Left Column Info
+    doc.fontSize(8.5)
        .font('Helvetica-Bold')
-       .text('Cliente: ', 55, clientBoxY + 12)
+       .fillColor(darkSlate)
+       .text('Cliente:', 55, clientBoxY + 32)
        .font('Helvetica')
-       .text(customerName, 105, clientBoxY + 12)
+       .fillColor(textGray)
+       .text(customerName, 105, clientBoxY + 32)
+       
        .font('Helvetica-Bold')
-       .text('Teléfono: ', 55, clientBoxY + 27)
+       .fillColor(darkSlate)
+       .text('Teléfono:', 55, clientBoxY + 47)
        .font('Helvetica')
-       .text(customerPhone, 105, clientBoxY + 27)
+       .fillColor(textGray)
+       .text(customerPhone, 105, clientBoxY + 47)
+       
        .font('Helvetica-Bold')
-       .text('Email: ', 55, clientBoxY + 42)
+       .fillColor(darkSlate)
+       .text('Email:', 55, clientBoxY + 62)
        .font('Helvetica')
-       .text(customerEmail, 105, clientBoxY + 42);
+       .fillColor(textGray)
+       .text(customerEmail, 105, clientBoxY + 62);
 
+    // Right Column Info
     doc.font('Helvetica-Bold')
-       .text('Método: ', 310, clientBoxY + 12)
+       .fillColor(darkSlate)
+       .text('Método:', 300, clientBoxY + 32)
        .font('Helvetica')
-       .text(deliveryMethod, 360, clientBoxY + 12);
+       .fillColor(textGray)
+       .text(deliveryMethod, 355, clientBoxY + 32);
 
     if (order.deliveryType === 'delivery') {
       doc.font('Helvetica-Bold')
-         .text('Dirección: ', 310, clientBoxY + 27)
+         .fillColor(darkSlate)
+         .text('Dirección:', 300, clientBoxY + 47)
          .font('Helvetica')
-         .text(order.shippingDetails.address || 'No especificada', 360, clientBoxY + 27, { width: 180 });
+         .fillColor(textGray)
+         .text(order.shippingDetails.address || 'No especificada', 355, clientBoxY + 47, { width: 185 });
     } else {
       doc.font('Helvetica-Bold')
-         .text('Dirección: ', 310, clientBoxY + 27)
+         .fillColor(darkSlate)
+         .text('Dirección:', 300, clientBoxY + 47)
          .font('Helvetica')
-         .text('Retira en tienda central', 360, clientBoxY + 27, { width: 180 });
+         .fillColor(textGray)
+         .text('Retira en depósito central', 355, clientBoxY + 47, { width: 185 });
     }
 
-    // 3. Table Title
-    doc.y = clientBoxY + 105;
+    // Notes if present
+    if (order.shippingDetails.notes) {
+      doc.font('Helvetica-Bold')
+         .fillColor(darkSlate)
+         .text('Notas:', 300, clientBoxY + 67)
+         .font('Helvetica-Oblique')
+         .fillColor(textGray)
+         .text(order.shippingDetails.notes, 355, clientBoxY + 67, { width: 185, height: 18, truncate: true });
+    }
+
+    // 3. Table Header Section
+    const tableTitleY = 220;
     doc.fillColor(darkSlate)
-       .fontSize(11)
+       .fontSize(10.5)
        .font('Helvetica-Bold')
-       .text('PRODUCTOS A RECOLECTAR (PICKING LIST)', 40, doc.y)
-       .moveDown(0.3);
+       .text('ARTÍCULOS A RECOLECTAR (PICKING LIST)', 40, tableTitleY);
 
-    // 4. Products Table Drawing
-    const tableTop = doc.y;
-    doc.rect(40, tableTop, 515, 20).fill(darkSlate);
-    doc.fillColor('#ffffff')
-       .fontSize(8.5)
+    const tableTop = tableTitleY + 18;
+    
+    // Draw Header Background Row
+    doc.rect(40, tableTop, 515, 20).fill('#e2e8f0');
+    
+    // Header text labels
+    doc.fillColor(darkSlate)
+       .fontSize(8)
        .font('Helvetica-Bold')
-       .text('DESCRIPCIÓN DEL PRODUCTO', 55, tableTop + 6)
-       .text('CANTIDAD', 300, tableTop + 6, { width: 60, align: 'center' })
-       .text('UNIDAD', 370, tableTop + 6, { width: 60, align: 'center' })
-       .text('P. UNIT', 440, tableTop + 6, { width: 50, align: 'right' })
-       .text('SUBTOTAL', 500, tableTop + 6, { width: 45, align: 'right' });
+       .text('OK', 45, tableTop + 6, { width: 20, align: 'center' })
+       .text('PRODUCTO / DESCRIPCIÓN', 70, tableTop + 6)
+       .text('CANT', 300, tableTop + 6, { width: 45, align: 'center' })
+       .text('UNIDAD', 350, tableTop + 6, { width: 55, align: 'center' })
+       .text('P. UNIT', 415, tableTop + 6, { width: 65, align: 'right' })
+       .text('SUBTOTAL', 485, tableTop + 6, { width: 65, align: 'right' });
 
+    // Table rows
     let currentY = tableTop + 20;
     
     order.products.forEach((item, index) => {
-      // Row Background
+      // Row zebra background
       if (index % 2 === 0) {
-        doc.rect(40, currentY, 515, 20).fill(lightGray);
+        doc.rect(40, currentY, 515, 22).fill('#f8fafc');
+      } else {
+        doc.rect(40, currentY, 515, 22).fill('#ffffff');
       }
+
+      // Draw Checkbox Square for Pickers
+      doc.rect(49, currentY + 5, 11, 11).lineWidth(1).strokeColor(textGray).stroke();
+
       doc.fillColor(darkSlate);
-
       const unitType = item.unit || 'unidades';
-      
-      // Text Alignment
+
+      // Text Alignment and fonts
       doc.font('Helvetica-Bold')
-         .text(item.title, 55, currentY + 6, { width: 235, truncate: true })
-         .font('Helvetica')
-         .text(item.quantity.toString(), 300, currentY + 6, { width: 60, align: 'center' })
-         .text(unitType, 370, currentY + 6, { width: 60, align: 'center' })
-         .text(formatPrice(item.price), 440, currentY + 6, { width: 50, align: 'right' })
+         .fontSize(8.5)
+         .text(item.title, 70, currentY + 7, { width: 220, truncate: true })
          .font('Helvetica-Bold')
-         .text(formatPrice(item.price * item.quantity), 500, currentY + 6, { width: 45, align: 'right' });
+         .fontSize(9)
+         .text(item.quantity.toString(), 300, currentY + 7, { width: 45, align: 'center' })
+         .font('Helvetica')
+         .fontSize(8.5)
+         .text(unitType, 350, currentY + 7, { width: 55, align: 'center' })
+         .text(formatPrice(item.price), 415, currentY + 7, { width: 65, align: 'right' })
+         .font('Helvetica-Bold')
+         .text(formatPrice(item.price * item.quantity), 485, currentY + 7, { width: 65, align: 'right' });
 
-      // Draw bottom border
-      doc.rect(40, currentY + 20, 515, 0.5).fill('#e2e8f0');
-
-      currentY += 21;
+      // Row thin bottom border divider
+      doc.rect(40, currentY + 22, 515, 0.5).fill('#e2e8f0');
+      currentY += 22;
     });
 
-    // 5. Total Row
+    // 4. Totals Row Box
     doc.y = currentY + 12;
-    doc.fillColor(darkSlate)
-       .fontSize(10)
-       .font('Helvetica-Bold')
-       .text('TOTAL DE LA ORDEN:', 330, doc.y)
-       .fontSize(12)
-       .text(formatPrice(order.total), 440, doc.y - 1, { width: 105, align: 'right' });
+    const totalsBoxY = doc.y;
+    
+    // Draw totals summary box
+    doc.rect(340, totalsBoxY, 215, 45).fill('#f8fafc');
+    doc.rect(340, totalsBoxY, 215, 45).lineWidth(1).strokeColor('#e2e8f0').stroke();
 
-    // 6. Signatures and control footer at the bottom
-    const footerY = 700;
-    doc.rect(40, footerY, 515, 0.5).fill(borderGray);
-
-    doc.fillColor(darkSlate)
+    doc.fillColor(textGray)
        .fontSize(8.5)
        .font('Helvetica')
-       .text('Armado por: ___________________________', 55, footerY + 20)
-       .text('Controlado por: ___________________________', 320, footerY + 20)
-       .font('Helvetica-Oblique')
-       .text('Este ticket sirve como constancia interna para el despacho físico de mercadería.', 40, footerY + 50, { align: 'center', width: 515 });
+       .text('Cantidad de Bultos:', 355, totalsBoxY + 10)
+       .font('Helvetica-Bold')
+       .fillColor(darkSlate)
+       .text(order.products.reduce((acc, p) => acc + p.quantity, 0).toString(), 460, totalsBoxY + 10)
+       
+       .font('Helvetica-Bold')
+       .fillColor(primaryColor)
+       .fontSize(10)
+       .text('TOTAL GENERAL:', 355, totalsBoxY + 26)
+       .fontSize(11)
+       .text(formatPrice(order.total), 450, totalsBoxY + 25, { width: 95, align: 'right' });
+
+    // 5. Signatures and control footer at the bottom of the page
+    const footerY = 715;
+    
+    // Draw thin line divider above footer
+    doc.rect(40, footerY, 515, 0.5).fill(borderGray);
+
+    // Operator Signatures
+    doc.fillColor(darkSlate)
+       .fontSize(8.5)
+       .font('Helvetica-Bold')
+       .text('Armado / Preparado por:', 55, footerY + 20)
+       .font('Helvetica')
+       .text('Firma: ___________________________', 55, footerY + 37)
+       .text('Nombre: __________________________', 55, footerY + 52)
+       
+       .font('Helvetica-Bold')
+       .text('Controlado / Despachado por:', 320, footerY + 20)
+       .font('Helvetica')
+       .text('Firma: ___________________________', 320, footerY + 37)
+       .text('Nombre: __________________________', 320, footerY + 52);
+
+    // Legal / Internal note
+    doc.font('Helvetica-Oblique')
+       .fontSize(7.5)
+       .fillColor(textGray)
+       .text('Este ticket es un comprobante interno de preparación de mercadería y picking, no es válido como factura.', 40, footerY + 74, { align: 'center', width: 515 });
 
     doc.end();
 
