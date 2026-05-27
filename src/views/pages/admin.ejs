@@ -416,15 +416,36 @@
                       <% if (order.paymentId) { %>
                         <p class="text-[9px] text-slate-400 font-mono mt-1">MP: <%= order.paymentId.substring(0, 15) %>...</p>
                       <% } %>
+                      <% if (order.paymentReceipt) { %>
+                        <div class="mt-2">
+                          <a href="<%= order.paymentReceipt %>" target="_blank" 
+                            class="inline-flex items-center gap-1 px-2 py-1 bg-brand-50 hover:bg-brand-100 text-brand-700 rounded-lg text-[10px] font-bold border border-brand-100 transition-all"
+                            title="Ver comprobante de pago subido por el cliente">
+                            <i class="fa-solid fa-receipt text-[9px]"></i> Ver Compr.
+                          </a>
+                        </div>
+                      <% } %>
                     </td>
 
-                    <!-- Acciones (Ticket PDF) -->
+                    <!-- Acciones (Ticket PDF & Aprobar Pago) -->
                     <td class="px-6 py-4 text-center">
-                      <a href="/admin/orders/<%= order._id %>/pdf" target="_blank" 
-                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-brand-100 hover:bg-brand-50 text-brand-650 text-xs font-bold transition-all" 
-                        title="Imprimir Ticket de Preparación (PDF)">
-                        <i class="fa-solid fa-file-pdf text-sm"></i> Ticket PDF
-                      </a>
+                      <div class="flex flex-col sm:flex-row items-center justify-center gap-2">
+                        <a href="/admin/orders/<%= order._id %>/pdf" target="_blank" 
+                          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-brand-100 hover:bg-brand-50 text-brand-650 text-xs font-bold transition-all" 
+                          title="Imprimir Ticket de Preparación (PDF)">
+                          <i class="fa-solid fa-file-pdf text-sm"></i> Ticket PDF
+                        </a>
+                        
+                        <% if (order.paymentStatus !== 'paid') { %>
+                          <form action="/admin/orders/<%= order._id %>/mark-paid" method="POST" class="inline"
+                            onsubmit="return confirm('¿Está seguro de marcar este pedido como pagado? Esto actualizará el stock de los productos.');">
+                            <button type="submit" 
+                              class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-sm">
+                              <i class="fa-solid fa-check text-[10px]"></i> Acreditar
+                            </button>
+                          </form>
+                        <% } %>
+                      </div>
                     </td>
 
                   </tr>

@@ -787,6 +787,47 @@ const generateOrdersSummaryPDF = async (req, res, next) => {
   }
 };
 
+// POST Mark Order as Paid (Admin Only)
+const markOrderAsPaid = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const order = await Order.findById(id);
+    
+    if (!order) {
+      return res.redirect('/admin?error=' + encodeURIComponent('Pedido no encontrado.'));
+    }
+
+    if (order.paymentStatus === 'paid') {
+      return res.redirect('/admin?error=' + encodeURIComponent('El pedido ya está marcado como pagado.'));
+    }
+
+    order.paymentStatus = 'paid';
+    
+    // Subtract stock if not already subtracted
+    if (!order.stockSubtracted) {
+      console.log(`📉 Reducing stock for manually approved order ${order._id}...`);
+      for (const item of order.products) {
+        const prod = await Product.findById(item.product);
+        if (prod) {
+          const newStock = Math.max(0, prod.stock - item.quantity);
+          prod.stock = newStock;
+          await prod.save();
+          console.log(`   - Product: ${prod.title}. Previous stock: ${prod.stock + item.quantity}, new stock: ${prod.stock}`);
+        } else {
+          console.warn(`   ⚠️ Product not found when trying to subtract stock: ${item.product}`);
+        }
+      }
+      order.stockSubtracted = true;
+    }
+
+    await order.save();
+    res.redirect('/admin?success=' + encodeURIComponent(`El pedido #${order._id.toString().substring(12).toUpperCase()} ha sido acreditado exitosamente.`));
+  } catch (error) {
+    console.error('Mark order as paid error:', error.message);
+    res.redirect('/admin?error=' + encodeURIComponent('Error al acreditar el pago: ' + error.message));
+  }
+};
+
 module.exports = {
   getProducts,
   getProductBySlug,
@@ -800,5 +841,6 @@ module.exports = {
   generatePDFTicket,
   createPartner,
   deletePartner,
-  generateOrdersSummaryPDF
+  generateOrdersSummaryPDF,
+  markOrderAsPaid
 };

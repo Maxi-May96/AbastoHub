@@ -44,6 +44,10 @@ const OrderSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  paymentReceipt: {
+    type: String,
+    default: null
+  },
   deliveryType: {
     type: String,
     enum: ['delivery', 'pickup'],

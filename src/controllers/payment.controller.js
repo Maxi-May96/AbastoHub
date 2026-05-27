@@ -6,6 +6,7 @@ const { createOrderPreference } = require('../services/mercadopago.service');
 const { mpClient, mpEnabled } = require('../config/mercadopago');
 const { Payment } = require('mercadopago');
 const formatPrice = require('../utils/formatPrice');
+const { uploadImage } = require('../services/firebase.service');
 
 // GET Checkout Page
 const getCheckout = async (req, res, next) => {
@@ -185,7 +186,9 @@ const getFeedback = async (req, res, next) => {
       title: 'Resultado del Pago',
       order,
       status: normalizedStatus,
-      formatPrice
+      formatPrice,
+      success: req.query.success || null,
+      error: req.query.error || null
     });
   } catch (error) {
     next(error);
@@ -302,11 +305,56 @@ const postSimulateCheckout = async (req, res, next) => {
   }
 };
 
+// POST Upload Payment Receipt for an order (Customer)
+const uploadReceipt = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const order = await Order.findById(id);
+    
+    if (!order) {
+      return res.status(404).render('pages/error', {
+        title: 'Pedido no encontrado',
+        status: 404,
+        message: 'No pudimos localizar la orden para subir el comprobante.',
+        stack: null
+      });
+    }
+
+    // Verify order ownership
+    if (order.user.toString() !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).render('pages/error', {
+        title: 'No autorizado',
+        status: 403,
+        message: 'No tienes permisos para modificar este pedido.',
+        stack: null
+      });
+    }
+
+    if (!req.file) {
+      return res.redirect(`/payment/feedback?status=${order.paymentStatus === 'paid' ? 'success' : order.paymentStatus === 'pending' ? 'pending' : 'failure'}&orderId=${order._id}&error=${encodeURIComponent('Por favor, selecciona un archivo de comprobante válido.')}`);
+    }
+
+    // Upload image proof to Firebase/local disk
+    const receiptUrl = await uploadImage(req.file, 'receipts');
+    if (!receiptUrl) {
+      throw new Error('No se pudo procesar la imagen del comprobante.');
+    }
+
+    order.paymentReceipt = receiptUrl;
+    await order.save();
+
+    res.redirect(`/payment/feedback?status=${order.paymentStatus === 'paid' ? 'success' : order.paymentStatus === 'pending' ? 'pending' : 'failure'}&orderId=${order._id}&success=${encodeURIComponent('Comprobante subido exitosamente. El administrador lo verificará a la brevedad.')}`);
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getCheckout,
   processCheckout,
   getFeedback,
   handleWebhook,
   getSimulateCheckout,
-  postSimulateCheckout
+  postSimulateCheckout,
+  uploadReceipt
 };
