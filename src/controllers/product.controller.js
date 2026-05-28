@@ -385,35 +385,47 @@ const generatePDFTicket = async (req, res, next) => {
     // Right Column Info
     doc.font('Helvetica-Bold')
        .fillColor(darkSlate)
-       .text('Método:', 300, clientBoxY + 32)
+       .text('Método:', 300, clientBoxY + 20)
        .font('Helvetica')
        .fillColor(textGray)
-       .text(deliveryMethod, 355, clientBoxY + 32);
+       .text(deliveryMethod, 355, clientBoxY + 20);
+
+    let nextRightY = clientBoxY + 35;
+    if (order.scheduledDate) {
+      doc.font('Helvetica-Bold')
+         .fillColor(primaryColor)
+         .text('Reserva:', 300, nextRightY)
+         .font('Helvetica-Bold')
+         .text(order.scheduledDate.toLocaleDateString('es-AR'), 355, nextRightY);
+      nextRightY += 15;
+    }
 
     if (order.deliveryType === 'delivery') {
       doc.font('Helvetica-Bold')
          .fillColor(darkSlate)
-         .text('Dirección:', 300, clientBoxY + 47)
+         .text('Dirección:', 300, nextRightY)
          .font('Helvetica')
          .fillColor(textGray)
-         .text(order.shippingDetails.address || 'No especificada', 355, clientBoxY + 47, { width: 185 });
+         .text(order.shippingDetails.address || 'No especificada', 355, nextRightY, { width: 185 });
     } else {
       doc.font('Helvetica-Bold')
          .fillColor(darkSlate)
-         .text('Dirección:', 300, clientBoxY + 47)
+         .text('Dirección:', 300, nextRightY)
          .font('Helvetica')
          .fillColor(textGray)
-         .text('Retira en depósito central', 355, clientBoxY + 47, { width: 185 });
+         .text('Retira en depósito central', 355, nextRightY, { width: 185 });
     }
+
+    nextRightY += 20;
 
     // Notes if present
     if (order.shippingDetails.notes) {
       doc.font('Helvetica-Bold')
          .fillColor(darkSlate)
-         .text('Notas:', 300, clientBoxY + 67)
+         .text('Notas:', 300, nextRightY)
          .font('Helvetica-Oblique')
          .fillColor(textGray)
-         .text(order.shippingDetails.notes, 355, clientBoxY + 67, { width: 185, height: 18, truncate: true });
+         .text(order.shippingDetails.notes, 355, nextRightY, { width: 185, height: 18, truncate: true });
     }
 
     // 3. Table Header Section

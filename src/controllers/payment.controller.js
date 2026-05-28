@@ -48,7 +48,7 @@ const getCheckout = async (req, res, next) => {
 // POST Process Checkout Action
 const processCheckout = async (req, res, next) => {
   try {
-    const { name, phone, deliveryType, street, city, zipCode, notes } = req.body;
+    const { name, phone, deliveryType, street, city, zipCode, notes, scheduledDate } = req.body;
 
     const cart = await Cart.findOne({ user: req.user.id }).populate('products.product');
     if (!cart || cart.products.length === 0) {
@@ -82,6 +82,7 @@ const processCheckout = async (req, res, next) => {
       total,
       paymentStatus: 'pending',
       deliveryType,
+      scheduledDate: scheduledDate ? new Date(scheduledDate + 'T00:00:00') : null,
       shippingDetails: {
         name: name || `${req.user.name} ${req.user.lastname}`,
         phone: phone || '',

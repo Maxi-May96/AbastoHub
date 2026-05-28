@@ -370,6 +370,11 @@
                     <td class="px-6 py-4">
                       <p class="font-bold text-slate-800">#<%= order._id.toString().substring(12) %></p>
                       <p class="text-[10px] text-slate-400 mt-0.5"><%= order.createdAt.toLocaleString('es-AR') %></p>
+                      <% if (order.scheduledDate) { %>
+                        <span class="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 bg-brand-50 text-brand-700 rounded-full text-[9px] font-bold border border-brand-100">
+                          <i class="fa-solid fa-calendar-day text-[9px]"></i> Reserva: <%= order.scheduledDate.toLocaleDateString('es-AR') %>
+                        </span>
+                      <% } %>
                     </td>
 
                     <!-- Customer Info -->

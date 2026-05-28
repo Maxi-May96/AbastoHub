@@ -104,7 +104,22 @@
           </div>
         </div>
 
-        <!-- Section 4: Notes -->
+        <!-- Section 4: Reservation Date -->
+        <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
+          <h2 class="display-font text-lg font-bold text-slate-950 flex items-center gap-2 border-b border-slate-100 pb-3">
+            <span class="text-brand-600"><i class="fa-solid fa-calendar-day"></i></span>
+            Fecha de Reserva
+          </h2>
+          
+          <div class="space-y-2">
+            <label for="scheduledDate" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Seleccionar Fecha (Opcional)</label>
+            <input type="date" id="scheduledDate" name="scheduledDate"
+              class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-sm">
+            <p class="text-[10px] text-slate-450 mt-1">Elige un día a partir de hoy si deseas coordinar tu entrega o retiro para una fecha específica.</p>
+          </div>
+        </div>
+
+        <!-- Section 5: Notes -->
         <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
           <h2 class="display-font text-lg font-bold text-slate-950 flex items-center gap-2 border-b border-slate-100 pb-3">
             <span class="text-brand-600"><i class="fa-solid fa-message"></i></span>
@@ -221,6 +236,13 @@
   // Run on startup to set street required values since delivery is default checked
   window.onload = function() {
     toggleDeliveryMode('delivery');
+    
+    // Set minimum date to today
+    const dateInput = document.getElementById('scheduledDate');
+    if (dateInput) {
+      const today = new Date().toISOString().split('T')[0];
+      dateInput.min = today;
+    }
   };
 </script>
 
