@@ -2,6 +2,7 @@ const Product = require('../models/Product');
 const Category = require('../models/Category');
 const Order = require('../models/Order');
 const Partner = require('../models/Partner');
+const RaffleParticipant = require('../models/RaffleParticipant');
 const { uploadImage } = require('../services/firebase.service');
 const formatPrice = require('../utils/formatPrice');
 const PDFDocument = require('pdfkit');
@@ -118,6 +119,7 @@ const getAdminPanel = async (req, res, next) => {
     // Load orders with populated user info
     const orders = await Order.find({}).populate('user').sort({ createdAt: -1 });
     const partners = await Partner.find({}).sort({ createdAt: -1 });
+    const raffleCount = await RaffleParticipant.countDocuments({});
 
     res.render('pages/admin', {
       title: 'Panel de Control',
@@ -125,6 +127,7 @@ const getAdminPanel = async (req, res, next) => {
       categories,
       orders,
       partners,
+      raffleCount,
       formatPrice,
       success: req.query.success || null,
       error: req.query.error || null
@@ -344,6 +347,13 @@ const generatePDFTicket = async (req, res, next) => {
        .fontSize(7.5)
        .font('Helvetica-Bold')
        .text(badgeLabel, 465, 91, { align: 'center', width: 90 });
+
+    if (order.raffleCode) {
+      doc.fillColor(darkSlate)
+         .fontSize(8.5)
+         .font('Helvetica-Bold')
+         .text(`CÓDIGO SORTEO: ${order.raffleCode}`, 280, 91, { align: 'right', width: 175 });
+    }
 
     // 2. Client & Delivery Info Card
     const clientBoxY = 120;

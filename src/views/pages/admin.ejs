@@ -55,6 +55,13 @@
         <i class="fa-solid fa-user-plus mr-1.5 text-xs"></i>
         Nuevo Socio/Afiliado
       </button>
+      <button onclick="switchTab('raffle-tab', this)" class="tab-btn pb-4 border-b-2 border-transparent text-slate-400 hover:text-slate-600">
+        <i class="fa-solid fa-gift mr-1.5 text-xs"></i>
+        Sorteos
+        <% if (raffleCount > 0) { %>
+          <span class="ml-1 bg-indigo-100 text-indigo-700 text-[10px] px-2 py-0.5 rounded-full font-bold"><%= raffleCount %></span>
+        <% } %>
+      </button>
     </nav>
   </div>
 
@@ -620,6 +627,74 @@
             </button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <!-- Tab 6: Sorteos Panel -->
+    <div id="raffle-tab" class="tab-panel hidden space-y-6 max-w-4xl">
+      <div class="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
+        
+        <!-- Header -->
+        <div class="flex items-center gap-3 pb-5 border-b border-slate-100">
+          <div class="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 text-2xl shadow-sm">
+            <i class="fa-solid fa-gift"></i>
+          </div>
+          <div>
+            <h3 class="display-font text-lg font-extrabold text-slate-900">Control de Sorteos</h3>
+            <p class="text-xs text-slate-500 mt-0.5">Administra los participantes registrados, realiza el sorteo o restablece los datos.</p>
+          </div>
+        </div>
+
+        <!-- Stats Card & Buttons Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          
+          <!-- Participant Counter Card -->
+          <div class="bg-indigo-50/50 border border-indigo-100 rounded-3xl p-6 flex flex-col justify-between space-y-4">
+            <div>
+              <span class="text-[10px] text-indigo-500 font-bold uppercase tracking-wider block">Participantes Registrados</span>
+              <p class="text-5xl font-black text-indigo-900 display-font mt-2"><%= raffleCount %></p>
+            </div>
+            <p class="text-xs text-indigo-700/80 leading-relaxed">Cantidad actual de clientes que completaron el formulario con un código válido de compra.</p>
+          </div>
+
+          <!-- Actions Panel -->
+          <div class="md:col-span-2 space-y-4 flex flex-col justify-center">
+            
+            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">Acciones del Sorteo</h4>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <!-- Download JSON Button -->
+              <a href="/admin/raffle/download-json" 
+                class="flex items-center justify-center gap-2 px-4 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl shadow-xs border border-slate-200 transition-all text-center">
+                <i class="fa-solid fa-file-code text-sm"></i>
+                Descargar JSON
+              </a>
+
+              <!-- Draw Winner Button -->
+              <form action="/admin/raffle/draw" method="POST" class="inline">
+                <button type="submit" 
+                  class="w-full flex items-center justify-center gap-2 px-4 py-3.5 bg-brand-650 hover:bg-brand-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all text-center"
+                  onclick="return confirm('¿Comenzar el sorteo y elegir un ganador al azar?');">
+                  <i class="fa-solid fa-trophy text-sm"></i>
+                  Realizar Sorteo
+                </button>
+              </form>
+            </div>
+
+            <!-- Clear Data Button -->
+            <form action="/admin/raffle/clear" method="POST" class="w-full"
+              onsubmit="return confirm('¿Está COMPLETAMENTE seguro de eliminar permanentemente todos los participantes registrados? Esto reactivará todos los códigos de compra para que puedan ser usados nuevamente.');">
+              <button type="submit" 
+                class="w-full flex items-center justify-center gap-2 px-4 py-3 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200/50 font-bold text-xs rounded-xl transition-all text-center">
+                <i class="fa-solid fa-trash-can text-xs"></i>
+                Borrar Datos de Participantes
+              </button>
+            </form>
+
+          </div>
+
+        </div>
+
       </div>
     </div>
 

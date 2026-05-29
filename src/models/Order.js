@@ -74,6 +74,15 @@ const OrderSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  raffleCode: {
+    type: String,
+    unique: true,
+    sparse: true
+  },
+  raffleUsed: {
+    type: Boolean,
+    default: false
+  },
   createdAt: {
     type: Date,
     default: Date.now

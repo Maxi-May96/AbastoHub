@@ -75,6 +75,17 @@ const processCheckout = async (req, res, next) => {
       };
     });
 
+    // Generate a unique raffle code: e.g. AH-XXXXXX (6 alphanumeric chars)
+    let raffleCode;
+    let codeExists = true;
+    while (codeExists) {
+      raffleCode = 'AH-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+      const existing = await Order.findOne({ raffleCode });
+      if (!existing) {
+        codeExists = false;
+      }
+    }
+
     // 2. Create Order in Database (Pending status)
     const newOrder = new Order({
       user: req.user.id,
@@ -83,6 +94,7 @@ const processCheckout = async (req, res, next) => {
       paymentStatus: 'pending',
       deliveryType,
       scheduledDate: scheduledDate ? new Date(scheduledDate + 'T00:00:00') : null,
+      raffleCode,
       shippingDetails: {
         name: name || `${req.user.name} ${req.user.lastname}`,
         phone: phone || '',

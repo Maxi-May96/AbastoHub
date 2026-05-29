@@ -83,6 +83,26 @@
         </div>
       </div>
 
+      <!-- Raffle Ticket Banner -->
+      <% if (order.raffleCode) { %>
+        <div class="bg-indigo-50 border border-indigo-150 p-4 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 text-xs text-indigo-800">
+          <div>
+            <p class="font-bold flex items-center gap-1.5 text-indigo-900">
+              <i class="fa-solid fa-ticket text-sm"></i> ¡Tienes un código para el Sorteo!
+            </p>
+            <p class="text-indigo-600/90 mt-0.5">Ingresa a la sección de sorteos e introduce este código para participar.</p>
+          </div>
+          <div class="flex items-center gap-2 w-full sm:w-auto">
+            <span class="bg-white border border-indigo-200 px-3 py-1.5 rounded-xl font-mono font-bold text-sm tracking-wider text-indigo-700 select-all shadow-2xs">
+              <%= order.raffleCode %>
+            </span>
+            <a href="/sorteo" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3.5 py-2 rounded-xl transition-all shadow-sm text-center text-[11px]">
+              Participar
+            </a>
+          </div>
+        </div>
+      <% } %>
+
       <!-- Delivery / Order Dispatch Status -->
       <% if (order.status !== 'cancelled' && order.paymentStatus !== 'cancelled') { %>
         <div class="bg-slate-50 border border-slate-100 p-5 rounded-2xl space-y-4">
