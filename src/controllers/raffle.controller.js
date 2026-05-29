@@ -1,5 +1,6 @@
 const Order = require('../models/Order');
 const RaffleParticipant = require('../models/RaffleParticipant');
+const UsedRaffleCode = require('../models/UsedRaffleCode');
 
 // GET Raffle public page
 const getRafflePage = async (req, res, next) => {
@@ -34,7 +35,13 @@ const postRegisterRaffle = async (req, res, next) => {
       return res.redirect(`/sorteo?error=${encodeURIComponent('El pedido correspondiente a este código aún no ha sido pagado/acreditado.')}&code=${code}`);
     }
 
-    // 3. Check if code has already been used
+    // 3. Check if code has already been used in UsedRaffleCode
+    const alreadyUsed = await UsedRaffleCode.findOne({ raffleCode: code });
+    if (alreadyUsed) {
+      return res.redirect(`/sorteo?error=${encodeURIComponent('Este código ya fue utilizado para registrarse en el sorteo.')}&code=${code}`);
+    }
+
+    // Check if code has already been used on the order
     if (order.raffleUsed) {
       return res.redirect(`/sorteo?error=${encodeURIComponent('Este código ya fue utilizado para registrarse en el sorteo.')}&code=${code}`);
     }
@@ -57,6 +64,13 @@ const postRegisterRaffle = async (req, res, next) => {
     });
 
     await participant.save();
+
+    // Register code as used permanently
+    const usedCodeRecord = new UsedRaffleCode({
+      raffleCode: code,
+      order: order._id
+    });
+    await usedCodeRecord.save();
 
     // Mark order raffle as used
     order.raffleUsed = true;
@@ -113,6 +127,9 @@ const clearRaffleData = async (req, res, next) => {
 
     // 2. Reset raffleUsed flag on all orders
     await Order.updateMany({}, { raffleUsed: false });
+
+    // 3. Clear permanent used raffle codes list to allow reusing codes in new raffles
+    await UsedRaffleCode.deleteMany({});
 
     res.redirect('/admin?success=' + encodeURIComponent('Se han eliminado todos los participantes y se han habilitado nuevamente los códigos para un nuevo sorteo.'));
   } catch (error) {
