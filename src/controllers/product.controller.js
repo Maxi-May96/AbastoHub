@@ -277,6 +277,11 @@ const generatePDFTicket = async (req, res, next) => {
       return res.status(404).send('Pedido no encontrado');
     }
 
+    // Check authorization: must be admin or the owner of the order
+    if (req.user.role !== 'admin' && (!order.user || order.user._id.toString() !== req.user._id.toString())) {
+      return res.status(403).send('No autorizado para ver este ticket');
+    }
+
     const doc = new PDFDocument({ size: 'A4', margin: 40 });
     
     // Set headers to open PDF in a new tab / window

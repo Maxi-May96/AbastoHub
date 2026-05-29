@@ -92,7 +92,11 @@
                 <% } %>
               </div>
 
-              <div class="flex gap-2 w-full justify-stretch md:justify-end mt-2">
+              <div class="flex flex-wrap gap-2 w-full justify-stretch md:justify-end mt-2">
+                <a href="/orders/<%= order._id %>/ticket" target="_blank" 
+                  class="flex-1 md:flex-none text-center px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5">
+                  <i class="fa-solid fa-file-pdf text-[11px]"></i> Ticket PDF
+                </a>
                 <a href="/payment/feedback?orderId=<%= order._id %>" 
                   class="flex-1 md:flex-none text-center px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5">
                   <i class="fa-solid fa-receipt text-[11px]"></i> Ver Detalles

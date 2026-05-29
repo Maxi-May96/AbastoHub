@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const paymentController = require('../controllers/payment.controller');
+const productController = require('../controllers/product.controller');
 const { isAuthenticated } = require('../middlewares/auth.middleware');
 const upload = require('../middlewares/upload.middleware');
 
@@ -8,6 +9,7 @@ const upload = require('../middlewares/upload.middleware');
 router.get('/checkout', isAuthenticated, paymentController.getCheckout);
 router.post('/checkout', isAuthenticated, paymentController.processCheckout);
 router.get('/orders/history', isAuthenticated, paymentController.getOrderHistory);
+router.get('/orders/:id/ticket', isAuthenticated, productController.generatePDFTicket);
 
 // MercadoPago webhooks and feedback redirects
 router.get('/payment/feedback', paymentController.getFeedback);

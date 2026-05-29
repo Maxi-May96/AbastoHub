@@ -239,7 +239,11 @@
 
       <!-- Return controls -->
       <div class="border-t border-slate-100 pt-6 flex flex-col sm:flex-row gap-3 justify-center">
-        <a href="/" class="px-6 py-2.5 rounded-full font-bold text-white bg-brand-600 hover:bg-brand-700 shadow-md shadow-brand-500/10 text-center text-sm transition-all">
+        <a href="/orders/<%= order._id %>/ticket" target="_blank" 
+          class="px-6 py-2.5 rounded-full font-bold text-white bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-500/10 text-center text-sm transition-all flex items-center justify-center gap-1.5">
+          <i class="fa-solid fa-file-pdf"></i> Descargar Ticket
+        </a>
+        <a href="/" class="px-6 py-2.5 rounded-full font-bold text-slate-650 bg-slate-100 hover:bg-slate-200 text-center text-sm transition-all">
           Volver al Inicio
         </a>
         <a href="/products" class="px-6 py-2.5 rounded-full font-bold text-slate-650 bg-slate-100 hover:bg-slate-200 text-center text-sm transition-all">
