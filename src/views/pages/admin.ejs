@@ -325,6 +325,13 @@
           </div>
           
           <div class="flex flex-wrap items-center gap-3">
+            <!-- Search ID/Client filter -->
+            <div class="relative bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-650 font-medium">
+              <span class="font-bold text-slate-500 mr-1.5"><i class="fa-solid fa-magnifying-glass text-[10px]"></i> Buscar:</span>
+              <input type="text" id="admin-orders-search" oninput="filterAdminOrders()" placeholder="ID, nombre, email..."
+                class="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 outline-none focus:bg-white focus:border-brand-500/40 text-slate-700 w-36 sm:w-44 text-[11px]">
+            </div>
+
             <!-- Date range filter -->
             <div class="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-650 font-medium">
               <span class="font-bold text-slate-500">Desde:</span>
@@ -364,7 +371,12 @@
             <tbody class="divide-y divide-slate-100">
               <% if (orders && orders.length > 0) { %>
                 <% orders.forEach(order => { %>
-                  <tr class="order-row hover:bg-slate-50/50 transition-colors" data-date="<%= order.createdAt.toISOString() %>">
+                  <tr class="order-row hover:bg-slate-50/50 transition-colors" 
+                      data-date="<%= order.createdAt.toISOString() %>"
+                      data-id="<%= order._id.toString().toUpperCase() %>"
+                      data-client-name="<%= (order.shippingDetails.name || (order.user ? `${order.user.name} ${order.user.lastname}` : '')).toUpperCase() %>"
+                      data-client-email="<%= (order.user ? order.user.email : '').toUpperCase() %>"
+                      data-client-phone="<%= (order.shippingDetails.phone || (order.user ? order.user.phone : '')).toUpperCase() %>">
                     
                     <!-- ID & Date -->
                     <td class="px-6 py-4">
@@ -676,13 +688,15 @@
   function filterAdminOrders() {
     const startVal = document.getElementById('admin-orders-start').value;
     const endVal = document.getElementById('admin-orders-end').value;
+    const searchVal = document.getElementById('admin-orders-search').value.trim().toUpperCase();
     
-    // Update PDF download link with selected dates
+    // Update PDF download link with selected dates and search text
     const pdfBtn = document.getElementById('download-orders-pdf-btn');
     let pdfUrl = '/admin/orders/report/pdf';
     const params = [];
     if (startVal) params.push(`startDate=${startVal}`);
     if (endVal) params.push(`endDate=${endVal}`);
+    if (searchVal) params.push(`search=${searchVal}`);
     if (params.length > 0) {
       pdfUrl += '?' + params.join('&');
     }
@@ -696,6 +710,11 @@
     
     rows.forEach(row => {
       const dateStr = row.getAttribute('data-date');
+      const orderId = (row.getAttribute('data-id') || '').toUpperCase();
+      const clientName = (row.getAttribute('data-client-name') || '').toUpperCase();
+      const clientEmail = (row.getAttribute('data-client-email') || '').toUpperCase();
+      const clientPhone = (row.getAttribute('data-client-phone') || '').toUpperCase();
+      
       if (!dateStr) return;
       
       const orderDate = new Date(dateStr);
@@ -709,7 +728,15 @@
         matchesEnd = false;
       }
       
-      if (matchesStart && matchesEnd) {
+      let matchesSearch = true;
+      if (searchVal) {
+        matchesSearch = orderId.includes(searchVal) || 
+                        clientName.includes(searchVal) || 
+                        clientEmail.includes(searchVal) || 
+                        clientPhone.includes(searchVal);
+      }
+      
+      if (matchesStart && matchesEnd && matchesSearch) {
         row.classList.remove('hidden');
       } else {
         row.classList.add('hidden');
@@ -718,6 +745,7 @@
   }
 
   function clearAdminOrdersFilters() {
+    document.getElementById('admin-orders-search').value = '';
     document.getElementById('admin-orders-start').value = '';
     document.getElementById('admin-orders-end').value = '';
     filterAdminOrders();

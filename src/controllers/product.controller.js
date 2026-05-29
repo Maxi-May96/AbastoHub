@@ -592,7 +592,7 @@ const deletePartner = async (req, res, next) => {
 // GET Generate PDF Report / Summary of Orders (Admin Only)
 const generateOrdersSummaryPDF = async (req, res, next) => {
   try {
-    const { startDate, endDate } = req.query;
+    const { startDate, endDate, search } = req.query;
     
     // Build date query
     const dateQuery = {};
@@ -609,7 +609,22 @@ const generateOrdersSummaryPDF = async (req, res, next) => {
     }
     
     // Find matching orders and populate user
-    const orders = await Order.find(query).populate('user').sort({ createdAt: -1 });
+    let orders = await Order.find(query).populate('user').sort({ createdAt: -1 });
+    
+    if (search) {
+      const searchUpper = search.trim().toUpperCase();
+      orders = orders.filter(order => {
+        const orderId = order._id.toString().toUpperCase();
+        const clientName = (order.shippingDetails.name || (order.user ? `${order.user.name} ${order.user.lastname}` : '')).toUpperCase();
+        const clientEmail = (order.user ? order.user.email : '').toUpperCase();
+        const clientPhone = (order.shippingDetails.phone || (order.user ? order.user.phone : '')).toUpperCase();
+        
+        return orderId.includes(searchUpper) || 
+               clientName.includes(searchUpper) || 
+               clientEmail.includes(searchUpper) || 
+               clientPhone.includes(searchUpper);
+      });
+    }
     
     const doc = new PDFDocument({ size: 'A4', margin: 40 });
     
