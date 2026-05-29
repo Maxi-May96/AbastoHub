@@ -125,13 +125,8 @@ const clearRaffleData = async (req, res, next) => {
     // 1. Delete all participants
     await RaffleParticipant.deleteMany({});
 
-    // 2. Reset raffleUsed flag on all orders
-    await Order.updateMany({}, { raffleUsed: false });
-
-    // 3. Clear permanent used raffle codes list to allow reusing codes in new raffles
-    await UsedRaffleCode.deleteMany({});
-
-    res.redirect('/admin?success=' + encodeURIComponent('Se han eliminado todos los participantes y se han habilitado nuevamente los códigos para un nuevo sorteo.'));
+    // 2. Clear participants only. Used codes in UsedRaffleCode remain permanent.
+    res.redirect('/admin?success=' + encodeURIComponent('Se han eliminado todos los participantes registrados. Los códigos ya utilizados permanecen inhabilitados permanentemente.'));
   } catch (error) {
     console.error('Clear raffle data error:', error.message);
     res.redirect('/admin?error=' + encodeURIComponent('Error al reiniciar los datos del sorteo: ' + error.message));

@@ -683,7 +683,7 @@
 
             <!-- Clear Data Button -->
             <form action="/admin/raffle/clear" method="POST" class="w-full"
-              onsubmit="return confirm('¿Está COMPLETAMENTE seguro de eliminar permanentemente todos los participantes registrados? Esto reactivará todos los códigos de compra para que puedan ser usados nuevamente.');">
+              onsubmit="return confirm('¿Está COMPLETAMENTE seguro de eliminar permanentemente todos los participantes registrados? Los códigos de ticket ya utilizados continuarán inhabilitados y no podrán ser reutilizados.');">
               <button type="submit" 
                 class="w-full flex items-center justify-center gap-2 px-4 py-3 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200/50 font-bold text-xs rounded-xl transition-all text-center">
                 <i class="fa-solid fa-trash-can text-xs"></i>
