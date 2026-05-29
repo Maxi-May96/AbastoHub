@@ -110,10 +110,51 @@
 
       </form>
 
+      <!-- View participants button -->
+      <div class="pt-4 border-t border-slate-100 flex flex-col items-center gap-4">
+        <button type="button" onclick="toggleParticipantsList()"
+          class="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-brand-700 font-bold transition-all focus:outline-none">
+          <i class="fa-solid fa-list-ul"></i> Ver lista de participantes (<%= participants.length %>)
+        </button>
+      </div>
+
+      <!-- Participants list panel -->
+      <div id="participants-list-panel" class="hidden mt-6 space-y-3 bg-slate-50 border border-slate-150 p-5 rounded-2xl">
+        <div class="flex justify-between items-center pb-2 border-b border-slate-200">
+          <span class="text-xs font-bold text-slate-700 uppercase tracking-wider block">Lista de Participantes</span>
+          <span class="text-[10px] bg-slate-200 text-slate-650 px-2 py-0.5 rounded-full font-bold"><%= participants.length %> en total</span>
+        </div>
+
+        <% if (participants && participants.length > 0) { %>
+          <div class="divide-y divide-slate-150 max-h-56 overflow-y-auto pr-2 custom-scrollbar pt-1">
+            <% participants.forEach(p => { %>
+              <div class="py-2 flex justify-between items-center text-xs gap-3">
+                <span class="font-semibold text-slate-750 flex items-center gap-1">
+                  <i class="fa-solid fa-circle-user text-slate-400 text-[10px]"></i>
+                  <%= p.name %>
+                </span>
+                <span class="font-mono text-[10px] bg-indigo-50 text-indigo-750 border border-indigo-100/50 px-2 py-0.5 rounded-lg font-bold">
+                  <%= p.raffleCode.substring(0, 5) %>***
+                </span>
+              </div>
+            <% }) %>
+          </div>
+        <% } else { %>
+          <p class="text-xs text-slate-450 text-center py-4">Aún no hay participantes registrados. ¡Sé el primero!</p>
+        <% } %>
+      </div>
+
     </div>
 
   </div>
   
 </div>
+
+<script>
+  function toggleParticipantsList() {
+    const el = document.getElementById('participants-list-panel');
+    el.classList.toggle('hidden');
+  }
+</script>
 
 <%- include('../partials/footer') %>

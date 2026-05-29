@@ -4,11 +4,13 @@ const RaffleParticipant = require('../models/RaffleParticipant');
 // GET Raffle public page
 const getRafflePage = async (req, res, next) => {
   try {
+    const participants = await RaffleParticipant.find({}, 'name raffleCode createdAt').sort({ createdAt: -1 });
     res.render('pages/sorteo', {
       title: 'Sorteo AbastoHub',
       success: req.query.success || null,
       error: req.query.error || null,
-      code: req.query.code || ''
+      code: req.query.code || '',
+      participants
     });
   } catch (error) {
     next(error);
