@@ -855,6 +855,45 @@ const markOrderAsPaid = async (req, res, next) => {
   }
 };
 
+// POST Update Order Status (Admin Only)
+const updateOrderStatus = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    
+    const order = await Order.findById(id);
+    if (!order) {
+      return res.redirect('/admin?error=' + encodeURIComponent('Pedido no encontrado.'));
+    }
+
+    order.status = status;
+
+    // If status is updated to cancelled, cancel payment status and restore stock if subtracted
+    if (status === 'cancelled') {
+      order.paymentStatus = 'cancelled';
+      
+      if (order.stockSubtracted) {
+        console.log(`📈 Restoring stock for cancelled order ${order._id}...`);
+        for (const item of order.products) {
+          const prod = await Product.findById(item.product);
+          if (prod) {
+            prod.stock += item.quantity;
+            await prod.save();
+            console.log(`   - Product: ${prod.title}. Restored stock: +${item.quantity}. New stock: ${prod.stock}`);
+          }
+        }
+        order.stockSubtracted = false;
+      }
+    }
+
+    await order.save();
+    res.redirect('/admin?success=' + encodeURIComponent(`Estado del pedido #${order._id.toString().substring(12).toUpperCase()} actualizado exitosamente.`));
+  } catch (error) {
+    console.error('Update order status error:', error.message);
+    res.redirect('/admin?error=' + encodeURIComponent('Error al actualizar el estado del pedido: ' + error.message));
+  }
+};
+
 module.exports = {
   getProducts,
   getProductBySlug,
@@ -869,5 +908,6 @@ module.exports = {
   createPartner,
   deletePartner,
   generateOrdersSummaryPDF,
-  markOrderAsPaid
+  markOrderAsPaid,
+  updateOrderStatus
 };

@@ -25,15 +25,32 @@
             
             <!-- Order Meta details -->
             <div class="space-y-1">
-              <div class="flex items-center gap-2">
+              <div class="flex flex-wrap items-center gap-2">
                 <span class="text-sm font-bold text-slate-900">Pedido #<%= order._id.toString().substring(12).toUpperCase() %></span>
                 
-                <!-- Status Badge -->
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border 
+                <!-- Payment Status Badge -->
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold border 
                   <% if (order.paymentStatus === 'paid') { %> bg-emerald-50 text-emerald-700 border-emerald-100 
                   <% } else if (order.paymentStatus === 'pending') { %> bg-amber-50 text-amber-700 border-amber-100 
+                  <% } else if (order.paymentStatus === 'cancelled') { %> bg-rose-50 text-rose-700 border-rose-100
                   <% } else { %> bg-rose-50 text-rose-700 border-rose-100 <% } %>">
-                  <%= order.paymentStatus === 'paid' ? 'ACREDITADO' : order.paymentStatus === 'pending' ? 'PENDIENTE' : 'FALLIDO' %>
+                  Pago: <%= order.paymentStatus === 'paid' ? 'ACREDITADO' : order.paymentStatus === 'pending' ? 'PENDIENTE' : (order.paymentStatus === 'cancelled' ? 'CANCELADO' : 'FALLIDO') %>
+                </span>
+
+                <!-- Order Status Badge -->
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold border 
+                  <% if (order.status === 'delivered') { %> bg-emerald-50 text-emerald-700 border-emerald-100 
+                  <% } else if (order.status === 'shipped' || order.status === 'ready_for_pickup') { %> bg-blue-50 text-blue-700 border-blue-100
+                  <% } else if (order.status === 'preparing') { %> bg-indigo-50 text-indigo-700 border-indigo-100
+                  <% } else if (order.status === 'cancelled') { %> bg-rose-50 text-rose-700 border-rose-100
+                  <% } else { %> bg-amber-50 text-amber-700 border-amber-100 <% } %>">
+                  Pedido: 
+                  <% if (order.status === 'pending') { %> Pendiente
+                  <% } else if (order.status === 'preparing') { %> En Preparación
+                  <% } else if (order.status === 'shipped') { %> En Camino
+                  <% } else if (order.status === 'ready_for_pickup') { %> Listo para Retirar
+                  <% } else if (order.status === 'delivered') { %> Entregado
+                  <% } else if (order.status === 'cancelled') { %> Cancelado <% } %>
                 </span>
               </div>
               <p class="text-xs text-slate-400">Realizado el: <%= order.createdAt.toLocaleString('es-AR') %></p>
@@ -83,6 +100,15 @@
               </div>
             </div>
 
+          <% if (order.status === 'cancelled') { %>
+            <div class="mt-4 bg-rose-50 border border-rose-150 rounded-2xl p-4 flex gap-3 items-start text-xs text-rose-800">
+              <i class="fa-solid fa-circle-exclamation text-rose-600 text-sm mt-0.5"></i>
+              <div>
+                <p class="font-bold text-rose-900">Pedido Cancelado</p>
+                <p class="text-rose-700 mt-0.5">La devolución de tu dinero impactará en tu cuenta dentro de las 24 a 72 horas hábiles.</p>
+              </div>
+            </div>
+          <% } %>
           </div>
         </div>
       <% }) %>

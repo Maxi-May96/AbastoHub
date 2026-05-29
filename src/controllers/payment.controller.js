@@ -156,9 +156,11 @@ const getFeedback = async (req, res, next) => {
     }
 
     // Normalize status parameter to handle cases where it is parsed as an array due to duplicated query parameters
-    let normalizedStatus = order.paymentStatus === 'paid' ? 'success' : (order.paymentStatus === 'pending' ? 'pending' : 'failure');
+    let normalizedStatus = order.paymentStatus === 'paid' ? 'success' : 
+                          (order.paymentStatus === 'pending' ? 'pending' : 
+                          (order.paymentStatus === 'cancelled' ? 'cancelled' : 'failure'));
     
-    if (status) {
+    if (status && order.paymentStatus !== 'cancelled') {
       const statusArray = Array.isArray(status) ? status : [status];
       if (statusArray.includes('success') || statusArray.includes('approved')) {
         normalizedStatus = 'success';

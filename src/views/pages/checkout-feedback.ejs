@@ -5,7 +5,17 @@
   <div class="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
     
     <!-- Top banner status styling -->
-    <% if (status === 'success' || status === 'approved') { %>
+    <% if (order.status === 'cancelled' || order.paymentStatus === 'cancelled') { %>
+      <div class="bg-slate-700 text-white p-8 text-center space-y-3">
+        <div class="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center mx-auto text-white text-3xl">
+          <i class="fa-solid fa-circle-minus"></i>
+        </div>
+        <h1 class="display-font text-2xl sm:text-3xl font-extrabold tracking-tight">Pedido Cancelado</h1>
+        <p class="text-slate-200 text-sm max-w-md mx-auto font-medium">
+          La devolución de tu dinero impactará en tu cuenta dentro de las 24 a 72 horas hábiles.
+        </p>
+      </div>
+    <% } else if (status === 'success' || status === 'approved') { %>
       <div class="bg-emerald-600 text-white p-8 text-center space-y-3">
         <div class="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center mx-auto text-white text-3xl">
           <i class="fa-solid fa-circle-check"></i>
@@ -72,6 +82,64 @@
           <p class="font-extrabold text-slate-850 mt-1 truncate" title="<%= order.paymentId %>"><%= order.paymentId || 'N/A' %></p>
         </div>
       </div>
+
+      <!-- Delivery / Order Dispatch Status -->
+      <% if (order.status !== 'cancelled' && order.paymentStatus !== 'cancelled') { %>
+        <div class="bg-slate-50 border border-slate-100 p-5 rounded-2xl space-y-4">
+          <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Estado de Entrega del Pedido</span>
+          
+          <!-- Progress Steps -->
+          <div class="grid grid-cols-3 gap-2 text-center text-xs">
+            <!-- Step 1: Preparación -->
+            <div class="flex flex-col items-center gap-1.5 p-2 rounded-xl bg-white border border-slate-100/55 shadow-2xs">
+              <span class="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs
+                <%= order.status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-brand-100 text-brand-700' %>">
+                <% if (order.status !== 'pending') { %>
+                  <i class="fa-solid fa-check text-[10px]"></i>
+                <% } else { %> 1 <% } %>
+              </span>
+              <span class="font-bold text-slate-700 text-[11px]">Recibido</span>
+            </div>
+
+            <!-- Step 2: En Camino / Listo para retirar -->
+            <div class="flex flex-col items-center gap-1.5 p-2 rounded-xl bg-white border border-slate-100/55 shadow-2xs">
+              <span class="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs
+                <%= (order.status === 'shipped' || order.status === 'ready_for_pickup' || order.status === 'delivered') ? 'bg-brand-100 text-brand-700' : 
+                    (order.status === 'preparing' ? 'bg-indigo-100 text-indigo-700 animate-pulse' : 'bg-slate-100 text-slate-400') %>">
+                <% if (order.status === 'shipped' || order.status === 'ready_for_pickup' || order.status === 'delivered') { %>
+                  <i class="fa-solid fa-check text-[10px]"></i>
+                <% } else { %> 2 <% } %>
+              </span>
+              <span class="font-bold text-slate-700 text-[11px]">
+                <%= order.deliveryType === 'delivery' ? 'Despachado' : 'Listo p/ Retirar' %>
+              </span>
+            </div>
+
+            <!-- Step 3: Entregado -->
+            <div class="flex flex-col items-center gap-1.5 p-2 rounded-xl bg-white border border-slate-100/55 shadow-2xs">
+              <span class="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs
+                <%= order.status === 'delivered' ? 'bg-brand-100 text-brand-700' : 'bg-slate-100 text-slate-400' %>">
+                <% if (order.status === 'delivered') { %>
+                  <i class="fa-solid fa-check text-[10px]"></i>
+                <% } else { %> 3 <% } %>
+              </span>
+              <span class="font-bold text-slate-700 text-[11px]">Entregado</span>
+            </div>
+          </div>
+
+          <% if (order.status === 'pending') { %>
+            <p class="text-xs text-slate-500 text-center"><i class="fa-solid fa-clock mr-1 text-amber-500"></i> Esperando confirmación de pago para iniciar la preparación.</p>
+          <% } else if (order.status === 'preparing') { %>
+            <p class="text-xs text-indigo-700 font-bold text-center"><i class="fa-solid fa-spinner fa-spin mr-1"></i> Tu pedido está siendo preparado en nuestro depósito.</p>
+          <% } else if (order.status === 'shipped') { %>
+            <p class="text-xs text-brand-750 font-black text-center"><i class="fa-solid fa-truck-fast mr-1 animate-bounce text-sm"></i> ¡Tu pedido ya salió y se encuentra en camino!</p>
+          <% } else if (order.status === 'ready_for_pickup') { %>
+            <p class="text-xs text-brand-750 font-black text-center"><i class="fa-solid fa-store mr-1 text-sm"></i> ¡Tu pedido está listo para ser retirado por nuestro local central!</p>
+          <% } else if (order.status === 'delivered') { %>
+            <p class="text-xs text-emerald-700 font-bold text-center"><i class="fa-solid fa-house-circle-check mr-1 text-sm"></i> Entregado con éxito. ¡Que lo disfrutes!</p>
+          <% } %>
+        </div>
+      <% } %>
 
       <!-- Products Summary List -->
       <div class="space-y-4">

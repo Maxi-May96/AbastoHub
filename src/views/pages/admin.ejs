@@ -365,6 +365,7 @@
                 <th class="px-6 py-4">Total</th>
                 <th class="px-6 py-4">Método / Dirección</th>
                 <th class="px-6 py-4">Pago</th>
+                <th class="px-6 py-4">Estado Pedido</th>
                 <th class="px-6 py-4 text-center">Acciones</th>
               </tr>
             </thead>
@@ -442,6 +443,28 @@
                           </a>
                         </div>
                       <% } %>
+                    </td>
+
+                    <!-- Estado Pedido Selector -->
+                    <td class="px-6 py-4">
+                      <form action="/admin/orders/<%= order._id %>/status" method="POST" class="inline">
+                        <select name="status" onchange="this.form.submit()" 
+                          class="text-[11px] font-bold rounded-xl border px-2.5 py-1.5 outline-none focus:ring-4 focus:ring-brand-500/10 cursor-pointer transition-all
+                            <%= order.status === 'cancelled' ? 'text-rose-600 bg-rose-50 border-rose-150' : 
+                               (order.status === 'delivered' ? 'text-emerald-700 bg-emerald-50 border-emerald-150' : 
+                               (order.status === 'shipped' || order.status === 'ready_for_pickup' ? 'text-blue-700 bg-blue-50 border-blue-150' : 
+                               (order.status === 'preparing' ? 'text-indigo-700 bg-indigo-50 border-indigo-150' : 'text-amber-700 bg-amber-50 border-amber-150'))) %>">
+                          <option value="pending" <%= order.status === 'pending' ? 'selected' : '' %>>Pendiente</option>
+                          <option value="preparing" <%= order.status === 'preparing' ? 'selected' : '' %>>En Preparación</option>
+                          <% if (order.deliveryType === 'delivery') { %>
+                            <option value="shipped" <%= order.status === 'shipped' ? 'selected' : '' %>>En Camino</option>
+                          <% } else { %>
+                            <option value="ready_for_pickup" <%= order.status === 'ready_for_pickup' ? 'selected' : '' %>>Listo para Retirar</option>
+                          <% } %>
+                          <option value="delivered" <%= order.status === 'delivered' ? 'selected' : '' %>>Entregado</option>
+                          <option value="cancelled" <%= order.status === 'cancelled' ? 'selected' : '' %>>Cancelado</option>
+                        </select>
+                      </form>
                     </td>
 
                     <!-- Acciones (Ticket PDF & Aprobar Pago) -->
