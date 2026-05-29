@@ -134,6 +134,10 @@
           <!-- Desktop Navigation -->
           <nav class="hidden md:flex items-center gap-4 sm:gap-6">
             <a href="/products" class="text-sm font-semibold text-slate-600 hover:text-brand-600 transition-colors">Catálogo</a>
+            <a href="/sorteo" class="text-sm font-semibold text-indigo-650 bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-100/50 hover:bg-indigo-100 transition-colors flex items-center gap-1.5">
+              <i class="fa-solid fa-gift text-xs"></i>
+              Sorteo
+            </a>
             
             <% if (user && user.role === 'admin') { %>
               <a href="/admin" class="text-sm font-semibold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-100 hover:bg-emerald-100 transition-colors flex items-center gap-1.5">
@@ -188,9 +192,11 @@
         </form>
       </div>
 
-      <!-- Mobile Menu Dropdown (toggled via JS) -->
       <div id="mobile-menu" class="hidden md:hidden border-t border-slate-200/60 pb-4 pt-3 space-y-3">
         <a href="/products" class="block px-3 py-2 rounded-xl text-base font-semibold text-slate-700 hover:bg-slate-100 hover:text-brand-600 transition-all">Catálogo</a>
+        <a href="/sorteo" class="block px-3 py-2 rounded-xl text-base font-semibold text-indigo-700 hover:bg-indigo-50 transition-all">
+          <i class="fa-solid fa-gift mr-2"></i>Sorteo
+        </a>
         
         <% if (user && user.role === 'admin') { %>
           <a href="/admin" class="block px-3 py-2 rounded-xl text-base font-semibold text-emerald-700 hover:bg-emerald-50 transition-all">
