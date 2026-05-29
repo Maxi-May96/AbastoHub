@@ -7,6 +7,7 @@ const upload = require('../middlewares/upload.middleware');
 // Checkout view and processing
 router.get('/checkout', isAuthenticated, paymentController.getCheckout);
 router.post('/checkout', isAuthenticated, paymentController.processCheckout);
+router.get('/orders/history', isAuthenticated, paymentController.getOrderHistory);
 
 // MercadoPago webhooks and feedback redirects
 router.get('/payment/feedback', paymentController.getFeedback);

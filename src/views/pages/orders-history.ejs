@@ -1,0 +1,109 @@
+<%- include('../partials/header') %>
+
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+  
+  <!-- Page Header -->
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-10 pb-6 border-b border-slate-200">
+    <div>
+      <h1 class="display-font text-3xl font-extrabold tracking-tight text-slate-900 flex items-center gap-2">
+        <span class="text-brand-600"><i class="fa-solid fa-clock-rotate-left"></i></span>
+        Historial de Compras
+      </h1>
+      <p class="text-sm text-slate-500 mt-1">Revisa el estado de tus compras, descarga tus comprobantes y sube comprobantes de pago.</p>
+    </div>
+    <a href="/products" class="inline-flex items-center gap-2 px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl shadow-sm transition-all">
+      <i class="fa-solid fa-bag-shopping"></i> Ir a la Tienda
+    </a>
+  </div>
+
+  <% if (orders && orders.length > 0) { %>
+    <!-- Orders List Container -->
+    <div class="space-y-6">
+      <% orders.forEach(order => { %>
+        <div class="bg-white border border-slate-200 rounded-3xl p-5 sm:p-6 shadow-sm hover:shadow-md hover:border-slate-300 transition-all">
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-slate-100 mb-4">
+            
+            <!-- Order Meta details -->
+            <div class="space-y-1">
+              <div class="flex items-center gap-2">
+                <span class="text-sm font-bold text-slate-900">Pedido #<%= order._id.toString().substring(12).toUpperCase() %></span>
+                
+                <!-- Status Badge -->
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border 
+                  <% if (order.paymentStatus === 'paid') { %> bg-emerald-50 text-emerald-700 border-emerald-100 
+                  <% } else if (order.paymentStatus === 'pending') { %> bg-amber-50 text-amber-700 border-amber-100 
+                  <% } else { %> bg-rose-50 text-rose-700 border-rose-100 <% } %>">
+                  <%= order.paymentStatus === 'paid' ? 'ACREDITADO' : order.paymentStatus === 'pending' ? 'PENDIENTE' : 'FALLIDO' %>
+                </span>
+              </div>
+              <p class="text-xs text-slate-400">Realizado el: <%= order.createdAt.toLocaleString('es-AR') %></p>
+            </div>
+
+            <!-- Total price info -->
+            <div class="text-right sm:text-right">
+              <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Total</span>
+              <p class="text-xl font-extrabold text-slate-900"><%= formatPrice(order.total) %></p>
+            </div>
+
+          </div>
+
+          <!-- Order Content Grid -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+            
+            <!-- Items Detail -->
+            <div class="md:col-span-2 space-y-2">
+              <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Productos</span>
+              <div class="space-y-1 max-h-24 overflow-y-auto pr-2 custom-scrollbar">
+                <% order.products.forEach(item => { %>
+                  <p class="text-xs text-slate-650 flex justify-between gap-4">
+                    <span class="truncate font-medium"><%= item.quantity %> × <%= item.title %> (<%= item.unit %>)</span>
+                    <span class="font-semibold text-slate-700"><%= formatPrice(item.price * item.quantity) %></span>
+                  </p>
+                <% }) %>
+              </div>
+            </div>
+
+            <!-- Delivery Details & Action button -->
+            <div class="flex flex-col gap-3 justify-end items-stretch md:items-end">
+              <div class="text-xs text-slate-500 sm:text-right space-y-1">
+                <p><strong>Tipo:</strong> <%= order.deliveryType === 'delivery' ? 'Envío a Domicilio' : 'Retiro en Local' %></p>
+                <% if (order.scheduledDate) { %>
+                  <p class="text-brand-700 font-semibold flex items-center justify-start md:justify-end gap-1">
+                    <i class="fa-solid fa-calendar-day text-[10px]"></i>
+                    Reserva: <%= order.scheduledDate.toLocaleDateString('es-AR') %>
+                  </p>
+                <% } %>
+              </div>
+
+              <div class="flex gap-2 w-full justify-stretch md:justify-end mt-2">
+                <a href="/payment/feedback?orderId=<%= order._id %>" 
+                  class="flex-1 md:flex-none text-center px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5">
+                  <i class="fa-solid fa-receipt text-[11px]"></i> Ver Detalles
+                </a>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      <% }) %>
+    </div>
+
+  <% } else { %>
+    <!-- Empty State -->
+    <div class="bg-white border border-slate-200 rounded-3xl p-12 text-center max-w-md mx-auto shadow-sm">
+      <div class="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center mx-auto text-slate-400 mb-6">
+        <i class="fa-solid fa-receipt text-3xl"></i>
+      </div>
+      <h3 class="display-font text-lg font-bold text-slate-800">Aún no tienes compras</h3>
+      <p class="text-xs text-slate-500 mt-2 leading-relaxed">Cuando realices compras en AbastoHub, podrás ver el historial y detalles de cada una de ellas desde este panel.</p>
+      <div class="mt-8">
+        <a href="/products" class="inline-flex items-center gap-1.5 px-6 py-3 bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs rounded-xl shadow-md shadow-brand-500/10 transition-all">
+          Comenzar a Comprar <i class="fa-solid fa-chevron-right text-[9px]"></i>
+        </a>
+      </div>
+    </div>
+  <% } %>
+
+</div>
+
+<%- include('../partials/footer') %>

@@ -156,31 +156,34 @@ const getFeedback = async (req, res, next) => {
     }
 
     // Normalize status parameter to handle cases where it is parsed as an array due to duplicated query parameters
-    let normalizedStatus = 'failure';
+    let normalizedStatus = order.paymentStatus === 'paid' ? 'success' : (order.paymentStatus === 'pending' ? 'pending' : 'failure');
+    
     if (status) {
       const statusArray = Array.isArray(status) ? status : [status];
       if (statusArray.includes('success') || statusArray.includes('approved')) {
         normalizedStatus = 'success';
       } else if (statusArray.includes('pending') || statusArray.includes('in_process')) {
         normalizedStatus = 'pending';
+      } else {
+        normalizedStatus = 'failure';
       }
-    }
 
-    // Update payment status from callback parameters
-    if (normalizedStatus === 'success') {
-      order.paymentStatus = 'paid';
-      const finalPaymentId = Array.isArray(payment_id) ? payment_id[0] : payment_id;
-      order.paymentId = finalPaymentId || order.paymentId || 'MP-' + Date.now();
-      await order.save();
-      
-      // Subtract stock upon successful payment
-      await subtractOrderStock(order);
-    } else if (normalizedStatus === 'pending') {
-      order.paymentStatus = 'pending';
-      await order.save();
-    } else {
-      order.paymentStatus = 'failed';
-      await order.save();
+      // Update payment status from callback parameters
+      if (normalizedStatus === 'success') {
+        order.paymentStatus = 'paid';
+        const finalPaymentId = Array.isArray(payment_id) ? payment_id[0] : payment_id;
+        order.paymentId = finalPaymentId || order.paymentId || 'MP-' + Date.now();
+        await order.save();
+        
+        // Subtract stock upon successful payment
+        await subtractOrderStock(order);
+      } else if (normalizedStatus === 'pending') {
+        order.paymentStatus = 'pending';
+        await order.save();
+      } else {
+        order.paymentStatus = 'failed';
+        await order.save();
+      }
     }
 
     res.render('pages/checkout-feedback', {
@@ -350,6 +353,21 @@ const uploadReceipt = async (req, res, next) => {
   }
 };
 
+// GET User's Order History Page
+const getOrderHistory = async (req, res, next) => {
+  try {
+    const orders = await Order.find({ user: req.user.id }).sort({ createdAt: -1 });
+    
+    res.render('pages/orders-history', {
+      title: 'Mis Compras',
+      orders,
+      formatPrice
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getCheckout,
   processCheckout,
@@ -357,5 +375,6 @@ module.exports = {
   handleWebhook,
   getSimulateCheckout,
   postSimulateCheckout,
-  uploadReceipt
+  uploadReceipt,
+  getOrderHistory
 };

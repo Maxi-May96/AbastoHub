@@ -145,7 +145,11 @@
             <!-- Auth States -->
             <% if (user) { %>
               <div class="relative flex items-center gap-3 border-l border-slate-200 pl-4">
-                <div class="text-right">
+                <a href="/orders/history" class="text-sm font-semibold text-slate-600 hover:text-brand-600 transition-colors flex items-center gap-1.5" title="Ver mi historial de compras">
+                  <i class="fa-solid fa-clock-rotate-left text-xs"></i>
+                  Mis Compras
+                </a>
+                <div class="text-right border-l border-slate-200 pl-3">
                   <p class="text-xs text-slate-400">Hola,</p>
                   <p class="text-sm font-bold text-slate-800 max-w-[120px] truncate"><%= user.name %></p>
                 </div>
@@ -196,13 +200,18 @@
 
         <div class="border-t border-slate-100 pt-3">
           <% if (user) { %>
-            <div class="px-3 py-2 flex items-center justify-between">
-              <div>
-                <p class="text-xs text-slate-400">Sesión iniciada como</p>
-                <p class="text-sm font-bold text-slate-800"><%= user.name %> <%= user.lastname %></p>
+            <div class="px-3 py-2 flex flex-col gap-2">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-xs text-slate-400">Sesión iniciada como</p>
+                  <p class="text-sm font-bold text-slate-800"><%= user.name %> <%= user.lastname %></p>
+                </div>
+                <a href="/logout" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-100 text-rose-600 font-semibold text-sm hover:bg-rose-50 transition-all">
+                  <i class="fa-solid fa-right-from-bracket"></i> Salir
+                </a>
               </div>
-              <a href="/logout" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-100 text-rose-600 font-semibold text-sm hover:bg-rose-50 transition-all">
-                <i class="fa-solid fa-right-from-bracket"></i> Salir
+              <a href="/orders/history" class="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-slate-200 text-slate-700 font-semibold text-sm hover:bg-slate-50 transition-all">
+                <i class="fa-solid fa-clock-rotate-left"></i> Mis Compras
               </a>
             </div>
           <% } else { %>
