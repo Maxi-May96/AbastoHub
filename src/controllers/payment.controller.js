@@ -48,7 +48,7 @@ const getCheckout = async (req, res, next) => {
 // POST Process Checkout Action
 const processCheckout = async (req, res, next) => {
   try {
-    const { name, phone, deliveryType, street, city, zipCode, notes, scheduledDate } = req.body;
+    const { name, phone, deliveryType, street, city, province, zipCode, notes, scheduledDate, latitude, longitude } = req.body;
 
     const cart = await Cart.findOne({ user: req.user.id }).populate('products.product');
     if (!cart || cart.products.length === 0) {
@@ -92,16 +92,19 @@ const processCheckout = async (req, res, next) => {
       products: orderProducts,
       total,
       paymentStatus: 'pending',
-      deliveryType,
+      deliveryType: 'delivery', // Force delivery mode
       scheduledDate: scheduledDate ? new Date(scheduledDate + 'T00:00:00') : null,
       raffleCode,
       shippingDetails: {
         name: name || `${req.user.name} ${req.user.lastname}`,
         phone: phone || '',
-        address: deliveryType === 'delivery' ? street : 'Retiro por sucursal',
-        city: deliveryType === 'delivery' ? city : '',
-        zipCode: deliveryType === 'delivery' ? zipCode : '',
-        notes: notes || ''
+        address: street || '',
+        city: city || '',
+        province: province || '',
+        zipCode: zipCode || '',
+        notes: notes || '',
+        latitude: latitude ? parseFloat(latitude) : null,
+        longitude: longitude ? parseFloat(longitude) : null
       }
     });
 

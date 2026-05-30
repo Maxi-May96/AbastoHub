@@ -67,8 +67,11 @@ const OrderSchema = new mongoose.Schema({
     phone: String,
     address: String,
     city: String,
+    province: String,
     zipCode: String,
-    notes: String
+    notes: String,
+    latitude: Number,
+    longitude: Number
   },
   stockSubtracted: {
     type: Boolean,

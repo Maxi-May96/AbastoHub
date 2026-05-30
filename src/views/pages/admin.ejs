@@ -424,9 +424,25 @@
 
                     <!-- Delivery & Address -->
                     <td class="px-6 py-4 text-xs text-slate-600">
-                      <p class="font-semibold"><%= order.deliveryType === 'delivery' ? 'Envío domicilio' : 'Retiro local' %></p>
+                      <p class="font-semibold text-slate-700 flex items-center gap-1">
+                        <i class="fa-solid fa-truck text-[10px]"></i>
+                        <%= order.deliveryType === 'delivery' ? 'Envío domicilio' : 'Retiro local' %>
+                      </p>
                       <% if (order.deliveryType === 'delivery') { %>
-                        <p class="text-[10px] text-slate-400 mt-1 line-clamp-2" title="<%= order.shippingDetails.address %>"><%= order.shippingDetails.address %></p>
+                        <p class="text-[10px] text-slate-500 mt-1" title="<%= order.shippingDetails.address %>">
+                          <strong>Calle:</strong> <%= order.shippingDetails.address %>
+                        </p>
+                        <% if (order.shippingDetails.city || order.shippingDetails.province) { %>
+                          <p class="text-[9px] text-slate-400">
+                            <strong>Lugar:</strong> <%= order.shippingDetails.city || '' %><%= (order.shippingDetails.city && order.shippingDetails.province) ? ', ' : '' %><%= order.shippingDetails.province || '' %>
+                          </p>
+                        <% } %>
+                        <% if (order.shippingDetails.latitude && order.shippingDetails.longitude) { %>
+                          <a href="https://www.google.com/maps/search/?api=1&query=<%= order.shippingDetails.latitude %>,<%= order.shippingDetails.longitude %>" target="_blank"
+                            class="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg text-[9px] font-bold border border-indigo-100/50 transition-all">
+                            <i class="fa-solid fa-location-crosshairs text-[9px]"></i> Ver GPS en Google Maps
+                          </a>
+                        <% } %>
                       <% } %>
                     </td>
 

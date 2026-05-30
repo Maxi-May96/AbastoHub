@@ -43,12 +43,11 @@
             Método de Entrega
           </h2>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 gap-4">
             <!-- Delivery Option Card -->
             <label class="relative flex items-center justify-between p-4 border border-brand-500/35 bg-brand-50/20 rounded-2xl cursor-pointer hover:bg-slate-50/10 transition-all" id="opt-delivery-label">
               <div class="flex items-center gap-3">
-                <input type="radio" name="deliveryType" value="delivery" checked onchange="toggleDeliveryMode('delivery')" 
-                  class="h-4.5 w-4.5 text-brand-600 border-slate-300 focus:ring-brand-500/20">
+                <input type="radio" name="deliveryType" value="delivery" checked class="h-4.5 w-4.5 text-brand-600 border-slate-300 focus:ring-brand-500/20">
                 <div>
                   <span class="block text-sm font-bold text-slate-850">Envío a Domicilio</span>
                   <span class="block text-xs text-slate-500">Recibe en tu casa o comercio</span>
@@ -57,22 +56,15 @@
               <i class="fa-solid fa-house-chimney text-brand-600 text-lg"></i>
             </label>
 
-            <!-- Pickup Option Card -->
-            <label class="relative flex items-center justify-between p-4 border border-slate-200 rounded-2xl cursor-pointer hover:bg-slate-50 transition-all" id="opt-pickup-label">
-              <div class="flex items-center gap-3">
-                <input type="radio" name="deliveryType" value="pickup" onchange="toggleDeliveryMode('pickup')" 
-                  class="h-4.5 w-4.5 text-brand-600 border-slate-300 focus:ring-brand-500/20">
-                <div>
-                  <span class="block text-sm font-bold text-slate-850">Retiro por Sucursal</span>
-                  <span class="block text-xs text-slate-500">Retira gratis en nuestro abasto</span>
-                </div>
-              </div>
-              <i class="fa-solid fa-store text-slate-400 text-lg"></i>
-            </label>
+            <!-- Disabled Pickup Info -->
+            <div class="flex items-start gap-2.5 p-3.5 bg-slate-50 border border-slate-150 rounded-2xl text-[11px] text-slate-500">
+              <i class="fa-solid fa-circle-info text-slate-400 mt-0.5 text-xs"></i>
+              <span>El retiro por sucursal se encuentra deshabilitado de forma temporal debido a que no contamos con una central física habilitada para entregas en este momento.</span>
+            </div>
           </div>
         </div>
 
-        <!-- Section 3: Shipping Address (Collapsible based on Delivery Mode) -->
+        <!-- Section 3: Shipping Address -->
         <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4 transition-all duration-300" id="address-section">
           <h2 class="display-font text-lg font-bold text-slate-950 flex items-center gap-2 border-b border-slate-100 pb-3">
             <span class="text-brand-600"><i class="fa-solid fa-map-location-dot"></i></span>
@@ -80,26 +72,71 @@
           </h2>
           
           <div class="space-y-4">
+            <!-- Hidden coordinates inputs -->
+            <input type="hidden" name="latitude" id="latitude">
+            <input type="hidden" name="longitude" id="longitude">
+
             <div>
               <label for="street" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Calle y Número</label>
-              <input type="text" id="street" name="street" placeholder="Av. Cabildo 2340, Piso 3A"
+              <input type="text" id="street" name="street" placeholder="Ej: Av. Cabildo 2340, Piso 3A" required
                 value="<%= defaultAddress ? defaultAddress.street : '' %>"
                 class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-sm">
             </div>
             
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label for="province" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Provincia</label>
+                <select id="province" name="province" required
+                  class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-sm">
+                  <option value="">Seleccione...</option>
+                  <option value="CABA" <%= (defaultAddress && defaultAddress.province === 'CABA') ? 'selected' : '' %>>CABA (Capital Federal)</option>
+                  <option value="Buenos Aires" <%= (defaultAddress && defaultAddress.province === 'Buenos Aires') ? 'selected' : '' %>>Buenos Aires</option>
+                  <option value="Catamarca" <%= (defaultAddress && defaultAddress.province === 'Catamarca') ? 'selected' : '' %>>Catamarca</option>
+                  <option value="Chaco" <%= (defaultAddress && defaultAddress.province === 'Chaco') ? 'selected' : '' %>>Chaco</option>
+                  <option value="Chubut" <%= (defaultAddress && defaultAddress.province === 'Chubut') ? 'selected' : '' %>>Chubut</option>
+                  <option value="Córdoba" <%= (defaultAddress && defaultAddress.province === 'Córdoba') ? 'selected' : '' %>>Córdoba</option>
+                  <option value="Corrientes" <%= (defaultAddress && defaultAddress.province === 'Corrientes') ? 'selected' : '' %>>Corrientes</option>
+                  <option value="Entre Ríos" <%= (defaultAddress && defaultAddress.province === 'Entre Ríos') ? 'selected' : '' %>>Entre Ríos</option>
+                  <option value="Formosa" <%= (defaultAddress && defaultAddress.province === 'Formosa') ? 'selected' : '' %>>Formosa</option>
+                  <option value="Jujuy" <%= (defaultAddress && defaultAddress.province === 'Jujuy') ? 'selected' : '' %>>Jujuy</option>
+                  <option value="La Pampa" <%= (defaultAddress && defaultAddress.province === 'La Pampa') ? 'selected' : '' %>>La Pampa</option>
+                  <option value="La Rioja" <%= (defaultAddress && defaultAddress.province === 'La Rioja') ? 'selected' : '' %>>La Rioja</option>
+                  <option value="Mendoza" <%= (defaultAddress && defaultAddress.province === 'Mendoza') ? 'selected' : '' %>>Mendoza</option>
+                  <option value="Misiones" <%= (defaultAddress && defaultAddress.province === 'Misiones') ? 'selected' : '' %>>Misiones</option>
+                  <option value="Neuquén" <%= (defaultAddress && defaultAddress.province === 'Neuquén') ? 'selected' : '' %>>Neuquén</option>
+                  <option value="Río Negro" <%= (defaultAddress && defaultAddress.province === 'Río Negro') ? 'selected' : '' %>>Río Negro</option>
+                  <option value="Salta" <%= (defaultAddress && defaultAddress.province === 'Salta') ? 'selected' : '' %>>Salta</option>
+                  <option value="San Juan" <%= (defaultAddress && defaultAddress.province === 'San Juan') ? 'selected' : '' %>>San Juan</option>
+                  <option value="San Luis" <%= (defaultAddress && defaultAddress.province === 'San Luis') ? 'selected' : '' %>>San Luis</option>
+                  <option value="Santa Cruz" <%= (defaultAddress && defaultAddress.province === 'Santa Cruz') ? 'selected' : '' %>>Santa Cruz</option>
+                  <option value="Santa Fe" <%= (defaultAddress && defaultAddress.province === 'Santa Fe') ? 'selected' : '' %>>Santa Fe</option>
+                  <option value="Santiago del Estero" <%= (defaultAddress && defaultAddress.province === 'Santiago del Estero') ? 'selected' : '' %>>Santiago del Estero</option>
+                  <option value="Tierra del Fuego" <%= (defaultAddress && defaultAddress.province === 'Tierra del Fuego') ? 'selected' : '' %>>Tierra del Fuego</option>
+                  <option value="Tucumán" <%= (defaultAddress && defaultAddress.province === 'Tucumán') ? 'selected' : '' %>>Tucumán</option>
+                </select>
+              </div>
               <div>
                 <label for="city" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Localidad / Ciudad</label>
-                <input type="text" id="city" name="city" placeholder="Belgrano, CABA"
+                <input type="text" id="city" name="city" placeholder="Belgrano" required
                   value="<%= defaultAddress ? defaultAddress.city : '' %>"
                   class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-sm">
               </div>
               <div>
                 <label for="zipCode" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Código Postal</label>
-                <input type="text" id="zipCode" name="zipCode" placeholder="C1428"
+                <input type="text" id="zipCode" name="zipCode" placeholder="C1428" required
                   value="<%= defaultAddress ? defaultAddress.zipCode : '' %>"
                   class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-sm">
               </div>
+            </div>
+
+            <!-- GPS Map Integration -->
+            <div class="space-y-1.5">
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-500">Ubicación GPS Exacta</label>
+              <div id="map" style="height: 300px; width: 100%; border-radius: 1rem; margin-top: 1rem; border: 1px solid #cbd5e1;"></div>
+              <p class="text-[10px] text-slate-400 flex items-center gap-1.5 mt-1.5">
+                <i class="fa-solid fa-location-dot text-indigo-500 text-xs"></i>
+                Haz click en el mapa o arrastra el marcador rojo para indicar la posición exacta de entrega.
+              </p>
             </div>
           </div>
         </div>
@@ -192,51 +229,120 @@
   </div>
 </div>
 
-<!-- Scripts for address toggling -->
+<!-- Scripts for address and Google Maps integration -->
 <script>
-  function toggleDeliveryMode(mode) {
-    const addressSection = document.getElementById('address-section');
-    const streetInput = document.getElementById('street');
-    const cityInput = document.getElementById('city');
-    const zipInput = document.getElementById('zipCode');
-    const summaryShipping = document.getElementById('summary-shipping-cost');
-    
-    const deliveryLabel = document.getElementById('opt-delivery-label');
-    const pickupLabel = document.getElementById('opt-pickup-label');
+  let map;
+  let marker;
+  const defaultLat = -34.6037; // Buenos Aires
+  const defaultLng = -58.3816;
 
-    if (mode === 'delivery') {
-      // Show and enable fields
-      addressSection.style.opacity = '1';
-      addressSection.style.pointerEvents = 'auto';
-      streetInput.required = true;
-      cityInput.required = true;
-      zipInput.required = true;
-      summaryShipping.innerText = 'A coordinar';
-      summaryShipping.className = 'font-medium text-emerald-600';
-      
-      // Styling highlight
-      deliveryLabel.className = "relative flex items-center justify-between p-4 border border-brand-500/35 bg-brand-50/20 rounded-2xl cursor-pointer hover:bg-slate-50/10 transition-all";
-      pickupLabel.className = "relative flex items-center justify-between p-4 border border-slate-200 rounded-2xl cursor-pointer hover:bg-slate-50 transition-all";
-    } else {
-      // Hide / Disable fields
-      addressSection.style.opacity = '0.4';
-      addressSection.style.pointerEvents = 'none';
-      streetInput.required = false;
-      cityInput.required = false;
-      zipInput.required = false;
-      summaryShipping.innerText = 'Sin Cargo';
-      summaryShipping.className = 'font-bold text-brand-600';
-      
-      // Styling highlight
-      deliveryLabel.className = "relative flex items-center justify-between p-4 border border-slate-200 rounded-2xl cursor-pointer hover:bg-slate-50 transition-all";
-      pickupLabel.className = "relative flex items-center justify-between p-4 border border-brand-500/35 bg-brand-50/20 rounded-2xl cursor-pointer hover:bg-slate-50/10 transition-all";
+  function initMap() {
+    const latInput = document.getElementById('latitude');
+    const lngInput = document.getElementById('longitude');
+
+    // Default coordinates in inputs
+    latInput.value = defaultLat;
+    lngInput.value = defaultLng;
+
+    const mapOptions = {
+      center: { lat: defaultLat, lng: defaultLng },
+      zoom: 13,
+      mapTypeControl: false,
+      streetViewControl: false,
+      fullscreenControl: false
+    };
+
+    map = new google.maps.Map(document.getElementById("map"), mapOptions);
+
+    marker = new google.maps.Marker({
+      position: { lat: defaultLat, lng: defaultLng },
+      map: map,
+      draggable: true,
+      animation: google.maps.Animation.DROP
+    });
+
+    // Autocomplete setup for street input
+    const streetInput = document.getElementById('street');
+    const autocomplete = new google.maps.places.Autocomplete(streetInput, {
+      componentRestrictions: { country: "ar" },
+      fields: ["address_components", "geometry"],
+      types: ["address"]
+    });
+
+    autocomplete.addListener('place_changed', function() {
+      const place = autocomplete.getPlace();
+      if (!place.geometry || !place.geometry.location) {
+        return;
+      }
+
+      const location = place.geometry.location;
+      map.setCenter(location);
+      map.setZoom(17);
+      marker.setPosition(location);
+
+      latInput.value = location.lat();
+      lngInput.value = location.lng();
+
+      // Autofill components
+      const components = place.address_components;
+      for (let component of components) {
+        const types = component.types;
+        if (types.includes("locality") || types.includes("sublocality") || types.includes("administrative_area_level_2")) {
+          document.getElementById('city').value = component.long_name;
+        }
+        if (types.includes("postal_code")) {
+          document.getElementById('zipCode').value = component.long_name;
+        }
+        if (types.includes("administrative_area_level_1")) {
+          const provinceSelect = document.getElementById('province');
+          const valueLower = component.long_name.toLowerCase();
+          
+          // Match selected options
+          for (let option of provinceSelect.options) {
+            if (valueLower.includes(option.value.toLowerCase()) || option.value.toLowerCase().includes(valueLower)) {
+              provinceSelect.value = option.value;
+              break;
+            }
+          }
+          if (valueLower.includes("caba") || valueLower.includes("ciudad autónoma de buenos aires") || valueLower.includes("capital federal")) {
+            provinceSelect.value = "CABA";
+          }
+        }
+      }
+    });
+
+    // Update coordinates when marker is dragged
+    google.maps.event.addListener(marker, 'dragend', function() {
+      const pos = marker.getPosition();
+      latInput.value = pos.lat();
+      lngInput.value = pos.lng();
+    });
+
+    // Update marker and coordinates when map is clicked
+    map.addListener('click', function(e) {
+      const clickedPos = e.latLng;
+      marker.setPosition(clickedPos);
+      latInput.value = clickedPos.lat();
+      lngInput.value = clickedPos.lng();
+    });
+
+    // Attempt geolocation
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(function(position) {
+        const userLat = position.coords.latitude;
+        const userLng = position.coords.longitude;
+        const userPos = { lat: userLat, lng: userLng };
+        map.setCenter(userPos);
+        marker.setPosition(userPos);
+        latInput.value = userLat;
+        lngInput.value = userLng;
+      }, function() {
+        console.log("Geolocation permission denied or timed out.");
+      });
     }
   }
 
-  // Run on startup to set street required values since delivery is default checked
   window.onload = function() {
-    toggleDeliveryMode('delivery');
-    
     // Set minimum date to today
     const dateInput = document.getElementById('scheduledDate');
     if (dateInput) {
@@ -245,5 +351,7 @@
     }
   };
 </script>
+
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCBMrNLZp5utwO_ecNIxd2srSxU_LWE2OA&libraries=places&callback=initMap" async defer></script>
 
 <%- include('../partials/footer') %>
