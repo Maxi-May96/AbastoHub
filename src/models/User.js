@@ -37,8 +37,11 @@ const UserSchema = new mongoose.Schema({
   addresses: [{
     street: String,
     city: String,
+    province: String,
     state: String,
     zipCode: String,
+    latitude: Number,
+    longitude: Number,
     isDefault: { type: Boolean, default: false }
   }],
   createdAt: {

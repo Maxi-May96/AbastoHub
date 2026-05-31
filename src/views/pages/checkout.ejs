@@ -73,8 +73,8 @@
           
           <div class="space-y-4">
             <!-- Hidden coordinates inputs -->
-            <input type="hidden" name="latitude" id="latitude">
-            <input type="hidden" name="longitude" id="longitude">
+            <input type="hidden" name="latitude" id="latitude" value="<%= (defaultAddress && defaultAddress.latitude) ? defaultAddress.latitude : '' %>">
+            <input type="hidden" name="longitude" id="longitude" value="<%= (defaultAddress && defaultAddress.longitude) ? defaultAddress.longitude : '' %>">
 
             <div>
               <label for="street" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Calle y Número</label>
@@ -233,20 +233,23 @@
 <script>
   let map;
   let marker;
-  const defaultLat = -34.6037; // Buenos Aires
-  const defaultLng = -58.3816;
+  
+  // Set default starting lat/lng from user's defaultAddress if present
+  const defaultLat = <%= (defaultAddress && defaultAddress.latitude) ? defaultAddress.latitude : -34.6037 %>;
+  const defaultLng = <%= (defaultAddress && defaultAddress.longitude) ? defaultAddress.longitude : -58.3816 %>;
+  const hasSavedCoords = <%= (defaultAddress && defaultAddress.latitude && defaultAddress.longitude) ? 'true' : 'false' %>;
 
   function initMap() {
     const latInput = document.getElementById('latitude');
     const lngInput = document.getElementById('longitude');
 
-    // Default coordinates in inputs
-    latInput.value = defaultLat;
-    lngInput.value = defaultLng;
+    // Default coordinates in inputs if empty
+    if (!latInput.value) latInput.value = defaultLat;
+    if (!lngInput.value) lngInput.value = defaultLng;
 
     const mapOptions = {
-      center: { lat: defaultLat, lng: defaultLng },
-      zoom: 13,
+      center: { lat: parseFloat(latInput.value), lng: parseFloat(lngInput.value) },
+      zoom: hasSavedCoords ? 16 : 13,
       mapTypeControl: false,
       streetViewControl: false,
       fullscreenControl: false
@@ -255,7 +258,7 @@
     map = new google.maps.Map(document.getElementById("map"), mapOptions);
 
     marker = new google.maps.Marker({
-      position: { lat: defaultLat, lng: defaultLng },
+      position: { lat: parseFloat(latInput.value), lng: parseFloat(lngInput.value) },
       map: map,
       draggable: true,
       animation: google.maps.Animation.DROP
@@ -326,8 +329,8 @@
       lngInput.value = clickedPos.lng();
     });
 
-    // Attempt geolocation
-    if (navigator.geolocation) {
+    // Attempt geolocation only if no saved coordinates exist
+    if (!hasSavedCoords && navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(function(position) {
         const userLat = position.coords.latitude;
         const userLng = position.coords.longitude;

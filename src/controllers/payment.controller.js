@@ -110,7 +110,41 @@ const processCheckout = async (req, res, next) => {
 
     await newOrder.save();
 
-    // 3. Clear user's Shopping Cart
+    // 3. Update or save default address in User profile so next time it is prefilled
+    const userObj = await User.findById(req.user.id);
+    if (userObj) {
+      const newAddressData = {
+        street: street || '',
+        city: city || '',
+        province: province || '',
+        state: province || '', // compatibility
+        zipCode: zipCode || '',
+        latitude: latitude ? parseFloat(latitude) : null,
+        longitude: longitude ? parseFloat(longitude) : null,
+        isDefault: true
+      };
+
+      // Set all other user addresses to isDefault = false
+      userObj.addresses.forEach(addr => {
+        addr.isDefault = false;
+      });
+
+      // Update first address or push new one
+      if (userObj.addresses.length > 0) {
+        userObj.addresses[0] = { ...userObj.addresses[0].toObject(), ...newAddressData };
+      } else {
+        userObj.addresses.push(newAddressData);
+      }
+
+      // Also update user's phone if provided
+      if (phone) {
+        userObj.phone = phone;
+      }
+      
+      await userObj.save();
+    }
+
+    // 4. Clear user's Shopping Cart
     cart.products = [];
     cart.total = 0;
     await cart.save();
