@@ -1,0 +1,385 @@
+<%- include('../partials/header') %>
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <!-- Back Button & Header -->
+  <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      <a href="/admin" class="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-brand-600 transition-colors mb-2.5">
+        <i class="fa-solid fa-arrow-left"></i> Volver al Panel
+      </a>
+      <div class="flex items-center gap-2 text-indigo-600 mb-1">
+        <i class="fa-solid fa-map-location-dot text-lg"></i>
+        <span class="text-xs font-bold uppercase tracking-wider">Logística de Despachos & Entregas</span>
+      </div>
+      <h1 class="display-font text-2xl font-extrabold tracking-tight text-slate-900">Trazador de Rutas</h1>
+      <p class="text-xs text-slate-500 mt-0.5">Agrupa pedidos por zonas y fechas, traza las rutas de entrega y asígnales conductores.</p>
+    </div>
+  </div>
+
+  <!-- Messages Feedback -->
+  <% if (success) { %>
+    <div class="mb-6 bg-emerald-50 border border-emerald-100 text-emerald-700 p-4 rounded-2xl text-sm flex gap-2 items-center">
+      <i class="fa-solid fa-circle-check text-base"></i>
+      <span><%= success %></span>
+    </div>
+  <% } %>
+  <% if (error) { %>
+    <div class="mb-6 bg-rose-50 border border-rose-100 text-rose-700 p-4 rounded-2xl text-sm flex gap-2 items-center">
+      <i class="fa-solid fa-circle-exclamation text-base"></i>
+      <span><%= error %></span>
+    </div>
+  <% } %>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    
+    <!-- Column 1 & 2: Map & Filtering -->
+    <div class="lg:col-span-2 space-y-6">
+      
+      <!-- Filters Card -->
+      <div class="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm space-y-4">
+        <h2 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+          <i class="fa-solid fa-filter text-slate-400"></i>
+          Filtros de Búsqueda
+        </h2>
+        
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label for="filterProvince" class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Provincia</label>
+            <select id="filterProvince" onchange="applyFilters()"
+              class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 text-slate-700 px-3 py-2 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 text-xs transition-all">
+              <option value="">Todas</option>
+              <option value="CABA">CABA</option>
+              <option value="Buenos Aires">Buenos Aires</option>
+              <option value="Córdoba">Córdoba</option>
+              <option value="Santa Fe">Santa Fe</option>
+              <option value="Mendoza">Mendoza</option>
+            </select>
+          </div>
+          <div>
+            <label for="filterDate" class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Fecha Reserva</label>
+            <input type="date" id="filterDate" onchange="applyFilters()"
+              class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 text-slate-700 px-3 py-2 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 text-xs transition-all">
+          </div>
+          <div>
+            <label for="filterPayment" class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Estado de Pago</label>
+            <select id="filterPayment" onchange="applyFilters()"
+              class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 text-slate-700 px-3 py-2 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 text-xs transition-all">
+              <option value="">Todos</option>
+              <option value="paid">Solo Pagados</option>
+              <option value="pending">Solo Pendientes</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Map Container -->
+      <div class="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
+        <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+          <div>
+            <h2 class="text-sm font-bold text-slate-800">Mapa de Ubicaciones</h2>
+            <p class="text-[11px] text-slate-400">Haz clic en los marcadores para ver los detalles del pedido e integrarlos a tu despacho.</p>
+          </div>
+          <span id="mapped-count" class="bg-indigo-50 text-indigo-700 text-xs px-2.5 py-1 rounded-full font-bold border border-indigo-100">
+            0 pedidos en mapa
+          </span>
+        </div>
+        <div id="map" class="w-full h-[520px]"></div>
+      </div>
+
+      <!-- Orders Without GPS Details -->
+      <div id="no-gps-section" class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-3 hidden">
+        <h3 class="text-xs font-bold text-rose-600 flex items-center gap-1.5">
+          <i class="fa-solid fa-circle-exclamation text-rose-500"></i>
+          Pedidos sin Coordenadas GPS Registradas
+        </h3>
+        <p class="text-[11px] text-slate-400">Estos pedidos tienen envío a domicilio pero no cuentan con ubicación en el mapa. Puedes seleccionarlos manualmente a la ruta:</p>
+        <div id="no-gps-list" class="grid grid-cols-1 sm:grid-cols-2 gap-3.5"></div>
+      </div>
+
+    </div>
+
+    <!-- Column 3: Route Dispatch Details -->
+    <div class="space-y-6">
+      
+      <!-- Route Box Card -->
+      <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-5 lg:sticky lg:top-24">
+        <div class="border-b border-slate-100 pb-3">
+          <h3 class="display-font text-base font-extrabold text-slate-900">Ruta Seleccionada</h3>
+          <p class="text-[11px] text-slate-400">Pedidos agrupados para el conductor.</p>
+        </div>
+
+        <!-- Selected Orders Count -->
+        <div class="flex justify-between items-center bg-slate-50 border border-slate-150 p-3 rounded-2xl">
+          <span class="text-xs font-medium text-slate-500">Pedidos seleccionados</span>
+          <span id="selected-count-badge" class="bg-brand-100 text-brand-800 text-xs px-2.5 py-1 rounded-full font-black">
+            0 pedidos
+          </span>
+        </div>
+
+        <!-- Selected List Container -->
+        <div class="space-y-3">
+          <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500">Pedidos en el Despacho</label>
+          <div id="selected-list" class="space-y-2.5 max-h-[220px] overflow-y-auto pr-1 border border-slate-100 rounded-2xl p-3 bg-slate-50/50 text-xs">
+            <!-- Empty state -->
+            <div id="selected-empty-state" class="text-center py-6 text-slate-400">
+              <i class="fa-solid fa-map-location text-lg text-slate-300 mb-1.5 block"></i>
+              No has seleccionado ningún pedido aún. Haz clic en un marcador para agregarlo.
+            </div>
+          </div>
+        </div>
+
+        <!-- Dispatch Form -->
+        <form id="dispatch-form" action="/admin/routes/dispatch" method="POST" class="space-y-4 pt-3 border-t border-slate-100">
+          <!-- Hidden inputs container for selected ids -->
+          <div id="hidden-ids-container"></div>
+
+          <div>
+            <label for="driverName" class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Nombre del Conductor</label>
+            <input type="text" id="driverName" name="driverName" placeholder="Ej: Carlos Gómez" required
+              class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-3.5 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 text-xs transition-all">
+          </div>
+
+          <div>
+            <label for="driverVehicle" class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Vehículo y Patente</label>
+            <input type="text" id="driverVehicle" name="driverVehicle" placeholder="Ej: Fiorino Blanca (AE123XX)" required
+              class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-3.5 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 text-xs transition-all">
+          </div>
+
+          <button type="submit" id="dispatch-btn" disabled
+            class="w-full py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs shadow-md hover:shadow-lg shadow-brand-500/10 hover:shadow-brand-500/20 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:pointer-events-none">
+            <i class="fa-solid fa-paper-plane text-[10px]"></i>
+            <span>Despachar Ruta & Enviar</span>
+          </button>
+        </form>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<!-- Raw data script -->
+<script>
+  const rawOrders = <%- JSON.stringify(orders.map(order => ({
+    id: order._id,
+    displayId: order._id.toString().substring(12).toUpperCase(),
+    clientName: order.shippingDetails.name || (order.user ? `${order.user.name} ${order.user.lastname}` : 'Cliente'),
+    phone: order.shippingDetails.phone || (order.user ? order.user.phone : ''),
+    address: order.shippingDetails.address || '',
+    city: order.shippingDetails.city || '',
+    province: order.shippingDetails.province || '',
+    total: order.total,
+    status: order.status,
+    paymentStatus: order.paymentStatus,
+    scheduledDate: order.scheduledDate ? new Date(order.scheduledDate).toISOString().split('T')[0] : null,
+    latitude: order.shippingDetails.latitude,
+    longitude: order.shippingDetails.longitude
+  }))) %>;
+</script>
+
+<!-- Map Javascript Logic -->
+<script>
+  let map;
+  let markers = [];
+  let selectedOrders = [];
+
+  function initMap() {
+    const mapOptions = {
+      center: { lat: -34.6037, lng: -58.3816 }, // Buenos Aires center default
+      zoom: 11,
+      mapTypeControl: false,
+      streetViewControl: false,
+      fullscreenControl: true
+    };
+
+    map = new google.maps.Map(document.getElementById("map"), mapOptions);
+    
+    // Load markers and render
+    renderMapData();
+  }
+
+  function renderMapData() {
+    // Clear existing markers
+    markers.forEach(m => m.setMap(null));
+    markers = [];
+
+    const bounds = new google.maps.LatLngBounds();
+    let hasGeocodedData = false;
+    let mapCount = 0;
+    const noGpsListContainer = document.getElementById('no-gps-list');
+    const noGpsSection = document.getElementById('no-gps-section');
+    noGpsListContainer.innerHTML = '';
+
+    const filterProvince = document.getElementById('filterProvince').value.toLowerCase();
+    const filterDate = document.getElementById('filterDate').value;
+    const filterPayment = document.getElementById('filterPayment').value;
+
+    rawOrders.forEach(order => {
+      // Apply filters
+      if (filterProvince && order.province.toLowerCase() !== filterProvince) return;
+      if (filterDate && order.scheduledDate !== filterDate) return;
+      if (filterPayment && order.paymentStatus !== filterPayment) return;
+
+      const isSelected = selectedOrders.some(so => so.id === order.id);
+
+      if (order.latitude && order.longitude) {
+        hasGeocodedData = true;
+        mapCount++;
+        const pos = { lat: order.latitude, lng: order.longitude };
+        bounds.extend(pos);
+
+        // Marker Styling: green if paid, yellow if pending, blue if selected
+        let markerColor = 'yellow';
+        if (isSelected) {
+          markerColor = 'blue';
+        } else if (order.paymentStatus === 'paid') {
+          markerColor = 'green';
+        }
+
+        const markerIcon = {
+          url: `http://maps.google.com/mapfiles/ms/icons/${markerColor}-dot.png`
+        };
+
+        const marker = new google.maps.Marker({
+          position: pos,
+          map: map,
+          title: `Pedido #${order.displayId}`,
+          icon: markerIcon
+        });
+
+        // Info Window content
+        const infoWindow = new google.maps.InfoWindow();
+        const content = `
+          <div class="p-2 space-y-1.5 text-xs text-slate-800 max-w-[200px]">
+            <h4 class="font-bold text-slate-900 flex justify-between">
+              <span>Pedido #${order.displayId}</span>
+              <span class="px-1.5 py-0.5 rounded text-[9px] ${order.paymentStatus === 'paid' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}">
+                ${order.paymentStatus.toUpperCase()}
+              </span>
+            </h4>
+            <p><strong>Cliente:</strong> ${order.clientName}</p>
+            <p><strong>Dirección:</strong> ${order.address}</p>
+            <p><strong>Fecha Reserva:</strong> ${order.scheduledDate ? order.scheduledDate : 'No programado'}</p>
+            <p class="font-bold text-brand-600">Total: $${order.total.toLocaleString()}</p>
+            <button onclick="toggleSelectOrder('${order.id}')" class="w-full mt-1.5 py-1 px-2 text-[10px] text-white rounded font-bold transition-all ${isSelected ? 'bg-rose-500 hover:bg-rose-600' : 'bg-brand-600 hover:bg-brand-700'}">
+              ${isSelected ? 'Quitar de la ruta' : 'Agregar a la ruta'}
+            </button>
+          </div>
+        `;
+
+        marker.addListener('click', () => {
+          infoWindow.setContent(content);
+          infoWindow.open(map, marker);
+        });
+
+        markers.push(marker);
+      } else {
+        // List in "No GPS" section
+        const card = document.createElement('div');
+        card.className = `p-3 rounded-2xl border text-xs flex justify-between items-center transition-all bg-white hover:border-slate-300 ${isSelected ? 'border-brand-500 bg-brand-50/10' : 'border-slate-200'}`;
+        card.innerHTML = `
+          <div class="space-y-0.5">
+            <p class="font-bold text-slate-800">#${order.displayId} - ${order.clientName}</p>
+            <p class="text-[10px] text-slate-400 truncate max-w-[170px]">${order.address}</p>
+            <p class="text-[9px] text-slate-400">Reserva: ${order.scheduledDate ? order.scheduledDate : 'No programada'}</p>
+          </div>
+          <button onclick="toggleSelectOrder('${order.id}')" class="p-1 px-2.5 rounded text-[10px] font-bold text-white transition-all ${isSelected ? 'bg-rose-500' : 'bg-slate-700 hover:bg-slate-900'}">
+            ${isSelected ? '<i class="fa-solid fa-minus"></i>' : '<i class="fa-solid fa-plus"></i>'}
+          </button>
+        `;
+        noGpsListContainer.appendChild(card);
+      }
+    });
+
+    // Update mapped count label
+    document.getElementById('mapped-count').innerText = `${mapCount} pedidos en mapa`;
+
+    // Fit map bounds if markers exist
+    if (hasGeocodedData) {
+      map.fitBounds(bounds);
+      // Limit zoom levels
+      const listener = google.maps.event.addListener(map, "idle", function() { 
+        if (map.getZoom() > 15) map.setZoom(15); 
+        google.maps.event.removeListener(listener); 
+      });
+    }
+
+    // Toggle "No GPS" warning section visibility
+    if (noGpsListContainer.childElementCount > 0) {
+      noGpsSection.classList.remove('hidden');
+    } else {
+      noGpsSection.classList.add('hidden');
+    }
+  }
+
+  function toggleSelectOrder(id) {
+    const idx = selectedOrders.findIndex(o => o.id === id);
+    if (idx > -1) {
+      selectedOrders.splice(idx, 1);
+    } else {
+      const order = rawOrders.find(o => o.id === id);
+      if (order) {
+        selectedOrders.push(order);
+      }
+    }
+
+    updateSelectedList();
+    renderMapData();
+  }
+
+  function updateSelectedList() {
+    const listContainer = document.getElementById('selected-list');
+    const emptyState = document.getElementById('selected-empty-state');
+    const badge = document.getElementById('selected-count-badge');
+    const dispatchBtn = document.getElementById('dispatch-btn');
+    const hiddenContainer = document.getElementById('hidden-ids-container');
+
+    // Reset list and hidden ids
+    listContainer.innerHTML = '';
+    hiddenContainer.innerHTML = '';
+
+    if (selectedOrders.length === 0) {
+      listContainer.appendChild(emptyState);
+      badge.innerText = '0 pedidos';
+      dispatchBtn.disabled = true;
+    } else {
+      badge.innerText = `${selectedOrders.length} ${selectedOrders.length === 1 ? 'pedido' : 'pedidos'}`;
+      dispatchBtn.disabled = false;
+
+      selectedOrders.forEach(order => {
+        // Add hidden input to form
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'orderIds';
+        input.value = order.id;
+        hiddenContainer.appendChild(input);
+
+        // Add card to UI list
+        const item = document.createElement('div');
+        item.className = 'flex justify-between items-center p-2.5 bg-white border border-slate-200 rounded-xl';
+        item.innerHTML = `
+          <div class="truncate pr-2">
+            <p class="font-bold text-slate-800 flex items-center gap-1.5">
+              <span class="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
+              #${order.displayId}
+            </p>
+            <p class="text-[10px] text-slate-500 font-semibold truncate">${order.clientName}</p>
+            <p class="text-[9px] text-slate-400 truncate">${order.address}</p>
+          </div>
+          <button type="button" onclick="toggleSelectOrder('${order.id}')" class="text-rose-500 hover:text-rose-700 p-1">
+            <i class="fa-solid fa-trash-can text-[11px]"></i>
+          </button>
+        `;
+        listContainer.appendChild(item);
+      });
+    }
+  }
+
+  function applyFilters() {
+    renderMapData();
+  }
+</script>
+
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCBMrNLZp5utwO_ecNIxd2srSxU_LWE2OA&callback=initMap" async defer></script>
+
+<%- include('../partials/footer') %>

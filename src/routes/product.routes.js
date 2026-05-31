@@ -20,6 +20,8 @@ router.get('/admin/orders/report/pdf', isAuthenticated, isAdmin, productControll
 router.get('/admin/orders/:id/pdf', isAuthenticated, isAdmin, productController.generatePDFTicket);
 router.post('/admin/orders/:id/mark-paid', isAuthenticated, isAdmin, productController.markOrderAsPaid);
 router.post('/admin/orders/:id/status', isAuthenticated, isAdmin, productController.updateOrderStatus);
+router.get('/admin/routes', isAuthenticated, isAdmin, productController.getAdminRoutes);
+router.post('/admin/routes/dispatch', isAuthenticated, isAdmin, productController.dispatchRoute);
 
 // Admin partner management routes
 router.post('/admin/partners', isAuthenticated, isAdmin, upload.single('logo'), productController.createPartner);

@@ -909,6 +909,57 @@ const updateOrderStatus = async (req, res, next) => {
   }
 };
 
+// GET Admin Routes Map Page
+const getAdminRoutes = async (req, res, next) => {
+  try {
+    // Get pending delivery orders (excluding cancelled or already delivered)
+    const orders = await Order.find({
+      deliveryType: 'delivery',
+      status: { $nin: ['delivered', 'cancelled'] }
+    }).populate('user').sort({ createdAt: -1 });
+
+    res.render('pages/admin-routes', {
+      title: 'Trazado de Rutas de Entrega',
+      orders,
+      formatPrice,
+      success: req.query.success || null,
+      error: req.query.error || null
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// POST Dispatch Routes (Admin Only)
+const dispatchRoute = async (req, res, next) => {
+  try {
+    const { orderIds, driverName, driverVehicle } = req.body;
+
+    if (!orderIds || (Array.isArray(orderIds) && orderIds.length === 0) || (!Array.isArray(orderIds) && !orderIds)) {
+      return res.redirect('/admin/routes?error=' + encodeURIComponent('Debe seleccionar al menos un pedido para despachar la ruta.'));
+    }
+
+    const ids = Array.isArray(orderIds) ? orderIds : [orderIds];
+
+    // Update orders status to 'shipped' and assign driver details
+    for (const orderId of ids) {
+      const order = await Order.findById(orderId);
+      if (order) {
+        order.status = 'shipped';
+        order.driverName = driverName || 'Conductor';
+        order.driverVehicle = driverVehicle || 'Vehículo';
+        order.dispatchedAt = new Date();
+        await order.save();
+      }
+    }
+
+    res.redirect('/admin/routes?success=' + encodeURIComponent(`Se han despachado ${ids.length} pedido(s) con el conductor ${driverName || 'asignado'}. El estado ha cambiado a "En camino".`));
+  } catch (error) {
+    console.error('Dispatch route error:', error.message);
+    res.redirect('/admin/routes?error=' + encodeURIComponent('Error al despachar la ruta: ' + error.message));
+  }
+};
+
 module.exports = {
   getProducts,
   getProductBySlug,
@@ -924,5 +975,7 @@ module.exports = {
   deletePartner,
   generateOrdersSummaryPDF,
   markOrderAsPaid,
-  updateOrderStatus
+  updateOrderStatus,
+  getAdminRoutes,
+  dispatchRoute
 };

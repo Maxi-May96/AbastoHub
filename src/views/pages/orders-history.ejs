@@ -90,6 +90,12 @@
                     Reserva: <%= order.scheduledDate.toLocaleDateString('es-AR') %>
                   </p>
                 <% } %>
+                <% if (order.status === 'shipped' && order.driverName) { %>
+                  <p class="text-emerald-700 font-semibold flex items-center justify-start md:justify-end gap-1">
+                    <i class="fa-solid fa-truck-fast text-[10px]"></i>
+                    En camino por: <%= order.driverName %> <%= order.driverVehicle ? `(${order.driverVehicle})` : '' %>
+                  </p>
+                <% } %>
               </div>
 
               <div class="flex flex-wrap gap-2 w-full justify-stretch md:justify-end mt-2">

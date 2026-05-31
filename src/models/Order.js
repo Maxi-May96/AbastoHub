@@ -86,6 +86,18 @@ const OrderSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  driverName: {
+    type: String,
+    default: null
+  },
+  driverVehicle: {
+    type: String,
+    default: null
+  },
+  dispatchedAt: {
+    type: Date,
+    default: null
+  },
   createdAt: {
     type: Date,
     default: Date.now
