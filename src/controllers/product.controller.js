@@ -912,10 +912,10 @@ const updateOrderStatus = async (req, res, next) => {
 // GET Admin Routes Map Page
 const getAdminRoutes = async (req, res, next) => {
   try {
-    // Get pending delivery orders (excluding cancelled or already delivered)
+    // Get pending delivery orders (excluding cancelled, already delivered, or already shipped)
     const orders = await Order.find({
       deliveryType: 'delivery',
-      status: { $nin: ['delivered', 'cancelled'] }
+      status: { $nin: ['shipped', 'delivered', 'cancelled'] }
     }).populate('user').sort({ createdAt: -1 });
 
     res.render('pages/admin-routes', {

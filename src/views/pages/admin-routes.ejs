@@ -397,6 +397,28 @@
   function applyFilters() {
     renderMapData();
   }
+
+  // Restore and save driver details from/to localStorage
+  document.addEventListener('DOMContentLoaded', () => {
+    const savedName = localStorage.getItem('lastDriverName');
+    const savedVehicle = localStorage.getItem('lastDriverVehicle');
+    if (savedName) {
+      document.getElementById('driverName').value = savedName;
+    }
+    if (savedVehicle) {
+      document.getElementById('driverVehicle').value = savedVehicle;
+    }
+
+    const form = document.getElementById('dispatch-form');
+    if (form) {
+      form.addEventListener('submit', () => {
+        const nameVal = document.getElementById('driverName').value;
+        const vehicleVal = document.getElementById('driverVehicle').value;
+        localStorage.setItem('lastDriverName', nameVal);
+        localStorage.setItem('lastDriverVehicle', vehicleVal);
+      });
+    }
+  });
 </script>
 
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCBMrNLZp5utwO_ecNIxd2srSxU_LWE2OA&callback=initMap" async defer></script>
