@@ -22,6 +22,8 @@ router.post('/admin/orders/:id/mark-paid', isAuthenticated, isAdmin, productCont
 router.post('/admin/orders/:id/status', isAuthenticated, isAdmin, productController.updateOrderStatus);
 router.get('/admin/routes', isAuthenticated, isAdmin, productController.getAdminRoutes);
 router.post('/admin/routes/dispatch', isAuthenticated, isAdmin, productController.dispatchRoute);
+router.post('/admin/drivers', isAuthenticated, isAdmin, productController.createDriver);
+router.post('/admin/drivers/:id/delete', isAuthenticated, isAdmin, productController.deleteDriver);
 
 // Admin partner management routes
 router.post('/admin/partners', isAuthenticated, isAdmin, upload.single('logo'), productController.createPartner);

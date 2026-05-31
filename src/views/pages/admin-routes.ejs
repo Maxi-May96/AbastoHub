@@ -153,15 +153,31 @@
           <div id="hidden-ids-container"></div>
 
           <div>
-            <label for="driverName" class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Nombre del Conductor</label>
-            <input type="text" id="driverName" name="driverName" placeholder="Ej: Carlos Gómez" required
-              class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-3.5 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 text-xs transition-all">
+            <label for="driverSelect" class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Seleccionar Conductor</label>
+            <select id="driverSelect" onchange="onDriverSelectChange()"
+              class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 text-slate-700 px-3 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 text-xs transition-all">
+              <option value="">-- Seleccionar registrado --</option>
+              <% drivers.forEach(driver => { %>
+                <option value="<%= driver._id %>" data-name="<%= driver.name %>" data-vehicle="<%= driver.vehicle %>">
+                  <%= driver.name %> (<%= driver.vehicle.length > 25 ? driver.vehicle.substring(0, 25) + '...' : driver.vehicle %>)
+                </option>
+              <% }) %>
+              <option value="custom">Ingresar manualmente...</option>
+            </select>
           </div>
 
-          <div>
-            <label for="driverVehicle" class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Vehículo y Patente</label>
-            <input type="text" id="driverVehicle" name="driverVehicle" placeholder="Ej: Fiorino Blanca (AE123XX)" required
-              class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-3.5 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 text-xs transition-all">
+          <div id="driverManualFields" class="space-y-4">
+            <div>
+              <label for="driverName" class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Nombre del Conductor</label>
+              <input type="text" id="driverName" name="driverName" placeholder="Ej: Carlos Gómez" required
+                class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-3.5 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 text-xs transition-all">
+            </div>
+
+            <div>
+              <label for="driverVehicle" class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Vehículo y Patente</label>
+              <input type="text" id="driverVehicle" name="driverVehicle" placeholder="Ej: Fiorino Blanca (AE123XX)" required
+                class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-3.5 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 text-xs transition-all">
+            </div>
           </div>
 
           <button type="submit" id="dispatch-btn" disabled
@@ -172,9 +188,112 @@
         </form>
       </div>
 
+  </div>
+
+  <!-- Driver Management & Dispatch History Sections -->
+  <div class="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Driver Management Card -->
+    <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
+      <div>
+        <h3 class="display-font text-base font-extrabold text-slate-900">Conductores Registrados</h3>
+        <p class="text-[11px] text-slate-400">Administra el personal de reparto para asignaciones rápidas.</p>
+      </div>
+
+      <!-- Add Driver Form -->
+      <form action="/admin/drivers" method="POST" class="space-y-3 p-4 bg-slate-50 border border-slate-150 rounded-2xl">
+        <h4 class="text-xs font-bold text-slate-700">Registrar Conductor</h4>
+        <div>
+          <label class="block text-[9px] font-bold uppercase tracking-wider text-slate-450 mb-0.5">Nombre</label>
+          <input type="text" name="name" placeholder="Nombre completo" required
+            class="w-full bg-white border border-slate-200 focus:border-brand-500/40 text-slate-800 placeholder-slate-400 px-3 py-2 rounded-xl outline-none text-xs transition-all">
+        </div>
+        <div>
+          <label class="block text-[9px] font-bold uppercase tracking-wider text-slate-450 mb-0.5">Vehículo</label>
+          <input type="text" name="vehicle" placeholder="Ej: Hilux Blanca (AA123BB)" required
+            class="w-full bg-white border border-slate-200 focus:border-brand-500/40 text-slate-800 placeholder-slate-400 px-3 py-2 rounded-xl outline-none text-xs transition-all">
+        </div>
+        <button type="submit" class="w-full py-2.5 rounded-xl bg-slate-850 hover:bg-slate-900 text-white font-bold text-[11px] transition-all flex items-center justify-center gap-1">
+          <i class="fa-solid fa-plus text-[9px]"></i> Agregar Conductor
+        </button>
+      </form>
+
+      <!-- Drivers List -->
+      <div class="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+        <% if (drivers.length === 0) { %>
+          <p class="text-xs text-slate-400 text-center py-4">No hay conductores registrados.</p>
+        <% } else { %>
+          <% drivers.forEach(driver => { %>
+            <div class="flex justify-between items-center p-2.5 bg-slate-50/50 border border-slate-150 rounded-xl text-xs">
+              <div>
+                <p class="font-bold text-slate-800"><%= driver.name %></p>
+                <p class="text-[10px] text-slate-500"><%= driver.vehicle %></p>
+              </div>
+              <form action="/admin/drivers/<%= driver._id %>/delete" method="POST" onsubmit="return confirm('¿Seguro deseas eliminar a este conductor?')">
+                <button type="submit" class="text-rose-500 hover:text-rose-700 p-1">
+                  <i class="fa-solid fa-trash text-[10px]"></i>
+                </button>
+              </form>
+            </div>
+          <% }) %>
+        <% } %>
+      </div>
     </div>
 
+    <!-- Dispatch History Card -->
+    <div class="lg:col-span-2 bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
+      <div>
+        <h3 class="display-font text-base font-extrabold text-slate-900">Historial de Despachos</h3>
+        <p class="text-[11px] text-slate-400">Registro histórico de envíos despachados y entregados.</p>
+      </div>
+
+      <!-- History Table -->
+      <div class="overflow-x-auto border border-slate-150 rounded-2xl max-h-[360px] overflow-y-auto">
+        <table class="w-full text-left text-xs divide-y divide-slate-150">
+          <thead class="bg-slate-50 font-bold text-slate-500 sticky top-0">
+            <tr>
+              <th class="px-4 py-3 bg-slate-50">Pedido</th>
+              <th class="px-4 py-3 bg-slate-50">Cliente</th>
+              <th class="px-4 py-3 bg-slate-50">Conductor / Vehículo</th>
+              <th class="px-4 py-3 bg-slate-50">Fecha Despacho</th>
+              <th class="px-4 py-3 bg-slate-50">Estado</th>
+              <th class="px-4 py-3 bg-slate-50 text-right">Total</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-150 text-slate-700">
+            <% if (dispatchedOrders.length === 0) { %>
+              <tr>
+                <td colspan="6" class="px-4 py-6 text-center text-slate-400">No hay despachos registrados en el historial.</td>
+              </tr>
+            <% } else { %>
+              <% dispatchedOrders.forEach(order => { %>
+                <tr class="hover:bg-slate-50/50">
+                  <td class="px-4 py-3 font-bold text-slate-950">#<%= order._id.toString().substring(12).toUpperCase() %></td>
+                  <td class="px-4 py-3">
+                    <p class="font-bold"><%= order.shippingDetails.name || (order.user ? `${order.user.name} ${order.user.lastname}` : 'Cliente') %></p>
+                    <p class="text-[10px] text-slate-450 truncate max-w-[150px]"><%= order.shippingDetails.address %></p>
+                  </td>
+                  <td class="px-4 py-3">
+                    <p class="font-bold text-indigo-750"><%= order.driverName || 'N/A' %></p>
+                    <p class="text-[10px] text-slate-450 truncate max-w-[150px]"><%= order.driverVehicle || 'N/A' %></p>
+                  </td>
+                  <td class="px-4 py-3 text-slate-500">
+                    <%= order.dispatchedAt ? new Date(order.dispatchedAt).toLocaleString('es-AR') : 'N/A' %>
+                  </td>
+                  <td class="px-4 py-3">
+                    <span class="px-2 py-0.5 rounded-full font-bold text-[9px] border <%= order.status === 'delivered' ? 'bg-emerald-50 text-emerald-700 border-emerald-150' : 'bg-blue-50 text-blue-700 border-blue-150' %>">
+                      <%= order.status === 'delivered' ? 'Entregado' : 'En Camino' %>
+                    </span>
+                  </td>
+                  <td class="px-4 py-3 text-right font-black text-slate-950"><%= formatPrice(order.total) %></td>
+                </tr>
+              <% }) %>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
+
 </div>
 
 <!-- Raw data script -->
@@ -398,22 +517,54 @@
     renderMapData();
   }
 
+  function onDriverSelectChange() {
+    const select = document.getElementById('driverSelect');
+    const selectedOption = select.options[select.selectedIndex];
+    const nameInput = document.getElementById('driverName');
+    const vehicleInput = document.getElementById('driverVehicle');
+    const manualFields = document.getElementById('driverManualFields');
+
+    if (select.value === '') {
+      nameInput.value = '';
+      vehicleInput.value = '';
+      manualFields.style.display = 'block';
+    } else if (select.value === 'custom') {
+      nameInput.value = '';
+      vehicleInput.value = '';
+      manualFields.style.display = 'block';
+      nameInput.focus();
+    } else {
+      nameInput.value = selectedOption.getAttribute('data-name');
+      vehicleInput.value = selectedOption.getAttribute('data-vehicle');
+      manualFields.style.display = 'block';
+    }
+  }
+
   // Restore and save driver details from/to localStorage
   document.addEventListener('DOMContentLoaded', () => {
-    const savedName = localStorage.getItem('lastDriverName');
-    const savedVehicle = localStorage.getItem('lastDriverVehicle');
-    if (savedName) {
-      document.getElementById('driverName').value = savedName;
-    }
-    if (savedVehicle) {
-      document.getElementById('driverVehicle').value = savedVehicle;
+    const savedSelect = localStorage.getItem('lastDriverSelect');
+    if (savedSelect) {
+      const select = document.getElementById('driverSelect');
+      select.value = savedSelect;
+      onDriverSelectChange();
+    } else {
+      const savedName = localStorage.getItem('lastDriverName');
+      const savedVehicle = localStorage.getItem('lastDriverVehicle');
+      if (savedName) {
+        document.getElementById('driverName').value = savedName;
+      }
+      if (savedVehicle) {
+        document.getElementById('driverVehicle').value = savedVehicle;
+      }
     }
 
     const form = document.getElementById('dispatch-form');
     if (form) {
       form.addEventListener('submit', () => {
+        const selectVal = document.getElementById('driverSelect').value;
         const nameVal = document.getElementById('driverName').value;
         const vehicleVal = document.getElementById('driverVehicle').value;
+        localStorage.setItem('lastDriverSelect', selectVal);
         localStorage.setItem('lastDriverName', nameVal);
         localStorage.setItem('lastDriverVehicle', vehicleVal);
       });

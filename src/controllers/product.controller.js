@@ -3,6 +3,7 @@ const Category = require('../models/Category');
 const Order = require('../models/Order');
 const Partner = require('../models/Partner');
 const RaffleParticipant = require('../models/RaffleParticipant');
+const Driver = require('../models/Driver');
 const { uploadImage } = require('../services/firebase.service');
 const formatPrice = require('../utils/formatPrice');
 const PDFDocument = require('pdfkit');
@@ -918,15 +919,56 @@ const getAdminRoutes = async (req, res, next) => {
       status: { $nin: ['shipped', 'delivered', 'cancelled'] }
     }).populate('user').sort({ createdAt: -1 });
 
+    // Get drivers list
+    const drivers = await Driver.find({}).sort({ name: 1 });
+
+    // Get dispatch history (shipped or delivered orders)
+    const dispatchedOrders = await Order.find({
+      deliveryType: 'delivery',
+      status: { $in: ['shipped', 'delivered'] }
+    }).populate('user').sort({ dispatchedAt: -1 });
+
     res.render('pages/admin-routes', {
       title: 'Trazado de Rutas de Entrega',
       orders,
+      drivers,
+      dispatchedOrders,
       formatPrice,
       success: req.query.success || null,
       error: req.query.error || null
     });
   } catch (error) {
     next(error);
+  }
+};
+
+// POST Create Driver (Admin Only)
+const createDriver = async (req, res, next) => {
+  try {
+    const { name, vehicle } = req.body;
+    if (!name || !vehicle) {
+      return res.redirect('/admin/routes?error=' + encodeURIComponent('El nombre y los datos del vehículo son obligatorios.'));
+    }
+
+    const driver = new Driver({ name, vehicle });
+    await driver.save();
+
+    res.redirect('/admin/routes?success=' + encodeURIComponent(`Conductor ${name} registrado exitosamente.`));
+  } catch (error) {
+    console.error('Create driver error:', error.message);
+    res.redirect('/admin/routes?error=' + encodeURIComponent('Error al registrar el conductor: ' + error.message));
+  }
+};
+
+// POST Delete Driver (Admin Only)
+const deleteDriver = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    await Driver.findByIdAndDelete(id);
+    res.redirect('/admin/routes?success=' + encodeURIComponent('Conductor eliminado exitosamente.'));
+  } catch (error) {
+    console.error('Delete driver error:', error.message);
+    res.redirect('/admin/routes?error=' + encodeURIComponent('Error al eliminar el conductor: ' + error.message));
   }
 };
 
@@ -977,5 +1019,7 @@ module.exports = {
   markOrderAsPaid,
   updateOrderStatus,
   getAdminRoutes,
-  dispatchRoute
+  dispatchRoute,
+  createDriver,
+  deleteDriver
 };
