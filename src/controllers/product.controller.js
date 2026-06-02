@@ -4,6 +4,7 @@ const Order = require('../models/Order');
 const Partner = require('../models/Partner');
 const RaffleParticipant = require('../models/RaffleParticipant');
 const Driver = require('../models/Driver');
+const Withdrawal = require('../models/Withdrawal');
 const { uploadImage } = require('../services/firebase.service');
 const formatPrice = require('../utils/formatPrice');
 const PDFDocument = require('pdfkit');
@@ -115,12 +116,18 @@ const getProductBySlug = async (req, res, next) => {
 // GET Admin Dashboard Panel
 const getAdminPanel = async (req, res, next) => {
   try {
-    const products = await Product.find({}).populate('category').sort({ createdAt: -1 });
+    const products = await Product.find({}).populate('category').populate('partner').sort({ createdAt: -1 });
     const categories = await Category.find({});
     // Load orders with populated user info
     const orders = await Order.find({}).populate('user').sort({ createdAt: -1 });
-    const partners = await Partner.find({}).sort({ createdAt: -1 });
+    const partners = await Partner.find({}).populate('assignedDriver').sort({ createdAt: -1 });
     const raffleCount = await RaffleParticipant.countDocuments({});
+    
+    // Load all partner withdrawals
+    const withdrawals = await Withdrawal.find({}).populate('partner').sort({ createdAt: -1 });
+
+    // Load global drivers to assign to partners
+    const drivers = await Driver.find({ partner: null }).sort({ name: 1 });
 
     res.render('pages/admin', {
       title: 'Panel de Control',
@@ -128,6 +135,8 @@ const getAdminPanel = async (req, res, next) => {
       categories,
       orders,
       partners,
+      withdrawals,
+      drivers,
       raffleCount,
       formatPrice,
       success: req.query.success || null,
@@ -610,10 +619,16 @@ const generatePDFTicket = async (req, res, next) => {
 // POST Create Partner/Affiliate Action (Admin Only)
 const createPartner = async (req, res, next) => {
   try {
-    const { name, type, website } = req.body;
+    const { name, type, website, email, password, phone, address } = req.body;
     
-    if (!name || !req.file) {
-      return res.redirect('/admin?error=' + encodeURIComponent('El nombre y el logo son campos obligatorios.'));
+    if (!name || !email || !password || !req.file) {
+      return res.redirect('/admin?error=' + encodeURIComponent('El nombre, correo, contraseña y logo son campos obligatorios.'));
+    }
+
+    // Check if email already exists
+    const existing = await Partner.findOne({ email: email.toLowerCase().trim() });
+    if (existing) {
+      return res.redirect('/admin?error=' + encodeURIComponent('Ya existe un socio registrado con ese correo electrónico.'));
     }
 
     // Upload logo image to Firebase
@@ -627,6 +642,10 @@ const createPartner = async (req, res, next) => {
       type,
       website: website || '',
       logo: logoUrl,
+      email: email.toLowerCase().trim(),
+      password, // Will be hashed via PartnerSchema pre('save') hook
+      phone: phone || '',
+      address: address || '',
       active: true
     });
 
@@ -649,6 +668,31 @@ const deletePartner = async (req, res, next) => {
     res.redirect('/admin?success=' + encodeURIComponent('Socio/Afiliado eliminado exitosamente.'));
   } catch (error) {
     res.redirect('/admin?error=' + encodeURIComponent('Error al eliminar el socio/afiliado: ' + error.message));
+  }
+};
+
+// POST Assign Driver to Partner (Admin Only)
+const assignDriverToPartner = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { driverId } = req.body;
+
+    const partner = await Partner.findById(id);
+    if (!partner) {
+      return res.redirect('/admin?error=' + encodeURIComponent('Socio/Afiliado no encontrado.'));
+    }
+
+    if (!driverId || driverId.trim() === '') {
+      partner.assignedDriver = null;
+    } else {
+      partner.assignedDriver = driverId;
+    }
+
+    await partner.save();
+    res.redirect('/admin?success=' + encodeURIComponent(`Conductor asignado correctamente a ${partner.name}.`));
+  } catch (error) {
+    console.error('Assign driver to partner error:', error.message);
+    res.redirect('/admin?error=' + encodeURIComponent('Error al asignar el conductor: ' + error.message));
   }
 };
 
@@ -999,7 +1043,7 @@ const getAdminRoutes = async (req, res, next) => {
 // GET Admin Drivers Management Page
 const getAdminDrivers = async (req, res, next) => {
   try {
-    const drivers = await Driver.find({}).sort({ name: 1 });
+    const drivers = await Driver.find({}).populate('partner').sort({ name: 1 });
     res.render('pages/admin-drivers', {
       title: 'Gestión de Conductores',
       drivers,
@@ -1269,6 +1313,33 @@ const generatePriceListPDF = async (req, res, next) => {
   }
 };
 
+// POST Admin Update Partner Withdrawal Status (Approve/Reject)
+const updateWithdrawalStatus = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { status, notes } = req.body;
+
+    if (!['approved', 'rejected'].includes(status)) {
+      return res.redirect('/admin?error=' + encodeURIComponent('Estado de retiro no válido.'));
+    }
+
+    const withdrawal = await Withdrawal.findById(id);
+    if (!withdrawal) {
+      return res.redirect('/admin?error=' + encodeURIComponent('Solicitud de retiro no encontrada.'));
+    }
+
+    withdrawal.status = status;
+    withdrawal.notes = (notes || '').trim();
+    withdrawal.processedAt = new Date();
+    await withdrawal.save();
+
+    res.redirect('/admin?success=' + encodeURIComponent(`Solicitud de retiro actualizada a [${status === 'approved' ? 'Aprobada/Pagada' : 'Rechazada'}] con éxito.`));
+  } catch (error) {
+    console.error('Update withdrawal status error:', error.message);
+    res.redirect('/admin?error=' + encodeURIComponent('Error al actualizar el estado del retiro: ' + error.message));
+  }
+};
+
 module.exports = {
   getProducts,
   getProductBySlug,
@@ -1284,6 +1355,7 @@ module.exports = {
   generatePDFTicket,
   createPartner,
   deletePartner,
+  assignDriverToPartner,
   generateOrdersSummaryPDF,
   markOrderAsPaid,
   updateOrderStatus,
@@ -1294,5 +1366,6 @@ module.exports = {
   deleteDriver,
   deleteOrder,
   deleteAllOrders,
-  generatePriceListPDF
+  generatePriceListPDF,
+  updateWithdrawalStatus
 };

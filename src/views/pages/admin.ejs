@@ -63,6 +63,14 @@
         <i class="fa-solid fa-user-plus mr-1.5 text-xs"></i>
         Nuevo Socio/Afiliado
       </button>
+      <button onclick="switchTab('withdrawals-tab', this)" class="tab-btn pb-4 border-b-2 border-transparent text-slate-400 hover:text-slate-600 flex items-center gap-1">
+        <i class="fa-solid fa-money-bill-transfer text-xs text-amber-500"></i>
+        Retiros de Socios
+        <% const pendingWithdrawalsCount = withdrawals.filter(w => w.status === 'pending').length; %>
+        <% if (pendingWithdrawalsCount > 0) { %>
+          <span class="ml-1 bg-amber-150 text-amber-800 text-[10px] px-2 py-0.5 rounded-full font-bold"><%= pendingWithdrawalsCount %></span>
+        <% } %>
+      </button>
       <button onclick="switchTab('raffle-tab', this)" class="tab-btn pb-4 border-b-2 border-transparent text-slate-400 hover:text-slate-600">
         <i class="fa-solid fa-gift mr-1.5 text-xs"></i>
         Sorteos
@@ -150,7 +158,14 @@
                         </div>
                         <div>
                           <p class="font-bold text-slate-800 line-clamp-1"><%= prod.title %></p>
-                          <p class="text-[10px] text-slate-400">Venta por <%= prod.unit %></p>
+                          <div class="flex items-center gap-1.5 flex-wrap mt-0.5">
+                            <span class="text-[10px] text-slate-400">Venta por <%= prod.unit %></span>
+                            <% if (prod.partner) { %>
+                              <span class="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold bg-indigo-50 text-indigo-750 border border-indigo-100 uppercase">
+                                Socio: <%= prod.partner.name %>
+                              </span>
+                            <% } %>
+                          </div>
                         </div>
                       </div>
                     </td>
@@ -604,6 +619,7 @@
                 <th class="px-6 py-4">Nombre</th>
                 <th class="px-6 py-4">Tipo</th>
                 <th class="px-6 py-4">Enlace Web</th>
+                <th class="px-6 py-4">Conductor Asignado</th>
                 <th class="px-6 py-4 text-center">Acciones</th>
               </tr>
             </thead>
@@ -632,6 +648,19 @@
                         <span class="text-slate-400 font-sans">Sin enlace</span>
                       <% } %>
                     </td>
+                    <td class="px-6 py-4">
+                      <form action="/admin/partners/<%= partner._id %>/assign-driver" method="POST" class="flex items-center gap-1.5">
+                        <select name="driverId" onchange="this.form.submit()" 
+                          class="bg-slate-50 border border-slate-200 text-slate-800 text-xs px-2.5 py-1.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all font-medium">
+                          <option value="">Sin conductor</option>
+                          <% drivers.forEach(d => { %>
+                            <option value="<%= d._id %>" <%= partner.assignedDriver && partner.assignedDriver._id.toString() === d._id.toString() ? 'selected' : '' %>>
+                              <%= d.name %> (<%= d.vehicle %>)
+                            </option>
+                          <% }); %>
+                        </select>
+                      </form>
+                    </td>
                     <td class="px-6 py-4 text-center">
                       <form action="/admin/partners/<%= partner._id %>/delete" method="POST" class="inline" onsubmit="return confirm('¿Estás seguro de que deseas eliminar este socio/afiliado?')">
                         <button type="submit" class="px-3 py-1.5 rounded-xl border border-red-100 hover:bg-red-50 text-red-600 text-xs font-bold transition-all">
@@ -643,7 +672,7 @@
                 <% }); %>
               <% } else { %>
                 <tr>
-                  <td colspan="5" class="px-6 py-12 text-center text-slate-400">
+                  <td colspan="6" class="px-6 py-12 text-center text-slate-400">
                     No se registran socios ni afiliados activos.
                   </td>
                 </tr>
@@ -677,6 +706,38 @@
                 <option value="socio">Socio Comercial / Sponsor</option>
                 <option value="afiliado">Afiliado / Proveedor Oficial</option>
               </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Email -->
+            <div>
+              <label for="partner-email" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Correo Electrónico (Para Login) *</label>
+              <input type="email" id="partner-email" name="email" required placeholder="socio@ejemplo.com"
+                class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-sm">
+            </div>
+
+            <!-- Password -->
+            <div>
+              <label for="partner-password" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Contraseña *</label>
+              <input type="password" id="partner-password" name="password" required placeholder="******"
+                class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-sm">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Phone -->
+            <div>
+              <label for="partner-phone" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Teléfono de Contacto</label>
+              <input type="text" id="partner-phone" name="phone" placeholder="Ej: +54 11 1234-5678"
+                class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-sm">
+            </div>
+
+            <!-- Address -->
+            <div>
+              <label for="partner-address" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Dirección / Ubicación</label>
+              <input type="text" id="partner-address" name="address" placeholder="Ej: Av. Rivadavia 1234, CABA"
+                class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-sm">
             </div>
           </div>
 
@@ -770,6 +831,124 @@
 
           </div>
 
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Tab 7: Retiros de Socios Panel -->
+    <div id="withdrawals-tab" class="tab-panel hidden space-y-6">
+      <div class="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
+        
+        <div class="px-6 py-5 border-b border-slate-100 bg-slate-50/50">
+          <h2 class="text-base font-bold text-slate-800">Solicitudes de Retiro de Socios</h2>
+          <p class="text-xs text-slate-400">Verifica los datos bancarios y procesa los pagos. El registro de transferencia es manual y debe actualizarse aquí una vez realizado.</p>
+        </div>
+
+        <div class="overflow-x-auto custom-scrollbar">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold">
+                <th class="px-6 py-3.5">Socio Comercial</th>
+                <th class="px-6 py-3.5">Fecha de Solicitud</th>
+                <th class="px-6 py-3.5">Coordenadas Bancarias</th>
+                <th class="px-6 py-3.5">Monto Solicitado</th>
+                <th class="px-6 py-3.5">Estado actual</th>
+                <th class="px-6 py-3.5 text-center">Acción / Comprobante</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <% if (withdrawals && withdrawals.length > 0) { %>
+                <% withdrawals.forEach(w => { %>
+                  <tr class="hover:bg-slate-50/20 transition-colors">
+                    
+                    <!-- Partner info -->
+                    <td class="px-6 py-4">
+                      <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-lg bg-slate-150 border border-slate-200 p-1 flex items-center justify-center overflow-hidden flex-shrink-0">
+                          <img src="<%= w.partner?.logo || '/img/placeholder-logo.png' %>" alt="" class="w-full h-full object-contain">
+                        </div>
+                        <div>
+                          <div class="font-bold text-slate-800 text-xs"><%= w.partner?.name || 'Socio Desconocido' %></div>
+                          <div class="text-[10px] text-slate-400"><%= w.partner?.email || 'N/A' %></div>
+                        </div>
+                      </div>
+                    </td>
+
+                    <!-- Request Date -->
+                    <td class="px-6 py-4 text-slate-500">
+                      <div><%= new Date(w.createdAt).toLocaleDateString('es-AR') %></div>
+                      <div class="text-[9px] text-slate-400 mt-0.5"><%= new Date(w.createdAt).toLocaleTimeString('es-AR', {hour: '2-digit', minute:'2-digit'}) %></div>
+                    </td>
+
+                    <!-- Bank details -->
+                    <td class="px-6 py-4">
+                      <div class="font-semibold text-slate-700"><%= w.bankName || 'Banco/Virtual' %></div>
+                      <div class="text-[10px] text-slate-450">Alias: <span class="font-mono text-slate-650 select-all"><%= w.alias %></span></div>
+                      <div class="text-[10px] text-slate-455">CBU: <span class="font-mono text-slate-700 select-all"><%= w.cbu %></span></div>
+                    </td>
+
+                    <!-- Amount -->
+                    <td class="px-6 py-4 font-black text-slate-800 text-sm">
+                      <%= formatPrice(w.amount) %>
+                    </td>
+
+                    <!-- Status -->
+                    <td class="px-6 py-4">
+                      <% if (w.status === 'approved') { %>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-100 uppercase">
+                          Pagado
+                        </span>
+                        <% if (w.processedAt) { %>
+                          <div class="text-[8px] text-slate-400 mt-1">Proc: <%= new Date(w.processedAt).toLocaleDateString('es-AR') %></div>
+                        <% } %>
+                      <% } else if (w.status === 'rejected') { %>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-rose-50 text-rose-700 border border-rose-100 uppercase">
+                          Rechazado
+                        </span>
+                      <% } else { %>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-amber-50 text-amber-700 border border-amber-100 uppercase">
+                          Pendiente
+                        </span>
+                      <% } %>
+                    </td>
+
+                    <!-- Actions -->
+                    <td class="px-6 py-4">
+                      <% if (w.status === 'pending') { %>
+                        <form action="/admin/withdrawals/<%= w._id %>/status" method="POST" class="flex flex-col gap-2 max-w-[220px] mx-auto" onsubmit="return confirm('¿Seguro desea confirmar la actualización de estado para esta solicitud de retiro?');">
+                          <input type="text" name="notes" placeholder="Notas/Comprobante de Pago (opcional)" 
+                            class="bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-2 py-1.5 rounded-lg outline-none text-[10px]">
+                          
+                          <div class="flex gap-1">
+                            <button type="submit" name="status" value="approved"
+                              class="flex-1 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[9px] transition-all text-center">
+                              Aprobar y Pagar
+                            </button>
+                            <button type="submit" name="status" value="rejected"
+                              class="flex-1 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200/50 font-bold text-[9px] transition-all text-center">
+                              Rechazar
+                            </button>
+                          </div>
+                        </form>
+                      <% } else { %>
+                        <div class="text-center text-[10px] text-slate-450 italic">
+                          <%= w.notes || 'Completado sin notas' %>
+                        </div>
+                      <% } %>
+                    </td>
+
+                  </tr>
+                <% }); %>
+              <% } else { %>
+                <tr>
+                  <td colspan="6" class="px-6 py-12 text-center text-slate-400">
+                    No hay solicitudes de retiro registradas por el momento.
+                  </td>
+                </tr>
+              <% } %>
+            </tbody>
+          </table>
         </div>
 
       </div>

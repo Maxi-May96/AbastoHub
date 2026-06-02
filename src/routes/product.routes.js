@@ -34,5 +34,7 @@ router.post('/admin/drivers/:id/delete', isAuthenticated, isAdmin, productContro
 // Admin partner management routes
 router.post('/admin/partners', isAuthenticated, isAdmin, upload.single('logo'), productController.createPartner);
 router.post('/admin/partners/:id/delete', isAuthenticated, isAdmin, productController.deletePartner);
+router.post('/admin/partners/:id/assign-driver', isAuthenticated, isAdmin, productController.assignDriverToPartner);
+router.post('/admin/withdrawals/:id/status', isAuthenticated, isAdmin, productController.updateWithdrawalStatus);
 
 module.exports = router;

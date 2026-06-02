@@ -42,6 +42,11 @@ const ProductSchema = new mongoose.Schema({
     ref: 'Category',
     required: [true, 'La categoría es obligatoria']
   },
+  partner: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Partner',
+    default: null
+  },
   unit: {
     type: String,
     default: 'unidades', // e.g. "kg", "unidades", "cajón"

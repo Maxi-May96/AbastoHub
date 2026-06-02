@@ -17,6 +17,11 @@ const DriverSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  partner: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Partner',
+    default: null
+  },
   createdAt: {
     type: Date,
     default: Date.now

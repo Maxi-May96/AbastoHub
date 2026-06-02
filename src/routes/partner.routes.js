@@ -1,0 +1,30 @@
+const express = require('express');
+const router = express.Router();
+const partnerController = require('../controllers/partner.controller');
+const { isPartnerAuthenticated } = require('../middlewares/auth.middleware');
+const upload = require('../middlewares/upload.middleware');
+
+// Public Partner Portal Login
+router.get('/partner/login', partnerController.getLogin);
+router.post('/partner/login', partnerController.postLogin);
+router.get('/partner/logout', partnerController.getLogout);
+
+// Protected Partner Portal routes
+router.get('/partner/panel', isPartnerAuthenticated, partnerController.getPanel);
+router.post('/partner/products', isPartnerAuthenticated, upload.array('images', 3), partnerController.createProduct);
+router.post('/partner/products/:id/stock', isPartnerAuthenticated, partnerController.updateStock);
+router.post('/partner/products/:id/price', isPartnerAuthenticated, partnerController.updatePrice);
+router.post('/partner/products/:id/edit', isPartnerAuthenticated, partnerController.updateProductDetails);
+router.post('/partner/products/:id/delete', isPartnerAuthenticated, partnerController.deleteProduct);
+
+// Accounting & Payouts
+router.post('/partner/bank-details', isPartnerAuthenticated, partnerController.updateBankDetails);
+router.post('/partner/withdraw', isPartnerAuthenticated, partnerController.requestWithdrawal);
+
+// Partner Driver Management
+router.post('/partner/drivers', isPartnerAuthenticated, partnerController.createPartnerDriver);
+router.post('/partner/drivers/:id/delete', isPartnerAuthenticated, partnerController.deletePartnerDriver);
+router.post('/partner/orders/:id/assign-driver', isPartnerAuthenticated, partnerController.assignDriverToOrder);
+router.post('/partner/orders/dispatch-route', isPartnerAuthenticated, partnerController.dispatchPartnerRoute);
+
+module.exports = router;

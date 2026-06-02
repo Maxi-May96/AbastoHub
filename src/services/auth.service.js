@@ -28,6 +28,19 @@ const generateDriverToken = (driver) => {
   );
 };
 
+const generatePartnerToken = (partner) => {
+  return jwt.sign(
+    { 
+      id: partner._id, 
+      name: partner.name,
+      email: partner.email,
+      role: 'partner'
+    },
+    env.jwtSecret,
+    { expiresIn: '30d' }
+  );
+};
+
 const verifyToken = (token) => {
   try {
     return jwt.verify(token, env.jwtSecret);
@@ -39,5 +52,6 @@ const verifyToken = (token) => {
 module.exports = {
   generateToken,
   generateDriverToken,
+  generatePartnerToken,
   verifyToken
 };

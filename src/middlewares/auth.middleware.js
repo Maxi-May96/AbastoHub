@@ -5,11 +5,14 @@ const Cart = require('../models/Cart');
 const loadUserSession = async (req, res, next) => {
   const token = req.cookies.token;
   const driverToken = req.cookies.driverToken;
+  const partnerToken = req.cookies.partnerToken;
   res.locals.user = null;
   res.locals.driver = null;
+  res.locals.partner = null;
   res.locals.cartCount = 0;
   req.user = null;
   req.driver = null;
+  req.partner = null;
 
   // Set default absolute URL helpers and Open Graph metadata for social sharing
   const protocol = req.protocol;
@@ -53,6 +56,17 @@ const loadUserSession = async (req, res, next) => {
       res.clearCookie('driverToken');
     }
   }
+
+  if (partnerToken) {
+    const decoded = verifyToken(partnerToken);
+    if (decoded && decoded.role === 'partner') {
+      req.partner = decoded;
+      res.locals.partner = decoded;
+    } else {
+      // Clear invalid cookie
+      res.clearCookie('partnerToken');
+    }
+  }
   
   next();
 };
@@ -75,6 +89,14 @@ const isDriverAuthenticated = (req, res, next) => {
   next();
 };
 
+// Check if partner is authenticated
+const isPartnerAuthenticated = (req, res, next) => {
+  if (!req.partner) {
+    return res.redirect('/partner/login');
+  }
+  next();
+};
+
 // Check if user has admin role
 const isAdmin = (req, res, next) => {
   if (!req.user || req.user.role !== 'admin') {
@@ -91,5 +113,6 @@ module.exports = {
   loadUserSession,
   isAuthenticated,
   isDriverAuthenticated,
+  isPartnerAuthenticated,
   isAdmin
 };

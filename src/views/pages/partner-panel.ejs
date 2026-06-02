@@ -1,0 +1,1032 @@
+<%- include('../partials/header') %>
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+  <!-- Header Card -->
+  <div class="bg-gradient-to-r from-emerald-800 to-emerald-650 rounded-3xl p-6 sm:p-8 text-white shadow-xl shadow-emerald-950/10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+    <div class="flex items-center gap-4">
+      <div class="w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center p-2 border border-white/20">
+        <img src="<%= partner.logo %>" alt="<%= partner.name %>" class="w-full h-full object-contain">
+      </div>
+      <div>
+        <span class="text-[10px] font-bold uppercase tracking-widest text-emerald-200 bg-emerald-900/40 px-2.5 py-1 rounded-full border border-emerald-500/20">Portal de Socio</span>
+        <h1 class="display-font text-2xl sm:text-3xl font-extrabold tracking-tight mt-1"><%= partner.name %></h1>
+        <p class="text-xs text-emerald-100/80 mt-1">Gestiona tu stock y precios. Logística a cargo de AbastoHub.</p>
+      </div>
+    </div>
+    
+    <div class="flex items-center gap-3">
+      <a href="/partner/logout" class="px-4 py-2 sm:py-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 text-xs font-bold transition-all flex items-center gap-2">
+        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+        <span>Cerrar Sesión</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Alerts -->
+  <% if (locals.success || success) { %>
+    <div class="bg-emerald-50 border border-emerald-250 text-emerald-800 px-5 py-4 rounded-2xl text-xs sm:text-sm flex items-center gap-3 shadow-sm">
+      <i class="fa-solid fa-circle-check text-emerald-600 text-lg"></i>
+      <span><%= success %></span>
+    </div>
+  <% } %>
+
+  <% if (locals.error || error) { %>
+    <div class="bg-rose-50 border border-rose-250 text-rose-800 px-5 py-4 rounded-2xl text-xs sm:text-sm flex items-center gap-3 shadow-sm">
+      <i class="fa-solid fa-circle-exclamation text-rose-600 text-lg"></i>
+      <span><%= error %></span>
+    </div>
+  <% } %>
+
+  <!-- Summary Dashboard Cards -->
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+    <div class="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm flex items-center gap-4">
+      <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-650 flex items-center justify-center text-lg">
+        <i class="fa-solid fa-box"></i>
+      </div>
+      <div>
+        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Productos</p>
+        <p class="text-xl font-extrabold text-slate-800"><%= totalProducts %></p>
+      </div>
+    </div>
+
+    <div class="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm flex items-center gap-4">
+      <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg">
+        <i class="fa-solid fa-circle-check"></i>
+      </div>
+      <div>
+        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Productos Activos</p>
+        <p class="text-xl font-extrabold text-slate-800"><%= activeProducts %></p>
+      </div>
+    </div>
+
+    <div class="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm flex items-center gap-4">
+      <div class="w-12 h-12 rounded-xl bg-rose-50 text-rose-650 flex items-center justify-center text-lg">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+      </div>
+      <div>
+        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Sin Stock (Agotados)</p>
+        <p class="text-xl font-extrabold text-slate-800"><%= outOfStockProducts %></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navigation Tab Bar -->
+  <div class="border-b border-slate-250 flex gap-6 text-sm">
+    <button onclick="switchTab('products-list-tab', this)" 
+      class="tab-btn pb-4 border-b-2 border-brand-650 text-brand-650 font-bold transition-all">
+      <i class="fa-solid fa-list mr-1"></i> Tus Productos
+    </button>
+    <button onclick="switchTab('orders-tab', this)" 
+      class="tab-btn pb-4 border-b-2 border-transparent text-slate-400 hover:text-slate-650 transition-all flex items-center gap-1.5">
+      <i class="fa-solid fa-cart-shopping"></i> Pedidos Asignados
+      <% if (orders && orders.length > 0) { %>
+        <span class="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-750 border border-indigo-150">
+          <%= orders.length %>
+        </span>
+      <% } %>
+    </button>
+    <button onclick="switchTab('accounting-tab', this)" 
+      class="tab-btn pb-4 border-b-2 border-transparent text-slate-400 hover:text-slate-650 transition-all flex items-center gap-1.5">
+      <i class="fa-solid fa-calculator"></i> Contabilidad y Retiros
+    </button>
+    <button onclick="switchTab('drivers-tab', this)" 
+      class="tab-btn pb-4 border-b-2 border-transparent text-slate-400 hover:text-slate-650 transition-all flex items-center gap-1.5">
+      <i class="fa-solid fa-truck"></i> Conductores
+      <% if (partnerDrivers && partnerDrivers.length > 0) { %>
+        <span class="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-750 border border-indigo-150">
+          <%= partnerDrivers.length %>
+        </span>
+      <% } %>
+    </button>
+    <button onclick="switchTab('new-product-tab', this)" 
+      class="tab-btn pb-4 border-b-2 border-transparent text-slate-400 hover:text-slate-650 transition-all">
+      <i class="fa-solid fa-circle-plus mr-1"></i> Agregar Producto
+    </button>
+  </div>
+
+  <!-- Panels container -->
+  <div class="space-y-6">
+
+    <!-- Tab 1: Products list -->
+    <div id="products-list-tab" class="tab-panel space-y-6">
+      <div class="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
+        
+        <div class="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-base font-bold text-slate-800">Catálogo de Productos</h2>
+            <p class="text-xs text-slate-400">Edita stock, modifica precios y administra tu catálogo de socio comercial.</p>
+          </div>
+          
+          <div class="relative">
+            <input type="text" id="partner-search-input" onkeyup="filterPartnerProducts()" placeholder="Buscar producto..." 
+              class="bg-white border border-slate-200 focus:border-brand-500/40 text-slate-800 placeholder-slate-400 px-3.5 py-1.5 pl-8 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-xs w-48">
+            <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[10px]"></i>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto custom-scrollbar">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-50 border-b border-slate-250 text-slate-500 font-semibold text-xs">
+                <th class="px-6 py-4">Imagen y Nombre</th>
+                <th class="px-6 py-4">Categoría / Unidad</th>
+                <th class="px-6 py-4 text-center">Stock</th>
+                <th class="px-6 py-4">Precios (Minorista y Mayorista)</th>
+                <th class="px-6 py-4 text-center">Acciones</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100" id="products-table-body">
+              <% if (products && products.length > 0) { %>
+                <% products.forEach(prod => { %>
+                  <tr class="hover:bg-slate-50/30 transition-colors product-row" data-title="<%= prod.title.toLowerCase() %>">
+                    
+                    <!-- Title & Image -->
+                    <td class="px-6 py-4">
+                      <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center p-1.5 overflow-hidden flex-shrink-0">
+                          <img src="<%= prod.images[0] %>" alt="<%= prod.title %>" class="w-full h-full object-contain">
+                        </div>
+                        <div>
+                          <div class="font-bold text-slate-800 text-xs sm:text-sm"><%= prod.title %></div>
+                          <div class="text-[10px] text-slate-400 mt-0.5 line-clamp-1 max-w-[240px]" title="<%= prod.description %>">
+                            <%= prod.description || 'Sin descripción' %>
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+
+                    <!-- Category & Unit -->
+                    <td class="px-6 py-4">
+                      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                        <%= prod.category ? prod.category.name : 'General' %>
+                      </span>
+                      <div class="text-[10px] text-slate-400 mt-1">Unidad: <span class="font-semibold text-slate-500"><%= prod.unit %></span></div>
+                    </td>
+
+                    <!-- Stock Inline Editor -->
+                    <td class="px-6 py-4 text-center">
+                      <form action="/partner/products/<%= prod._id %>/stock" method="POST" class="inline-flex items-center justify-center gap-1.5">
+                        <input type="number" name="stock" value="<%= prod.stock %>" min="0" required
+                          class="w-14 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 font-bold px-2 py-1 text-xs text-center outline-none focus:border-brand-500/40 focus:bg-white focus:ring-4 focus:ring-brand-500/10">
+                        <button type="submit" class="p-1 rounded-md text-slate-400 hover:text-brand-650 hover:bg-slate-100 transition-all" title="Guardar stock">
+                          <i class="fa-solid fa-floppy-disk text-sm"></i>
+                        </button>
+                      </form>
+                    </td>
+
+                    <!-- Pricing Inline Editor -->
+                    <td class="px-6 py-4">
+                      <form action="/partner/products/<%= prod._id %>/price" method="POST" class="flex flex-col gap-1.5 max-w-[170px]">
+                        <div class="flex items-center gap-1">
+                          <span class="text-[10px] text-slate-400 font-bold w-10">Minor:</span>
+                          <input type="number" name="price" value="<%= prod.price %>" min="0" step="any" required
+                            class="w-20 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 font-bold px-1.5 py-0.5 text-xs outline-none focus:border-brand-500/40 focus:bg-white focus:ring-4 focus:ring-brand-500/10">
+                        </div>
+                        <div class="flex items-center gap-1">
+                          <span class="text-[10px] text-slate-400 font-bold w-10">Mayor:</span>
+                          <input type="number" name="wholesalePrice" value="<%= prod.wholesalePrice %>" min="0" step="any" required
+                            class="w-20 bg-slate-50 border border-slate-200 rounded-lg text-slate-850 font-bold px-1.5 py-0.5 text-xs outline-none focus:border-brand-500/40 focus:bg-white focus:ring-4 focus:ring-brand-500/10">
+                          <button type="submit" class="p-1 rounded-md text-slate-400 hover:text-brand-650 hover:bg-slate-100 transition-all ml-1" title="Guardar precios">
+                            <i class="fa-solid fa-floppy-disk text-sm"></i>
+                          </button>
+                        </div>
+                      </form>
+                    </td>
+
+                    <!-- Actions -->
+                    <td class="px-6 py-4 text-center">
+                      <div class="flex items-center justify-center gap-2 flex-wrap">
+                        <button type="button" 
+                                data-id="<%= prod._id %>"
+                                data-title="<%= prod.title %>"
+                                data-description="<%= prod.description || '' %>"
+                                data-category="<%= prod.category ? prod.category._id : '' %>"
+                                onclick="triggerEditProduct(this)"
+                                class="px-3 py-1.5 rounded-xl border border-indigo-100 hover:bg-indigo-50 text-indigo-650 text-xs font-bold transition-all flex items-center gap-1" 
+                                title="Editar Nombre, Descripción y Categoría">
+                          <i class="fa-solid fa-pen-to-square text-[10px]"></i>Editar
+                        </button>
+                        
+                        <form action="/partner/products/<%= prod._id %>/delete" method="POST" class="inline" onsubmit="return confirm('¿Seguro deseas eliminar este producto por completo?');">
+                          <button type="submit" class="px-3 py-1.5 rounded-xl border border-rose-100 hover:bg-rose-50 text-rose-600 text-xs font-bold transition-all">
+                            <i class="fa-solid fa-trash-can mr-1"></i>Eliminar
+                          </button>
+                        </form>
+                      </div>
+                    </td>
+
+                  </tr>
+                <% }); %>
+              <% } else { %>
+                <tr>
+                  <td colspan="5" class="px-6 py-12 text-center text-slate-450">
+                    No posees productos en tu catálogo actualmente. ¡Crea el primero usando la pestaña de agregar!
+                  </td>
+                </tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Tab: Orders list -->
+    <div id="orders-tab" class="tab-panel hidden space-y-6">
+      <div class="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
+        
+        <div class="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-base font-bold text-slate-800">Pedidos de Clientes</h2>
+            <p class="text-xs text-slate-400">Visualiza las órdenes de compra asignadas que contienen tus productos y prepara su inventario.</p>
+          </div>
+          
+          <div class="relative">
+            <input type="text" id="partner-orders-search" onkeyup="filterPartnerOrders()" placeholder="Buscar pedido o cliente..." 
+              class="bg-white border border-slate-200 focus:border-brand-500/40 text-slate-800 placeholder-slate-400 px-3.5 py-1.5 pl-8 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-xs w-56">
+            <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[10px]"></i>
+          </div>
+        </div>
+
+        <!-- Bulk Dispatch/Routing Bar -->
+        <div id="bulk-dispatch-bar" class="hidden mx-6 my-4 bg-indigo-50 border border-indigo-150 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all">
+          <div class="flex items-center gap-2.5">
+            <div class="relative flex h-2 w-2">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2 w-2 bg-indigo-650"></span>
+            </div>
+            <span class="text-xs font-bold text-indigo-900" id="selected-orders-count">0 pedidos seleccionados para ruta</span>
+          </div>
+          <form action="/partner/orders/dispatch-route" method="POST" class="flex flex-wrap items-center gap-2" onsubmit="return confirm('¿Seguro desea despachar la ruta con los pedidos seleccionados?');">
+            <input type="hidden" name="orderIds" id="bulk-order-ids" value="">
+            <select name="driverId" required class="bg-white border border-indigo-200 text-slate-800 text-[11px] px-3 py-2 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all font-semibold">
+              <option value="">Seleccionar Conductor para la Ruta</option>
+              <% if (assignedDriver) { %>
+                <option value="<%= assignedDriver._id %>"><%= assignedDriver.name %> (Asignado)</option>
+              <% } %>
+              <% partnerDrivers.forEach(d => { %>
+                <option value="<%= d._id %>"><%= d.name %> (Propio)</option>
+              <% }); %>
+            </select>
+            <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[11px] px-4 py-2 rounded-xl transition-all shadow-sm flex items-center gap-1.5">
+              <i class="fa-solid fa-paper-plane text-[9px]"></i> Despachar Ruta
+            </button>
+          </form>
+        </div>
+
+        <div class="overflow-x-auto custom-scrollbar">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-50 border-b border-slate-250 text-slate-500 font-semibold text-xs">
+                <th class="px-6 py-4 w-12 text-center">
+                  <input type="checkbox" id="select-all-orders" class="rounded border-slate-350 text-indigo-650 focus:ring-indigo-500/25">
+                </th>
+                <th class="px-6 py-4">Ref. Pedido</th>
+                <th class="px-6 py-4">Cliente y Contacto</th>
+                <th class="px-6 py-4">Estado Pago/Logística</th>
+                <th class="px-6 py-4">Productos Vendidos (Tus Artículos)</th>
+                <th class="px-6 py-4">Conductor / Despacho</th>
+                <th class="px-6 py-4 text-right">Subtotal Socio</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100" id="orders-table-body">
+              <% if (orders && orders.length > 0) { %>
+                <% orders.forEach(order => { %>
+                  <tr class="hover:bg-slate-50/30 transition-colors order-row text-xs" 
+                      data-id="<%= order._id.toString().substring(12).toUpperCase() %>"
+                      data-client="<%= (order.shippingDetails?.name || (order.user ? (order.user.name + ' ' + order.user.lastname) : '') || '').toLowerCase() %>">
+                    
+                    <td class="px-6 py-4 text-center">
+                      <input type="checkbox" name="selectedOrders" value="<%= order._id %>" <%= order.driverName ? 'disabled' : '' %> class="order-checkbox rounded border-slate-300 text-indigo-600 focus:ring-indigo-500/20">
+                    </td>
+                    
+                    <!-- Order ID & Date -->
+                    <td class="px-6 py-4">
+                      <div class="font-bold text-slate-800 text-sm">#<%= order._id.toString().substring(12).toUpperCase() %></div>
+                      <div class="text-[10px] text-slate-400 mt-1"><%= new Date(order.createdAt).toLocaleString('es-AR') %></div>
+                    </td>
+
+                    <!-- Customer Contact & Delivery Info -->
+                    <td class="px-6 py-4 space-y-1">
+                      <div class="font-bold text-slate-800"><%= order.shippingDetails?.name || (order.user ? (order.user.name + ' ' + order.user.lastname) : 'Cliente General') %></div>
+                      <div class="text-slate-500 flex items-center gap-1.5">
+                        <i class="fa-solid fa-phone text-[9px] text-slate-400"></i>
+                        <span><%= order.shippingDetails?.phone || (order.user ? order.user.phone : 'N/A') %></span>
+                      </div>
+                      <div class="text-slate-500 flex items-center gap-1.5 max-w-[220px]">
+                        <i class="fa-solid fa-location-dot text-[9px] text-slate-400 flex-shrink-0"></i>
+                        <span class="truncate" title="<%= order.shippingDetails?.address %> (<%= order.shippingDetails?.city %>)"><%= order.shippingDetails?.address || 'N/A' %></span>
+                      </div>
+                      <% if (order.shippingDetails?.notes) { %>
+                        <div class="text-[10px] text-slate-400 italic max-w-[220px] truncate" title="<%= order.shippingDetails.notes %>">
+                          Obs: "<%= order.shippingDetails.notes %>"
+                        </div>
+                      <% } %>
+                    </td>
+
+                    <!-- Status Badges -->
+                    <td class="px-6 py-4 space-y-2">
+                      <!-- Payment Status -->
+                      <div>
+                        <% if (order.paymentStatus === 'paid') { %>
+                          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-100 uppercase">
+                            Pago Acreditado
+                          </span>
+                        <% } else if (order.paymentStatus === 'cancelled') { %>
+                          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold bg-rose-50 text-rose-700 border border-rose-100 uppercase">
+                            Cancelado
+                          </span>
+                        <% } else { %>
+                          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-50 text-amber-700 border border-amber-100 uppercase">
+                            Pago Pendiente
+                          </span>
+                        <% } %>
+                      </div>
+
+                      <!-- Logistics Status -->
+                      <div>
+                        <% if (order.status === 'pending') { %>
+                          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold bg-blue-50 text-blue-700 border border-blue-100 uppercase">
+                            Pendiente / Nuevo
+                          </span>
+                        <% } else if (order.status === 'preparing') { %>
+                          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-50 text-amber-700 border border-amber-100 uppercase">
+                            Preparando pedido
+                          </span>
+                        <% } else if (order.status === 'shipped') { %>
+                          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-100 uppercase">
+                            En Camino
+                          </span>
+                        <% } else if (order.status === 'delivered') { %>
+                          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-100 uppercase">
+                            Entregado
+                          </span>
+                        <% } else if (order.status === 'ready_for_pickup') { %>
+                          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-100 uppercase">
+                            Listo para Retiro
+                          </span>
+                        <% } else { %>
+                          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold bg-slate-50 text-slate-700 border border-slate-100 uppercase">
+                            <%= order.status %>
+                          </span>
+                        <% } %>
+                      </div>
+                    </td>
+
+                    <!-- Products -->
+                    <td class="px-6 py-4">
+                      <div class="space-y-1.5 max-w-sm">
+                        <% order.partnerProducts.forEach(item => { %>
+                          <div class="flex items-center justify-between gap-4 text-[11px] text-slate-750 bg-slate-50/50 p-1.5 rounded-lg border border-slate-100">
+                            <span class="font-semibold truncate max-w-[200px]" title="<%= item.title %>"><%= item.title %></span>
+                            <span class="text-slate-400 font-medium text-[10px] flex-shrink-0">
+                              <%= item.quantity %> x <%= formatPrice(item.price) %>
+                            </span>
+                          </div>
+                        <% }); %>
+                      </div>
+                    </td>
+
+                    <!-- Driver / Dispatch -->
+                    <td class="px-6 py-4">
+                      <% if (order.driverName) { %>
+                        <div class="flex items-center gap-2 text-indigo-700 font-bold text-xs bg-indigo-50 border border-indigo-100 px-3 py-2 rounded-xl inline-flex shadow-2xs">
+                          <i class="fa-solid fa-truck text-[10px] text-indigo-500"></i>
+                          <div>
+                            <div class="text-[11px] font-bold text-indigo-900"><%= order.driverName %></div>
+                            <div class="text-[9px] text-indigo-500 font-semibold mt-0.5"><%= order.driverVehicle %></div>
+                          </div>
+                        </div>
+                      <% } else { %>
+                        <form action="/partner/orders/<%= order._id %>/assign-driver" method="POST" class="flex flex-col gap-1.5 max-w-[170px]" onsubmit="return confirm('¿Seguro desea despachar el pedido con este conductor?');">
+                          <select name="driverId" required class="bg-slate-50 border border-slate-200 text-slate-800 text-[10px] px-2.5 py-1.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all font-semibold">
+                            <option value="">Seleccionar Conductor</option>
+                            <% if (assignedDriver) { %>
+                              <option value="<%= assignedDriver._id %>"><%= assignedDriver.name %> (Asignado)</option>
+                            <% } %>
+                            <% partnerDrivers.forEach(d => { %>
+                              <option value="<%= d._id %>"><%= d.name %> (Propio)</option>
+                            <% }); %>
+                          </select>
+                          <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[9px] py-1.5 rounded-lg transition-all text-center">
+                            Despachar Pedido
+                          </button>
+                        </form>
+                      <% } %>
+                    </td>
+
+                    <!-- Subtotal Partner -->
+                    <td class="px-6 py-4 text-right font-extrabold text-slate-800 text-sm">
+                      <%= formatPrice(order.partnerSubtotal) %>
+                    </td>
+
+                  </tr>
+                <% }); %>
+              <% } else { %>
+                <tr>
+                  <td colspan="6" class="px-6 py-12 text-center text-slate-400">
+                    No hay pedidos registrados para tus productos por el momento.
+                  </td>
+                </tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Tab: Accounting, Balance, Withdrawals -->
+    <div id="accounting-tab" class="tab-panel hidden space-y-6">
+      
+      <!-- Balance Metrics Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+        <div class="bg-gradient-to-br from-emerald-50 to-white border border-emerald-200 rounded-3xl p-6 shadow-sm flex items-center gap-4 relative overflow-hidden">
+          <div class="absolute -right-4 -bottom-4 text-emerald-150 text-6xl opacity-40 font-bold"><i class="fa-solid fa-wallet"></i></div>
+          <div class="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center text-lg">
+            <i class="fa-solid fa-wallet"></i>
+          </div>
+          <div>
+            <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Saldo Disponible</p>
+            <p class="text-2xl font-extrabold text-emerald-850"><%= formatPrice(availableBalance) %></p>
+            <p class="text-[10px] text-slate-400 mt-0.5">Listo para ser transferido</p>
+          </div>
+        </div>
+
+        <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex items-center gap-4 relative overflow-hidden">
+          <div class="absolute -right-4 -bottom-4 text-slate-50 text-6xl opacity-40 font-bold"><i class="fa-solid fa-coins"></i></div>
+          <div class="w-12 h-12 rounded-xl bg-slate-50 text-slate-650 flex items-center justify-center text-lg">
+            <i class="fa-solid fa-coins"></i>
+          </div>
+          <div>
+            <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Facturado</p>
+            <p class="text-2xl font-extrabold text-slate-800"><%= formatPrice(totalEarnings) %></p>
+            <p class="text-[10px] text-slate-400 mt-0.5">Ingresos por órdenes pagadas</p>
+          </div>
+        </div>
+
+        <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex items-center gap-4 relative overflow-hidden">
+          <div class="absolute -right-4 -bottom-4 text-slate-50 text-6xl opacity-40 font-bold"><i class="fa-solid fa-hand-holding-dollar"></i></div>
+          <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center text-lg">
+            <i class="fa-solid fa-hand-holding-dollar"></i>
+          </div>
+          <div>
+            <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Retiros Solicitados</p>
+            <p class="text-2xl font-extrabold text-slate-800"><%= formatPrice(totalApprovedWithdrawals + totalPendingWithdrawals) %></p>
+            <p class="text-[10px] text-slate-400 mt-0.5">
+              <%= formatPrice(totalPendingWithdrawals) %> pendientes de pago
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Left Column: Bank Coordinates & Payout Forms -->
+        <div class="lg:col-span-1 space-y-6">
+          
+          <!-- Bank Details Form -->
+          <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
+            <h3 class="font-bold text-slate-800 text-sm mb-1.5 flex items-center gap-2">
+              <i class="fa-solid fa-building-columns text-brand-650"></i>
+              Datos de Transferencia
+            </h3>
+            <p class="text-slate-400 text-[11px] mb-4">Configura tu CBU/CVU y Alias para recibir las transferencias correspondientes a tus ventas.</p>
+            
+            <form action="/partner/bank-details" method="POST" class="space-y-4">
+              <div>
+                <label for="bank-name" class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Nombre del Banco / Virtual *</label>
+                <input type="text" id="bank-name" name="bankName" value="<%= partner.bankName %>" required placeholder="Ej. Banco Galicia, MercadoPago"
+                  class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-3 py-2 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-xs font-medium">
+              </div>
+
+              <div>
+                <label for="bank-cbu" class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">CBU / CVU *</label>
+                <input type="text" id="bank-cbu" name="cbu" value="<%= partner.cbu %>" required placeholder="22 dígitos"
+                  class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-3 py-2 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-xs font-semibold tracking-wider">
+              </div>
+
+              <div>
+                <label for="bank-alias" class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Alias CBU / CVU *</label>
+                <input type="text" id="bank-alias" name="alias" value="<%= partner.alias %>" required placeholder="Ej. cooperativa.fruta.mp"
+                  class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-3 py-2 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-xs font-semibold">
+              </div>
+
+              <button type="submit" class="w-full py-2.5 rounded-xl bg-brand-650 hover:bg-brand-700 text-white font-bold text-xs shadow-sm transition-all text-center">
+                Guardar Cuentas Bancarias
+              </button>
+            </form>
+          </div>
+
+          <!-- Request Payout Form -->
+          <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
+            <h3 class="font-bold text-slate-800 text-sm mb-1.5 flex items-center gap-2">
+              <i class="fa-solid fa-paper-plane text-emerald-600"></i>
+              Solicitar Retiro
+            </h3>
+            <p class="text-slate-400 text-[11px] mb-4">Ingresa el monto que deseas transferir a tu cuenta bancaria. Mínimo $1.</p>
+            
+            <% if (!partner.alias || !partner.cbu) { %>
+              <div class="bg-amber-50 border border-amber-200 text-amber-800 p-3 rounded-xl text-[11px] mb-2">
+                <i class="fa-solid fa-triangle-exclamation mr-1 text-amber-600"></i>
+                Primero debes configurar y guardar tus datos de transferencia bancaria arriba.
+              </div>
+            <% } %>
+
+            <form action="/partner/withdraw" method="POST" class="space-y-4">
+              <div>
+                <label for="withdraw-amount" class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Monto a retirar ($) *</label>
+                <input type="number" id="withdraw-amount" name="amount" min="1" max="<%= availableBalance %>" required placeholder="Monto" <%= (!partner.alias || !partner.cbu || availableBalance <= 0) ? 'disabled' : '' %>
+                  class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-850 placeholder-slate-400 px-3 py-2 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-sm font-bold">
+              </div>
+
+              <button type="submit" <%= (!partner.alias || !partner.cbu || availableBalance <= 0) ? 'disabled' : '' %>
+                class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition-all text-center disabled:opacity-50 disabled:cursor-not-allowed">
+                Solicitar Transferencia
+              </button>
+            </form>
+          </div>
+
+        </div>
+
+        <!-- Right Column: Withdrawals Logs -->
+        <div class="lg:col-span-2 space-y-6">
+          <div class="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
+            <div class="px-6 py-5 border-b border-slate-100 bg-slate-50/50">
+              <h3 class="font-bold text-slate-800 text-sm">Historial de Retiros</h3>
+              <p class="text-slate-450 text-[11px]">Sigue el estado y detalles de tus solicitudes de transferencia y pagos recibidos.</p>
+            </div>
+
+            <div class="overflow-x-auto custom-scrollbar">
+              <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr class="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold">
+                    <th class="px-6 py-3.5">Fecha</th>
+                    <th class="px-6 py-3.5">Cuenta Destino</th>
+                    <th class="px-6 py-3.5">Monto</th>
+                    <th class="px-6 py-3.5">Estado</th>
+                    <th class="px-6 py-3.5">Notas del Admin</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                  <% if (withdrawals && withdrawals.length > 0) { %>
+                    <% withdrawals.forEach(w => { %>
+                      <tr class="hover:bg-slate-50/20 transition-colors">
+                        <td class="px-6 py-4">
+                          <div class="font-semibold text-slate-700"><%= new Date(w.createdAt).toLocaleDateString('es-AR') %></div>
+                          <div class="text-[9px] text-slate-400"><%= new Date(w.createdAt).toLocaleTimeString('es-AR', {hour: '2-digit', minute:'2-digit'}) %></div>
+                        </td>
+                        <td class="px-6 py-4">
+                          <div class="font-bold text-slate-800"><%= w.bankName || 'Banco' %></div>
+                          <div class="text-[10px] text-slate-455">Alias: <span class="font-mono text-slate-600"><%= w.alias %></span></div>
+                          <div class="text-[10px] text-slate-455">CBU: <span class="font-mono text-slate-650"><%= w.cbu %></span></div>
+                        </td>
+                        <td class="px-6 py-4 font-extrabold text-slate-800 text-sm">
+                          <%= formatPrice(w.amount) %>
+                        </td>
+                        <td class="px-6 py-4">
+                          <% if (w.status === 'approved') { %>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-100 uppercase">
+                              Pagado
+                            </span>
+                            <% if (w.processedAt) { %>
+                              <div class="text-[8px] text-slate-400 mt-1"><%= new Date(w.processedAt).toLocaleDateString('es-AR') %></div>
+                            <% } %>
+                          <% } else if (w.status === 'rejected') { %>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold bg-rose-50 text-rose-700 border border-rose-100 uppercase">
+                              Rechazado
+                            </span>
+                          <% } else { %>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-50 text-amber-700 border border-amber-100 uppercase">
+                              Pendiente
+                            </span>
+                          <% } %>
+                        </td>
+                        <td class="px-6 py-4 text-[10px] text-slate-500 italic max-w-[150px] truncate" title="<%= w.notes %>">
+                          <%= w.notes || 'Sin observaciones' %>
+                        </td>
+                      </tr>
+                    <% }); %>
+                  <% } else { %>
+                    <tr>
+                      <td colspan="5" class="px-6 py-12 text-center text-slate-400">
+                        Aún no posees solicitudes de retiro registradas.
+                      </td>
+                    </tr>
+                  <% } %>
+                </tbody>
+              </table>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Tab 2: Create product form -->
+    <div id="new-product-tab" class="tab-panel hidden space-y-6">
+      <div class="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm">
+        <h2 class="text-lg font-bold text-slate-800 mb-2">Nuevo Producto para tu Catálogo</h2>
+        <p class="text-xs text-slate-400 mb-6">El producto estará disponible en el catálogo público una vez guardado. La logística de entregas corre por cuenta de AbastoHub.</p>
+
+        <form action="/partner/products" method="POST" enctype="multipart/form-data" class="space-y-5">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Title -->
+            <div>
+              <label for="prod-title" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Nombre del Producto *</label>
+              <input type="text" id="prod-title" name="title" required placeholder="E.g. Manzana Verde Orgánica"
+                class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-sm">
+            </div>
+
+            <!-- Category -->
+            <div>
+              <label for="prod-category" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Categoría *</label>
+              <select id="prod-category" name="categoryId" required
+                class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-sm">
+                <% categories.forEach(cat => { %>
+                  <option value="<%= cat._id %>"><%= cat.name %></option>
+                <% }); %>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+            <!-- Price Minorista -->
+            <div>
+              <label for="prod-price" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Precio Minorista *</label>
+              <input type="number" id="prod-price" name="price" min="0" step="any" required placeholder="0.00"
+                class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-sm font-bold">
+            </div>
+
+            <!-- Price Mayorista -->
+            <div>
+              <label for="prod-wholesale" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Precio Mayorista (Opcional)</label>
+              <input type="number" id="prod-wholesale" name="wholesalePrice" min="0" step="any" placeholder="Al por mayor"
+                class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-sm font-bold">
+            </div>
+
+            <!-- Stock -->
+            <div>
+              <label for="prod-stock" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Stock Inicial *</label>
+              <input type="number" id="prod-stock" name="stock" min="0" required placeholder="0"
+                class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-sm font-bold">
+            </div>
+
+            <!-- Unit -->
+            <div>
+              <label for="prod-unit" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Unidad de Medida *</label>
+              <input type="text" id="prod-unit" name="unit" required placeholder="E.g. kg, unidad, cajón"
+                class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-sm">
+            </div>
+          </div>
+
+          <!-- Description -->
+          <div>
+            <label for="prod-description" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Descripción</label>
+            <textarea id="prod-description" name="description" rows="3" placeholder="Escribe detalles del producto, origen o especificaciones..."
+              class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-sm resize-none"></textarea>
+          </div>
+
+          <!-- Image Files -->
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Imágenes del Producto (Max 3)</label>
+            <input type="file" name="images" multiple accept="image/*"
+              class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-850 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-sm">
+            <span class="text-[10px] text-slate-400 mt-1 block">Selecciona hasta 3 imágenes. Si no se sube ninguna, se usará un marcador predeterminado.</span>
+          </div>
+
+          <div class="pt-4 border-t border-slate-100 flex justify-end gap-3">
+            <button type="reset" class="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-650 hover:bg-slate-50 text-xs font-bold transition-all">
+              Limpiar Campos
+            </button>
+            <button type="submit" class="px-5 py-2.5 rounded-xl bg-brand-650 hover:bg-brand-700 text-white text-xs font-bold transition-all shadow-sm">
+              Guardar Producto
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Tab 5: Conductores Panel -->
+    <div id="drivers-tab" class="tab-panel hidden space-y-6">
+      
+      <!-- Top Grid: Assigned Driver and New Driver Registration -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Main Assigned Driver Info -->
+        <div class="bg-gradient-to-br from-indigo-900 to-slate-900 border border-slate-800 rounded-3xl p-6 text-white flex flex-col justify-between shadow-sm space-y-4">
+          <div>
+            <span class="text-[10px] text-indigo-300 font-bold uppercase tracking-wider block font-semibold">Conductor Asignado por Administración</span>
+            
+            <% if (assignedDriver) { %>
+              <div class="mt-4 flex items-center gap-3">
+                <div class="w-12 h-12 rounded-2xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-300 text-2xl">
+                  <i class="fa-solid fa-user-tie"></i>
+                </div>
+                <div>
+                  <h4 class="font-bold text-base text-white"><%= assignedDriver.name %></h4>
+                  <p class="text-xs text-indigo-200 mt-0.5">Vehículo: <%= assignedDriver.vehicle %></p>
+                </div>
+              </div>
+              <p class="text-xs text-indigo-300/80 leading-relaxed mt-4">
+                Este es el conductor oficial asignado a tu cuenta para la logística general gestionada por AbastoHub.
+              </p>
+            <% } else { %>
+              <div class="mt-4 flex items-center gap-3 text-slate-400">
+                <div class="w-12 h-12 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center text-xl">
+                  <i class="fa-solid fa-user-slash"></i>
+                </div>
+                <div>
+                  <h4 class="font-bold text-sm text-slate-300">Sin Conductor Oficial</h4>
+                  <p class="text-xs text-slate-500 mt-0.5">No asignado por admin</p>
+                </div>
+              </div>
+              <p class="text-xs text-slate-400/85 leading-relaxed mt-4">
+                AbastoHub aún no te ha asignado un conductor de reparto global. Puedes registrar tus propios conductores locales a la derecha.
+              </p>
+            <% } %>
+          </div>
+        </div>
+
+        <!-- New Driver Form -->
+        <div class="lg:col-span-2 bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
+          <div>
+            <h3 class="font-bold text-slate-800 text-base">Registrar Nuevo Conductor</h3>
+            <p class="text-xs text-slate-400 mt-0.5">Crea una cuenta para tus choferes de entrega propios.</p>
+          </div>
+
+          <form action="/partner/drivers" method="POST" class="space-y-4">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5 font-semibold">Nombre del Conductor</label>
+                <input type="text" name="name" required placeholder="Ej: Juan Pérez"
+                  class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-xs font-medium">
+              </div>
+              
+              <div>
+                <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5 font-semibold">Vehículo / Patente</label>
+                <input type="text" name="vehicle" required placeholder="Ej: Renault Kangoo (AF998X)"
+                  class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-xs font-medium">
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5 font-semibold">Contraseña de Ingreso</label>
+                <input type="password" name="password" required placeholder="Contraseña de login"
+                  class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-xs font-medium">
+              </div>
+            </div>
+
+            <div class="flex justify-end">
+              <button type="submit"
+                class="px-5 py-2.5 bg-brand-650 hover:bg-brand-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5">
+                <i class="fa-solid fa-plus"></i> Registrar Conductor
+              </button>
+            </div>
+          </form>
+        </div>
+
+      </div>
+
+      <!-- Drivers List Table -->
+      <div class="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
+        <div class="px-6 py-5 border-b border-slate-100 bg-slate-50/50">
+          <h3 class="font-bold text-slate-800 text-sm">Lista de Conductores Locales</h3>
+          <p class="text-xs text-slate-400">Conductores que has registrado para tus despachos particulares. Ellos pueden iniciar sesión en el panel de reparto con sus credenciales.</p>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold">
+                <th class="px-6 py-3.5">Nombre del Conductor</th>
+                <th class="px-6 py-3.5">Vehículo / Identificación</th>
+                <th class="px-6 py-3.5">Fecha de Registro</th>
+                <th class="px-6 py-3.5 text-center">Acciones</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <% if (partnerDrivers && partnerDrivers.length > 0) { %>
+                <% partnerDrivers.forEach(d => { %>
+                  <tr class="hover:bg-slate-50/20 transition-colors">
+                    <td class="px-6 py-4 font-bold text-slate-800">
+                      <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold">
+                          <%= d.name.substring(0,2).toUpperCase() %>
+                        </div>
+                        <span><%= d.name %></span>
+                      </div>
+                    </td>
+                    <td class="px-6 py-4 text-slate-600 font-medium">
+                      <%= d.vehicle %>
+                    </td>
+                    <td class="px-6 py-4 text-slate-450">
+                      <%= new Date(d.createdAt).toLocaleDateString('es-AR') %>
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                      <form action="/partner/drivers/<%= d._id %>/delete" method="POST" onsubmit="return confirm('¿Estás seguro de eliminar este conductor?');">
+                        <button type="submit" class="px-2.5 py-1.5 border border-rose-100 hover:bg-rose-50 text-rose-600 text-[10px] font-bold rounded-lg transition-all">
+                          <i class="fa-solid fa-trash-can mr-1"></i> Eliminar
+                        </button>
+                      </form>
+                    </td>
+                  </tr>
+                <% }); %>
+              <% } else { %>
+                <tr>
+                  <td colspan="4" class="px-6 py-12 text-center text-slate-400">
+                    No tienes conductores locales registrados.
+                  </td>
+                </tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+<!-- Modal for Editing Product Details (Title, Description, Category) -->
+<div id="edit-partner-product-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm hidden">
+  <div class="bg-white rounded-3xl border border-slate-200 shadow-xl max-w-lg w-full overflow-hidden transition-all transform scale-95 duration-150" id="edit-modal-card">
+    <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+      <h3 class="display-font text-base font-extrabold text-slate-900 flex items-center gap-2">
+        <i class="fa-solid fa-pen-to-square text-brand-650"></i>
+        <span>Editar Detalles del Producto</span>
+      </h3>
+      <button onclick="closeEditModal()" class="text-slate-400 hover:text-slate-650 p-1.5 rounded-lg hover:bg-slate-100 transition-all">
+        <i class="fa-solid fa-xmark text-sm"></i>
+      </button>
+    </div>
+    
+    <form id="edit-partner-product-form" action="" method="POST" class="p-6 space-y-4">
+      <div>
+        <label for="edit-title" class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Nombre del Producto</label>
+        <input type="text" id="edit-title" name="title" required
+          class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-xs font-medium">
+      </div>
+      
+      <div>
+        <label for="edit-category" class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Categoría</label>
+        <select id="edit-category" name="categoryId" required
+          class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-xs font-medium">
+          <% categories.forEach(cat => { %>
+            <option value="<%= cat._id %>"><%= cat.name %></option>
+          <% }); %>
+        </select>
+      </div>
+
+      <div>
+        <label for="edit-description" class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Descripción</label>
+        <textarea id="edit-description" name="description" rows="4"
+          class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-xs font-medium resize-none"></textarea>
+      </div>
+      
+      <div class="flex gap-3 pt-2">
+        <button type="button" onclick="closeEditModal()"
+          class="flex-1 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs transition-all text-center">
+          Cancelar
+        </button>
+        <button type="submit"
+          class="flex-1 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs shadow-md transition-all text-center">
+          Guardar Cambios
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  function switchTab(tabId, buttonElement) {
+    // Hide all panels
+    const panels = document.querySelectorAll('.tab-panel');
+    panels.forEach(p => p.classList.add('hidden'));
+
+    // Show selected panel
+    document.getElementById(tabId).classList.remove('hidden');
+
+    // Reset button states
+    const buttons = document.querySelectorAll('.tab-btn');
+    buttons.forEach(btn => {
+      btn.className = "tab-btn pb-4 border-b-2 border-transparent text-slate-400 hover:text-slate-650 transition-all";
+    });
+
+    // Highlight clicked button
+    buttonElement.className = "tab-btn pb-4 border-b-2 border-brand-650 text-brand-650 font-bold transition-all";
+  }
+
+  function filterPartnerProducts() {
+    const searchVal = document.getElementById('partner-search-input').value.toLowerCase().trim();
+    const rows = document.querySelectorAll('.product-row');
+    
+    rows.forEach(row => {
+      const title = row.getAttribute('data-title') || '';
+      if (title.includes(searchVal)) {
+        row.classList.remove('hidden');
+      } else {
+        row.classList.add('hidden');
+      }
+    });
+  }
+
+  function filterPartnerOrders() {
+    const searchVal = document.getElementById('partner-orders-search').value.toLowerCase().trim();
+    const rows = document.querySelectorAll('.order-row');
+    
+    rows.forEach(row => {
+      const id = row.getAttribute('data-id') || '';
+      const client = row.getAttribute('data-client') || '';
+      if (id.includes(searchVal) || client.includes(searchVal)) {
+        row.classList.remove('hidden');
+      } else {
+        row.classList.add('hidden');
+      }
+    });
+  }
+
+  function triggerEditProduct(button) {
+    const id = button.getAttribute('data-id');
+    const title = button.getAttribute('data-title');
+    const description = button.getAttribute('data-description');
+    const categoryId = button.getAttribute('data-category');
+    
+    const modal = document.getElementById('edit-partner-product-modal');
+    const card = document.getElementById('edit-modal-card');
+    const form = document.getElementById('edit-partner-product-form');
+    
+    form.action = `/partner/products/${id}/edit`;
+    document.getElementById('edit-title').value = title;
+    document.getElementById('edit-description').value = description || '';
+    document.getElementById('edit-category').value = categoryId || '';
+    
+    modal.classList.remove('hidden');
+    setTimeout(() => {
+      card.classList.remove('scale-95');
+      card.classList.add('scale-100');
+    }, 10);
+  }
+
+  function closeEditModal() {
+    const modal = document.getElementById('edit-partner-product-modal');
+    const card = document.getElementById('edit-modal-card');
+    
+    card.classList.remove('scale-100');
+    card.classList.add('scale-95');
+    setTimeout(() => {
+      modal.classList.add('hidden');
+    }, 150);
+  }
+
+  // Handle bulk route dispatch selection
+  document.addEventListener('DOMContentLoaded', () => {
+    const selectAllCheckbox = document.getElementById('select-all-orders');
+    const orderCheckboxes = document.querySelectorAll('.order-checkbox');
+    const bulkBar = document.getElementById('bulk-dispatch-bar');
+    const selectedCountSpan = document.getElementById('selected-orders-count');
+    const bulkOrderIdsInput = document.getElementById('bulk-order-ids');
+
+    function updateBulkSelection() {
+      const selectedCheckboxes = document.querySelectorAll('.order-checkbox:checked');
+      const selectedIds = Array.from(selectedCheckboxes).map(cb => cb.value);
+      
+      selectedCountSpan.textContent = `${selectedIds.length} ${selectedIds.length === 1 ? 'pedido seleccionado' : 'pedidos seleccionados'} para ruta`;
+      bulkOrderIdsInput.value = selectedIds.join(',');
+
+      if (selectedIds.length > 0) {
+        bulkBar.classList.remove('hidden');
+      } else {
+        bulkBar.classList.add('hidden');
+      }
+    }
+
+    if (selectAllCheckbox) {
+      selectAllCheckbox.addEventListener('change', () => {
+        const isChecked = selectAllCheckbox.checked;
+        orderCheckboxes.forEach(cb => {
+          if (!cb.disabled) {
+            cb.checked = isChecked;
+          }
+        });
+        updateBulkSelection();
+      });
+    }
+
+    orderCheckboxes.forEach(cb => {
+      cb.addEventListener('change', () => {
+        updateBulkSelection();
+        // If one is unchecked, uncheck the select all
+        if (!cb.checked && selectAllCheckbox) {
+          selectAllCheckbox.checked = false;
+        }
+      });
+    });
+  });
+</script>
+
+<%- include('../partials/footer') %>

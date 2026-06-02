@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 
 const PartnerSchema = new mongoose.Schema({
   name: {
@@ -20,6 +21,46 @@ const PartnerSchema = new mongoose.Schema({
     enum: ['socio', 'afiliado'],
     default: 'socio'
   },
+  email: {
+    type: String,
+    unique: true,
+    sparse: true,
+    trim: true,
+    lowercase: true
+  },
+  password: {
+    type: String
+  },
+  phone: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  address: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  alias: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  cbu: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  bankName: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  assignedDriver: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Driver',
+    default: null
+  },
   active: {
     type: Boolean,
     default: true
@@ -29,5 +70,18 @@ const PartnerSchema = new mongoose.Schema({
     default: Date.now
   }
 });
+
+// Pre-save hook to hash password
+PartnerSchema.pre('save', async function () {
+  if (!this.isModified('password') || !this.password) return;
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
+});
+
+// Instance method to check password
+PartnerSchema.methods.comparePassword = async function (candidatePassword) {
+  if (!this.password) return false;
+  return bcrypt.compare(candidatePassword, this.password);
+};
 
 module.exports = mongoose.model('Partner', PartnerSchema);

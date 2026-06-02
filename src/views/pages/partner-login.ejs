@@ -1,0 +1,73 @@
+<%- include('../partials/header') %>
+
+<div class="min-h-[70vh] flex flex-col justify-center py-12 sm:px-6 lg:px-8 bg-emerald-50/20">
+  <div class="sm:mx-auto sm:w-full sm:max-w-md text-center">
+    <div class="w-12 h-12 rounded-2xl bg-brand-650 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-brand-500/10 text-white">
+      <i class="fa-solid fa-handshake text-lg"></i>
+    </div>
+    <h2 class="display-font text-3xl font-extrabold text-slate-900 tracking-tight">
+      Portal de Socios & Afiliados
+    </h2>
+    <p class="mt-2 text-sm text-slate-500">
+      Gestiona tus productos y precios en el catálogo de AbastoHub.
+    </p>
+  </div>
+
+  <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md px-4">
+    <div class="bg-white py-8 px-6 sm:px-10 rounded-3xl border border-slate-200/85 shadow-xl shadow-brand-100/20">
+      
+      <!-- Alerts -->
+      <% if (locals.error) { %>
+        <div class="mb-4 bg-rose-50 border border-rose-100 text-rose-700 p-4 rounded-xl text-sm flex gap-2 items-center">
+          <i class="fa-solid fa-circle-exclamation text-base"></i>
+          <span><%= error %></span>
+        </div>
+      <% } %>
+      
+      <% if (locals.success) { %>
+        <div class="mb-4 bg-emerald-50 border border-emerald-100 text-emerald-700 p-4 rounded-xl text-sm flex gap-2 items-center">
+          <i class="fa-solid fa-circle-check text-base"></i>
+          <span><%= success %></span>
+        </div>
+      <% } %>
+
+      <form class="space-y-6" action="/partner/login" method="POST">
+        <div>
+          <label for="email" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+            Correo Electrónico
+          </label>
+          <div class="relative">
+            <input id="email" name="email" type="email" required placeholder="socio@ejemplo.com"
+              class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/50 focus:bg-white text-slate-800 placeholder-slate-400 pl-10 pr-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-sm">
+            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+              <i class="fa-solid fa-envelope text-sm"></i>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label for="password" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+            Contraseña de Acceso
+          </label>
+          <div class="relative">
+            <input id="password" name="password" type="password" required placeholder="******"
+              class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/50 focus:bg-white text-slate-800 placeholder-slate-400 pl-10 pr-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-sm">
+            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+              <i class="fa-solid fa-key text-sm"></i>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <button type="submit" class="w-full py-3 px-4 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold shadow-md shadow-brand-500/10 hover:shadow-lg transition-all text-sm flex items-center justify-center gap-2">
+            Ingresar al Panel
+            <i class="fa-solid fa-arrow-right-to-bracket text-xs"></i>
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

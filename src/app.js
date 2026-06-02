@@ -19,6 +19,7 @@ const productRoutes = require('./routes/product.routes');
 const cartRoutes = require('./routes/cart.routes');
 const paymentRoutes = require('./routes/payment.routes');
 const raffleRoutes = require('./routes/raffle.routes');
+const partnerRoutes = require('./routes/partner.routes');
 
 const app = express();
 app.set('trust proxy', true);
@@ -46,6 +47,7 @@ app.use('/', productRoutes);
 app.use('/', cartRoutes);
 app.use('/', paymentRoutes);
 app.use('/', raffleRoutes);
+app.use('/', partnerRoutes);
 
 // 404 Handler
 app.use(notFoundHandler);

@@ -55,6 +55,20 @@
         </span>
       </div>
 
+      <!-- Map Container -->
+      <div id="driver-map-container" class="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm <% if (pendingOrders.length === 0) { %>hidden<% } %>">
+        <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+          <div>
+            <h2 class="text-sm font-bold text-slate-800">Mapa de tu Ruta de Entrega</h2>
+            <p class="text-[11px] text-slate-400">Visualiza la ubicación de todos tus envíos asignados en tiempo real.</p>
+          </div>
+          <span id="mapped-count" class="bg-indigo-50 text-indigo-700 text-xs px-2.5 py-1 rounded-full font-bold border border-indigo-100">
+            0 entregas en mapa
+          </span>
+        </div>
+        <div id="map" class="w-full h-[320px]"></div>
+      </div>
+
       <!-- Deliveries List -->
       <div class="space-y-4">
         <% if (pendingOrders.length === 0) { %>
@@ -271,5 +285,104 @@
 
   </div>
 </div>
+
+<!-- Raw data script -->
+<script>
+  const rawOrders = <%- JSON.stringify(pendingOrders.map(order => ({
+    id: order._id,
+    displayId: order._id.toString().substring(12).toUpperCase(),
+    clientName: order.shippingDetails.name || '',
+    phone: order.shippingDetails.phone || '',
+    address: order.shippingDetails.address || '',
+    city: order.shippingDetails.city || '',
+    province: order.shippingDetails.province || '',
+    total: order.total,
+    latitude: order.shippingDetails.latitude,
+    longitude: order.shippingDetails.longitude
+  }))) %>;
+</script>
+
+<!-- Google Maps Script Logic -->
+<script>
+  let map;
+  let markers = [];
+
+  function initMap() {
+    if (rawOrders.length === 0) return;
+
+    const mapOptions = {
+      center: { lat: -34.6037, lng: -58.3816 }, // Default Buenos Aires center
+      zoom: 11,
+      mapTypeControl: false,
+      streetViewControl: false,
+      fullscreenControl: true
+    };
+
+    map = new google.maps.Map(document.getElementById("map"), mapOptions);
+    
+    renderMapData();
+  }
+
+  function renderMapData() {
+    markers.forEach(m => m.setMap(null));
+    markers = [];
+
+    const bounds = new google.maps.LatLngBounds();
+    let mapCount = 0;
+
+    rawOrders.forEach(order => {
+      if (order.latitude && order.longitude) {
+        mapCount++;
+        const pos = { lat: order.latitude, lng: order.longitude };
+        bounds.extend(pos);
+
+        // Marker Styling: premium indigo dot
+        const marker = new google.maps.Marker({
+          position: pos,
+          map: map,
+          title: `Pedido #${order.displayId}`,
+          icon: {
+            url: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png"
+          }
+        });
+
+        const infoWindow = new google.maps.InfoWindow();
+        const content = `
+          <div class="p-2 space-y-1.5 text-xs text-slate-800 max-w-[200px]">
+            <h4 class="font-bold text-slate-900 flex justify-between gap-2 border-b border-slate-100 pb-1">
+              <span>Pedido #${order.displayId}</span>
+            </h4>
+            <p><strong>Cliente:</strong> ${order.clientName}</p>
+            <p><strong>Dirección:</strong> ${order.address}</p>
+            <p class="font-bold text-brand-600">Total: $${order.total.toLocaleString('es-AR')}</p>
+            <a href="https://www.google.com/maps/search/?api=1&query=${order.latitude},${order.longitude}" target="_blank"
+               class="w-full mt-1.5 py-1 px-2 text-[10px] text-white bg-indigo-650 hover:bg-indigo-700 rounded font-bold text-center block transition-all">
+              Navegar con GPS
+            </a>
+          </div>
+        `;
+
+        marker.addListener('click', () => {
+          infoWindow.setContent(content);
+          infoWindow.open(map, marker);
+        });
+
+        markers.push(marker);
+      }
+    });
+
+    document.getElementById('mapped-count').innerText = `${mapCount} ${mapCount === 1 ? 'entrega' : 'entregas'} en mapa`;
+
+    if (mapCount > 0) {
+      map.fitBounds(bounds);
+      const listener = google.maps.event.addListener(map, "idle", function() { 
+        if (map.getZoom() > 15) map.setZoom(15); 
+        google.maps.event.removeListener(listener); 
+      });
+    }
+  }
+</script>
+
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCBMrNLZp5utwO_ecNIxd2srSxU_LWE2OA&callback=initMap" async defer></script>
 
 <%- include('../partials/footer') %>
