@@ -153,11 +153,29 @@
                       <%= prod.category ? prod.category.name : 'N/A' %>
                     </td>
 
-                    <!-- Pricing -->
-                    <td class="px-6 py-4 text-xs font-semibold">
-                      <span class="text-slate-800"><%= formatPrice(prod.price) %></span>
-                      <span class="text-slate-300 mx-1">/</span>
-                      <span class="text-brand-650 font-bold" title="Mayorista (6+ u.)"><%= formatPrice(prod.wholesalePrice) %></span>
+                    <!-- Pricing Inline Editor -->
+                    <td class="px-6 py-4 text-xs">
+                      <form action="/admin/products/<%= prod._id %>/price" method="POST" class="flex flex-col gap-1.5 max-w-[130px]">
+                        <div class="flex items-center gap-1.5">
+                          <span class="text-[9px] font-bold text-slate-400 w-8 uppercase">Minor:</span>
+                          <div class="relative flex items-center">
+                            <span class="absolute left-2 text-[10px] text-slate-400">$</span>
+                            <input type="number" name="price" step="0.01" min="0" value="<%= prod.price %>" required
+                              class="w-20 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 font-bold pl-4 pr-1.5 py-0.5 text-[11px] outline-none focus:border-brand-500/40 focus:bg-white focus:ring-2 focus:ring-brand-500/10">
+                          </div>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                          <span class="text-[9px] font-bold text-slate-400 w-8 uppercase">Mayor:</span>
+                          <div class="relative flex items-center">
+                            <span class="absolute left-2 text-[10px] text-slate-400">$</span>
+                            <input type="number" name="wholesalePrice" step="0.01" min="0" value="<%= prod.wholesalePrice %>" required
+                              class="w-20 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 font-bold pl-4 pr-1.5 py-0.5 text-[11px] outline-none focus:border-brand-500/40 focus:bg-white focus:ring-2 focus:ring-brand-500/10">
+                          </div>
+                          <button type="submit" class="p-1 rounded-md text-slate-400 hover:text-brand-650 hover:bg-slate-100 transition-all" title="Guardar precios">
+                            <i class="fa-solid fa-floppy-disk text-xs"></i>
+                          </button>
+                        </div>
+                      </form>
                     </td>
 
                     <!-- Stock Inline Editor -->

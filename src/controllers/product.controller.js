@@ -200,6 +200,26 @@ const updateStock = async (req, res, next) => {
   }
 };
 
+// POST Update Product Prices Action (Admin Only)
+const updatePrice = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { price, wholesalePrice } = req.body;
+    
+    if (price === undefined || price === '' || wholesalePrice === undefined || wholesalePrice === '') {
+      return res.redirect('/admin?error=' + encodeURIComponent('Precios no válidos.'));
+    }
+
+    await Product.findByIdAndUpdate(id, { 
+      price: Number(price), 
+      wholesalePrice: Number(wholesalePrice) 
+    });
+    res.redirect('/admin?success=' + encodeURIComponent('Precios actualizados exitosamente.'));
+  } catch (error) {
+    res.redirect('/admin?error=' + encodeURIComponent('Error al actualizar precios.'));
+  }
+};
+
 // POST Toggle Active Status Action (Admin Only)
 const toggleActive = async (req, res, next) => {
   try {
@@ -1056,6 +1076,7 @@ module.exports = {
   getAdminPanel,
   createProduct,
   updateStock,
+  updatePrice,
   toggleActive,
   toggleFeatured,
   updateDiscount,

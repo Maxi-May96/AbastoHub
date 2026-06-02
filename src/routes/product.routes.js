@@ -12,6 +12,7 @@ router.get('/products/:slug', productController.getProductBySlug);
 router.get('/admin', isAuthenticated, isAdmin, productController.getAdminPanel);
 router.post('/admin/products', isAuthenticated, isAdmin, upload.array('images', 3), productController.createProduct);
 router.post('/admin/products/:id/stock', isAuthenticated, isAdmin, productController.updateStock);
+router.post('/admin/products/:id/price', isAuthenticated, isAdmin, productController.updatePrice);
 router.post('/admin/products/:id/toggle', isAuthenticated, isAdmin, productController.toggleActive);
 router.post('/admin/products/:id/toggle-featured', isAuthenticated, isAdmin, productController.toggleFeatured);
 router.post('/admin/products/:id/discount', isAuthenticated, isAdmin, productController.updateDiscount);
