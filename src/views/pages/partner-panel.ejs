@@ -632,6 +632,17 @@
         <h2 class="text-lg font-bold text-slate-800 mb-2">Nuevo Producto para tu Catálogo</h2>
         <p class="text-xs text-slate-400 mb-6">El producto estará disponible en el catálogo público una vez guardado. La logística de entregas corre por cuenta de AbastoHub.</p>
 
+        <!-- Notification: 5% Commission Info -->
+        <div class="bg-indigo-50 border border-indigo-150 rounded-2xl p-4 flex gap-3 text-xs text-indigo-900 mb-6">
+          <div class="text-indigo-600 text-lg mt-0.5">
+            <i class="fa-solid fa-circle-info"></i>
+          </div>
+          <div>
+            <span class="font-extrabold uppercase tracking-wider text-[10px] text-indigo-750 block mb-1">Comisión de la Plataforma</span>
+            La aplicación cobra una comisión del <strong>5%</strong> por cada compra realizada de tus productos. A continuación puedes ver el desglose en tiempo real de lo que recibirás.
+          </div>
+        </div>
+
         <form action="/partner/products" method="POST" enctype="multipart/form-data" class="space-y-5">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <!-- Title -->
@@ -657,15 +668,27 @@
             <!-- Price Minorista -->
             <div>
               <label for="prod-price" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Precio Minorista *</label>
-              <input type="number" id="prod-price" name="price" min="0" step="any" required placeholder="0.00"
+              <input type="number" id="prod-price" name="price" min="0" step="any" required placeholder="0.00" oninput="calculateCommission('prod-price', 'minorista-comm', 'minorista-net', 'price-commission-preview')"
                 class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-sm font-bold">
+              
+              <!-- Commission Info -->
+              <div id="price-commission-preview" class="text-[10px] text-slate-500 mt-2 hidden space-y-0.5 bg-slate-50 border border-slate-150 p-2 rounded-xl">
+                <div>Comisión (5%): <span class="font-bold text-rose-600" id="minorista-comm">$0.00</span></div>
+                <div>Recibirás (95%): <span class="font-bold text-emerald-600" id="minorista-net">$0.00</span></div>
+              </div>
             </div>
 
             <!-- Price Mayorista -->
             <div>
               <label for="prod-wholesale" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Precio Mayorista (Opcional)</label>
-              <input type="number" id="prod-wholesale" name="wholesalePrice" min="0" step="any" placeholder="Al por mayor"
+              <input type="number" id="prod-wholesale" name="wholesalePrice" min="0" step="any" placeholder="Al por mayor" oninput="calculateCommission('prod-wholesale', 'mayorista-comm', 'mayorista-net', 'wholesale-commission-preview')"
                 class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-sm font-bold">
+              
+              <!-- Commission Info -->
+              <div id="wholesale-commission-preview" class="text-[10px] text-slate-500 mt-2 hidden space-y-0.5 bg-slate-50 border border-slate-150 p-2 rounded-xl">
+                <div>Comisión (5%): <span class="font-bold text-rose-600" id="mayorista-comm">$0.00</span></div>
+                <div>Recibirás (95%): <span class="font-bold text-emerald-600" id="mayorista-net">$0.00</span></div>
+              </div>
             </div>
 
             <!-- Stock -->
@@ -1027,6 +1050,24 @@
       });
     });
   });
+
+  function calculateCommission(inputId, commissionId, netId, previewId) {
+    const input = document.getElementById(inputId);
+    const commissionEl = document.getElementById(commissionId);
+    const netEl = document.getElementById(netId);
+    const previewEl = document.getElementById(previewId);
+    
+    const value = parseFloat(input.value);
+    if (!isNaN(value) && value > 0) {
+      const commission = value * 0.05;
+      const net = value * 0.95;
+      commissionEl.textContent = `$${commission.toFixed(2)}`;
+      netEl.textContent = `$${net.toFixed(2)}`;
+      previewEl.classList.remove('hidden');
+    } else {
+      previewEl.classList.add('hidden');
+    }
+  }
 </script>
 
 <%- include('../partials/footer') %>
