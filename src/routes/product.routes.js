@@ -17,6 +17,7 @@ router.post('/admin/products/:id/toggle', isAuthenticated, isAdmin, productContr
 router.post('/admin/products/:id/toggle-featured', isAuthenticated, isAdmin, productController.toggleFeatured);
 router.post('/admin/products/:id/discount', isAuthenticated, isAdmin, productController.updateDiscount);
 router.post('/admin/products/:id/delete', isAuthenticated, isAdmin, productController.deleteProduct);
+router.post('/admin/products/:id/edit-details', isAuthenticated, isAdmin, productController.updateProductDetails);
 router.get('/admin/orders/report/pdf', isAuthenticated, isAdmin, productController.generateOrdersSummaryPDF);
 router.get('/admin/orders/:id/pdf', isAuthenticated, isAdmin, productController.generatePDFTicket);
 router.post('/admin/orders/:id/mark-paid', isAuthenticated, isAdmin, productController.markOrderAsPaid);

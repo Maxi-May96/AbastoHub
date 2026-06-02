@@ -220,6 +220,33 @@ const updatePrice = async (req, res, next) => {
   }
 };
 
+// POST Update Product Details (Title and Description) Action (Admin Only)
+const updateProductDetails = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { title, description } = req.body;
+    
+    if (!title || !title.trim()) {
+      return res.redirect('/admin?error=' + encodeURIComponent('El nombre del producto no puede estar vacío.'));
+    }
+
+    const product = await Product.findById(id);
+    if (!product) {
+      return res.redirect('/admin?error=' + encodeURIComponent('Producto no encontrado.'));
+    }
+
+    product.title = title.trim();
+    product.description = (description || '').trim();
+    
+    await product.save();
+
+    res.redirect('/admin?success=' + encodeURIComponent('Producto actualizado exitosamente.'));
+  } catch (error) {
+    console.error('Update product details error:', error.message);
+    res.redirect('/admin?error=' + encodeURIComponent('Error al actualizar el producto: ' + error.message));
+  }
+};
+
 // POST Toggle Active Status Action (Admin Only)
 const toggleActive = async (req, res, next) => {
   try {
@@ -1077,6 +1104,7 @@ module.exports = {
   createProduct,
   updateStock,
   updatePrice,
+  updateProductDetails,
   toggleActive,
   toggleFeatured,
   updateDiscount,
