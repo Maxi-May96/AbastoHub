@@ -1017,6 +1017,32 @@ const dispatchRoute = async (req, res, next) => {
   }
 };
 
+// POST Delete Single Order (Admin Only)
+const deleteOrder = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const order = await Order.findByIdAndDelete(id);
+    if (!order) {
+      return res.redirect('/admin?error=' + encodeURIComponent('Pedido no encontrado.'));
+    }
+    res.redirect('/admin?success=' + encodeURIComponent(`Pedido #${id.toString().substring(12).toUpperCase()} eliminado correctamente.`));
+  } catch (error) {
+    console.error('Delete order error:', error.message);
+    res.redirect('/admin?error=' + encodeURIComponent('Error al eliminar el pedido: ' + error.message));
+  }
+};
+
+// POST Delete All Orders (Admin Only)
+const deleteAllOrders = async (req, res, next) => {
+  try {
+    const result = await Order.deleteMany({});
+    res.redirect('/admin?success=' + encodeURIComponent(`Se han eliminado todos los pedidos correctamente (${result.deletedCount} registros).`));
+  } catch (error) {
+    console.error('Delete all orders error:', error.message);
+    res.redirect('/admin?error=' + encodeURIComponent('Error al eliminar todos los pedidos: ' + error.message));
+  }
+};
+
 module.exports = {
   getProducts,
   getProductBySlug,
@@ -1037,5 +1063,7 @@ module.exports = {
   dispatchRoute,
   getAdminDrivers,
   createDriver,
-  deleteDriver
+  deleteDriver,
+  deleteOrder,
+  deleteAllOrders
 };

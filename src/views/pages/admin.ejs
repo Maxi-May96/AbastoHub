@@ -363,6 +363,15 @@
               <i class="fa-solid fa-file-pdf"></i>Descargar Resumen PDF
             </a>
 
+            <!-- Delete All Button -->
+            <form action="/admin/orders/delete-all" method="POST" class="inline"
+              onsubmit="return confirm('¿ESTÁS ABSOLUTAMENTE SEGURO de eliminar TODOS los pedidos registrados? Esta acción no se puede deshacer y borrará todo el historial.');">
+              <button type="submit" 
+                class="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm hover:shadow">
+                <i class="fa-solid fa-trash-can"></i>Borrar Todo
+              </button>
+            </form>
+
             <!-- Reset Button -->
             <button onclick="clearAdminOrdersFilters()" class="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-650 hover:text-slate-850 text-xs font-bold transition-all">
               <i class="fa-solid fa-rotate-left mr-1 text-[10px]"></i>Limpiar
@@ -498,7 +507,7 @@
                       </form>
                     </td>
 
-                    <!-- Acciones (Ticket PDF & Aprobar Pago) -->
+                    <!-- Acciones (Ticket PDF & Aprobar Pago & Borrar) -->
                     <td class="px-6 py-4 text-center">
                       <div class="flex flex-col sm:flex-row items-center justify-center gap-2">
                         <a href="/admin/orders/<%= order._id %>/pdf" target="_blank" 
@@ -516,6 +525,15 @@
                             </button>
                           </form>
                         <% } %>
+
+                        <form action="/admin/orders/<%= order._id %>/delete" method="POST" class="inline"
+                          onsubmit="return confirm('¿Está seguro de eliminar este pedido permanentemente? Esta acción no se puede deshacer.');">
+                          <button type="submit" 
+                            class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl border border-rose-100 hover:bg-rose-50 text-rose-600 text-xs font-bold transition-all"
+                            title="Eliminar Pedido">
+                            <i class="fa-solid fa-trash-can text-sm"></i> Borrar
+                          </button>
+                        </form>
                       </div>
                     </td>
 

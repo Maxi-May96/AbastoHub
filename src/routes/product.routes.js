@@ -20,6 +20,8 @@ router.get('/admin/orders/report/pdf', isAuthenticated, isAdmin, productControll
 router.get('/admin/orders/:id/pdf', isAuthenticated, isAdmin, productController.generatePDFTicket);
 router.post('/admin/orders/:id/mark-paid', isAuthenticated, isAdmin, productController.markOrderAsPaid);
 router.post('/admin/orders/:id/status', isAuthenticated, isAdmin, productController.updateOrderStatus);
+router.post('/admin/orders/:id/delete', isAuthenticated, isAdmin, productController.deleteOrder);
+router.post('/admin/orders/delete-all', isAuthenticated, isAdmin, productController.deleteAllOrders);
 router.get('/admin/routes', isAuthenticated, isAdmin, productController.getAdminRoutes);
 router.post('/admin/routes/dispatch', isAuthenticated, isAdmin, productController.dispatchRoute);
 router.get('/admin/drivers', isAuthenticated, isAdmin, productController.getAdminDrivers);
