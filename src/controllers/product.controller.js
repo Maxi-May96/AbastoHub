@@ -825,6 +825,13 @@ const generateOrdersSummaryPDF = async (req, res, next) => {
        .text('Este documento es un reporte consolidado emitido automáticamente por el panel de control de AbastoHub.', 40, footerY + 10, { align: 'center', width: 515 });
        
     doc.end();
+
+    // Delete matching orders from database to clear history for the selected range
+    if (orders && orders.length > 0) {
+      const orderIds = orders.map(o => o._id);
+      console.log(`🗑️ PDF Report Generated: Deleting ${orderIds.length} orders from range.`);
+      await Order.deleteMany({ _id: { $in: orderIds } });
+    }
   } catch (error) {
     next(error);
   }
