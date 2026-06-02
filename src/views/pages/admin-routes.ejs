@@ -122,9 +122,16 @@
       
       <!-- Route Box Card -->
       <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-5 lg:sticky lg:top-24">
-        <div class="border-b border-slate-100 pb-3">
-          <h3 class="display-font text-base font-extrabold text-slate-900">Ruta Seleccionada</h3>
-          <p class="text-[11px] text-slate-400">Pedidos agrupados para el conductor.</p>
+        <div class="border-b border-slate-100 pb-3 flex justify-between items-start gap-4">
+          <div>
+            <h3 class="display-font text-base font-extrabold text-slate-900">Ruta Seleccionada</h3>
+            <p class="text-[11px] text-slate-400">Pedidos agrupados para el conductor.</p>
+          </div>
+          <button type="button" onclick="clearAllDispatchData()" 
+            class="text-[10px] font-bold text-rose-650 hover:text-rose-800 transition-colors flex items-center gap-1.5 py-1.5 px-3 rounded-xl bg-rose-50 border border-rose-100/60 hover:bg-rose-100">
+            <i class="fa-solid fa-trash-can"></i>
+            <span>Limpiar</span>
+          </button>
         </div>
 
         <!-- Selected Orders Count -->
@@ -499,6 +506,33 @@
         listContainer.appendChild(item);
       });
     }
+  }
+
+  function clearAllDispatchData() {
+    if (!confirm('¿Seguro que deseas limpiar todos los pedidos seleccionados y datos del conductor?')) return;
+    
+    // 1. Clear selected orders list
+    selectedOrders = [];
+    updateSelectedList();
+    renderMapData();
+
+    // 2. Clear driver form inputs and dropdown select value
+    const select = document.getElementById('driverSelect');
+    if (select) select.value = '';
+    
+    const nameInput = document.getElementById('driverName');
+    if (nameInput) nameInput.value = '';
+    
+    const vehicleInput = document.getElementById('driverVehicle');
+    if (vehicleInput) vehicleInput.value = '';
+    
+    const manualFields = document.getElementById('driverManualFields');
+    if (manualFields) manualFields.style.display = 'block';
+
+    // 3. Clear localStorage items
+    localStorage.removeItem('lastDriverSelect');
+    localStorage.removeItem('lastDriverName');
+    localStorage.removeItem('lastDriverVehicle');
   }
 
   function applyFilters() {
