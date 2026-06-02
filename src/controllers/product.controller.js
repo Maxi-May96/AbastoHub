@@ -942,21 +942,36 @@ const getAdminRoutes = async (req, res, next) => {
   }
 };
 
+// GET Admin Drivers Management Page
+const getAdminDrivers = async (req, res, next) => {
+  try {
+    const drivers = await Driver.find({}).sort({ name: 1 });
+    res.render('pages/admin-drivers', {
+      title: 'Gestión de Conductores',
+      drivers,
+      success: req.query.success || null,
+      error: req.query.error || null
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // POST Create Driver (Admin Only)
 const createDriver = async (req, res, next) => {
   try {
     const { name, vehicle } = req.body;
     if (!name || !vehicle) {
-      return res.redirect('/admin/routes?error=' + encodeURIComponent('El nombre y los datos del vehículo son obligatorios.'));
+      return res.redirect('/admin/drivers?error=' + encodeURIComponent('El nombre y los datos del vehículo son obligatorios.'));
     }
 
     const driver = new Driver({ name, vehicle });
     await driver.save();
 
-    res.redirect('/admin/routes?success=' + encodeURIComponent(`Conductor ${name} registrado exitosamente.`));
+    res.redirect('/admin/drivers?success=' + encodeURIComponent(`Conductor ${name} registrado exitosamente.`));
   } catch (error) {
     console.error('Create driver error:', error.message);
-    res.redirect('/admin/routes?error=' + encodeURIComponent('Error al registrar el conductor: ' + error.message));
+    res.redirect('/admin/drivers?error=' + encodeURIComponent('Error al registrar el conductor: ' + error.message));
   }
 };
 
@@ -965,10 +980,10 @@ const deleteDriver = async (req, res, next) => {
   try {
     const { id } = req.params;
     await Driver.findByIdAndDelete(id);
-    res.redirect('/admin/routes?success=' + encodeURIComponent('Conductor eliminado exitosamente.'));
+    res.redirect('/admin/drivers?success=' + encodeURIComponent('Conductor eliminado exitosamente.'));
   } catch (error) {
     console.error('Delete driver error:', error.message);
-    res.redirect('/admin/routes?error=' + encodeURIComponent('Error al eliminar el conductor: ' + error.message));
+    res.redirect('/admin/drivers?error=' + encodeURIComponent('Error al eliminar el conductor: ' + error.message));
   }
 };
 
@@ -1020,6 +1035,7 @@ module.exports = {
   updateOrderStatus,
   getAdminRoutes,
   dispatchRoute,
+  getAdminDrivers,
   createDriver,
   deleteDriver
 };

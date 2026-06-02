@@ -1,0 +1,144 @@
+<%- include('../partials/header') %>
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <!-- Back Button & Header -->
+  <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      <a href="/admin" class="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-brand-600 transition-colors mb-2.5">
+        <i class="fa-solid fa-arrow-left"></i> Volver al Panel
+      </a>
+      <div class="flex items-center gap-2 text-indigo-600 mb-1">
+        <i class="fa-solid fa-user-tie text-base"></i>
+        <span class="text-xs font-bold uppercase tracking-wider">Gestión de Personal</span>
+      </div>
+      <h1 class="display-font text-2xl font-extrabold tracking-tight text-slate-900">Conductores de Reparto</h1>
+      <p class="text-xs text-slate-500 mt-0.5">Registra y administra los choferes y sus vehículos para el trazado de rutas.</p>
+    </div>
+    
+    <div>
+      <a href="/admin/routes" class="inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-750 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-md transition-all">
+        <i class="fa-solid fa-map-location-dot"></i>
+        <span>Ir a Trazar Rutas</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Messages Feedback -->
+  <% if (success) { %>
+    <div class="mb-6 bg-emerald-50 border border-emerald-100 text-emerald-700 p-4 rounded-2xl text-sm flex gap-2 items-center">
+      <i class="fa-solid fa-circle-check text-base"></i>
+      <span><%= success %></span>
+    </div>
+  <% } %>
+  <% if (error) { %>
+    <div class="mb-6 bg-rose-50 border border-rose-100 text-rose-700 p-4 rounded-2xl text-sm flex gap-2 items-center">
+      <i class="fa-solid fa-circle-exclamation text-base"></i>
+      <span><%= error %></span>
+    </div>
+  <% } %>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Form column -->
+    <div class="lg:col-span-1">
+      <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
+        <div>
+          <h2 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+            <i class="fa-solid fa-plus text-indigo-500"></i>
+            Registrar Nuevo Conductor
+          </h2>
+          <p class="text-[11px] text-slate-400 mt-0.5">Completa los campos para agregarlo a la base de datos.</p>
+        </div>
+
+        <form action="/admin/drivers" method="POST" class="space-y-4">
+          <div>
+            <label for="name" class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Nombre Completo</label>
+            <input type="text" id="name" name="name" placeholder="Ej: Juan Pérez" required
+              class="w-full bg-slate-50 border border-slate-250 focus:border-brand-500/40 text-slate-800 placeholder-slate-400 px-3.5 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 text-xs transition-all">
+          </div>
+          <div>
+            <label for="vehicle" class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Vehículo (Detalles & Patente)</label>
+            <input type="text" id="vehicle" name="vehicle" placeholder="Ej: Hilux Blanca (AA123BB)" required
+              class="w-full bg-slate-50 border border-slate-250 focus:border-brand-500/40 text-slate-800 placeholder-slate-400 px-3.5 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 text-xs transition-all">
+          </div>
+          
+          <button type="submit" class="w-full py-3 rounded-xl bg-slate-850 hover:bg-slate-900 text-white font-bold text-xs shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2">
+            <i class="fa-solid fa-plus text-[10px]"></i>
+            <span>Guardar Conductor</span>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Drivers List column -->
+    <div class="lg:col-span-2 space-y-4">
+      <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h2 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+              <i class="fa-solid fa-users text-slate-400"></i>
+              Conductores Registrados
+            </h2>
+            <p class="text-[11px] text-slate-400 mt-0.5">Listado total de personal disponible para despacho de mercadería.</p>
+          </div>
+          
+          <!-- Search input -->
+          <div class="relative">
+            <input type="text" id="driverSearch" onkeyup="filterDrivers()" placeholder="Buscar conductor..."
+              class="bg-slate-50 border border-slate-200 text-slate-700 placeholder-slate-400 pl-8 pr-3 py-1.5 rounded-xl outline-none text-xs w-full sm:w-48 focus:border-brand-500/40 transition-all">
+            <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-[10px] text-slate-400"></i>
+          </div>
+        </div>
+
+        <div id="driversGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <% if (drivers.length === 0) { %>
+            <div class="sm:col-span-2 text-center py-10 text-slate-400 text-xs bg-slate-50 rounded-2xl border border-slate-150">
+              <i class="fa-solid fa-user-slash text-2xl text-slate-300 mb-2 block"></i>
+              No hay conductores registrados en el sistema.
+            </div>
+          <% } else { %>
+            <% drivers.forEach(driver => { %>
+              <div class="driver-card p-4 bg-slate-50 border border-slate-150 rounded-2xl flex justify-between items-start hover:border-slate-350 transition-all" data-name="<%= driver.name.toLowerCase() %>">
+                <div class="space-y-1">
+                  <div class="flex items-center gap-2">
+                    <span class="w-7 h-7 rounded-full bg-indigo-50 text-indigo-650 flex items-center justify-center font-bold text-xs">
+                      <%= driver.name.charAt(0).toUpperCase() %>
+                    </span>
+                    <p class="font-bold text-slate-900 text-xs leading-none"><%= driver.name %></p>
+                  </div>
+                  <div class="pt-2 text-[11px] text-slate-600 space-y-1">
+                    <p class="flex items-center gap-1.5"><i class="fa-solid fa-car text-[10px] text-slate-400"></i> <strong>Vehículo:</strong> <%= driver.vehicle %></p>
+                    <p class="text-[9px] text-slate-400 flex items-center gap-1.5"><i class="fa-solid fa-calendar text-[9px]"></i> Reg: <%= new Date(driver.createdAt).toLocaleDateString('es-AR') %></p>
+                  </div>
+                </div>
+                
+                <form action="/admin/drivers/<%= driver._id %>/delete" method="POST" onsubmit="return confirm('¿Seguro deseas eliminar a este conductor?')">
+                  <button type="submit" class="text-rose-500 hover:text-rose-700 hover:bg-rose-50 p-1.5 rounded-lg transition-all">
+                    <i class="fa-solid fa-trash-can text-[11px]"></i>
+                  </button>
+                </form>
+              </div>
+            <% }) %>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function filterDrivers() {
+    const query = document.getElementById('driverSearch').value.toLowerCase();
+    const cards = document.getElementsByClassName('driver-card');
+    
+    for (let i = 0; i < cards.length; i++) {
+      const name = cards[i].getAttribute('data-name');
+      if (name.includes(query)) {
+        cards[i].style.display = 'flex';
+      } else {
+        cards[i].style.display = 'none';
+      }
+    }
+  }
+</script>
+
+<%- include('../partials/footer') %>

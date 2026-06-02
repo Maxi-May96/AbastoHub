@@ -153,7 +153,12 @@
           <div id="hidden-ids-container"></div>
 
           <div>
-            <label for="driverSelect" class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Seleccionar Conductor</label>
+            <div class="flex justify-between items-center mb-1">
+              <label for="driverSelect" class="block text-[10px] font-bold uppercase tracking-wider text-slate-500">Seleccionar Conductor</label>
+              <a href="/admin/drivers" class="text-[9px] font-bold text-indigo-600 hover:text-indigo-800 transition-colors flex items-center gap-0.5">
+                <i class="fa-solid fa-user-plus text-[8px]"></i> Gestionar Conductores
+              </a>
+            </div>
             <select id="driverSelect" onchange="onDriverSelectChange()"
               class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 text-slate-700 px-3 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 text-xs transition-all">
               <option value="">-- Seleccionar registrado --</option>
@@ -190,61 +195,12 @@
 
   </div>
 
-  <!-- Driver Management & Dispatch History Sections -->
-  <div class="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <!-- Driver Management Card -->
-    <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
-      <div>
-        <h3 class="display-font text-base font-extrabold text-slate-900">Conductores Registrados</h3>
-        <p class="text-[11px] text-slate-400">Administra el personal de reparto para asignaciones rápidas.</p>
-      </div>
-
-      <!-- Add Driver Form -->
-      <form action="/admin/drivers" method="POST" class="space-y-3 p-4 bg-slate-50 border border-slate-150 rounded-2xl">
-        <h4 class="text-xs font-bold text-slate-700">Registrar Conductor</h4>
-        <div>
-          <label class="block text-[9px] font-bold uppercase tracking-wider text-slate-450 mb-0.5">Nombre</label>
-          <input type="text" name="name" placeholder="Nombre completo" required
-            class="w-full bg-white border border-slate-200 focus:border-brand-500/40 text-slate-800 placeholder-slate-400 px-3 py-2 rounded-xl outline-none text-xs transition-all">
-        </div>
-        <div>
-          <label class="block text-[9px] font-bold uppercase tracking-wider text-slate-450 mb-0.5">Vehículo</label>
-          <input type="text" name="vehicle" placeholder="Ej: Hilux Blanca (AA123BB)" required
-            class="w-full bg-white border border-slate-200 focus:border-brand-500/40 text-slate-800 placeholder-slate-400 px-3 py-2 rounded-xl outline-none text-xs transition-all">
-        </div>
-        <button type="submit" class="w-full py-2.5 rounded-xl bg-slate-850 hover:bg-slate-900 text-white font-bold text-[11px] transition-all flex items-center justify-center gap-1">
-          <i class="fa-solid fa-plus text-[9px]"></i> Agregar Conductor
-        </button>
-      </form>
-
-      <!-- Drivers List -->
-      <div class="space-y-2 max-h-[220px] overflow-y-auto pr-1">
-        <% if (drivers.length === 0) { %>
-          <p class="text-xs text-slate-400 text-center py-4">No hay conductores registrados.</p>
-        <% } else { %>
-          <% drivers.forEach(driver => { %>
-            <div class="flex justify-between items-center p-2.5 bg-slate-50/50 border border-slate-150 rounded-xl text-xs">
-              <div>
-                <p class="font-bold text-slate-800"><%= driver.name %></p>
-                <p class="text-[10px] text-slate-500"><%= driver.vehicle %></p>
-              </div>
-              <form action="/admin/drivers/<%= driver._id %>/delete" method="POST" onsubmit="return confirm('¿Seguro deseas eliminar a este conductor?')">
-                <button type="submit" class="text-rose-500 hover:text-rose-700 p-1">
-                  <i class="fa-solid fa-trash text-[10px]"></i>
-                </button>
-              </form>
-            </div>
-          <% }) %>
-        <% } %>
-      </div>
+  <!-- Dispatch History Section -->
+  <div class="mt-8 bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
+    <div>
+      <h3 class="display-font text-base font-extrabold text-slate-900">Historial de Despachos</h3>
+      <p class="text-[11px] text-slate-400">Registro histórico de envíos despachados y entregados.</p>
     </div>
-
-    <!-- Dispatch History Card -->
-    <div class="lg:col-span-2 bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
-      <div>
-        <h3 class="display-font text-base font-extrabold text-slate-900">Historial de Despachos</h3>
-        <p class="text-[11px] text-slate-400">Registro histórico de envíos despachados y entregados.</p>
-      </div>
 
       <!-- History Table (Desktop only) -->
       <div class="hidden md:block overflow-x-auto border border-slate-150 rounded-2xl max-h-[360px] overflow-y-auto">
