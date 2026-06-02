@@ -4,9 +4,12 @@ const Cart = require('../models/Cart');
 // Global middleware to populate res.locals.user and cart count for all routes
 const loadUserSession = async (req, res, next) => {
   const token = req.cookies.token;
+  const driverToken = req.cookies.driverToken;
   res.locals.user = null;
+  res.locals.driver = null;
   res.locals.cartCount = 0;
   req.user = null;
+  req.driver = null;
 
   // Set default absolute URL helpers and Open Graph metadata for social sharing
   const protocol = req.protocol;
@@ -39,6 +42,17 @@ const loadUserSession = async (req, res, next) => {
       res.clearCookie('token');
     }
   }
+
+  if (driverToken) {
+    const decoded = verifyToken(driverToken);
+    if (decoded && decoded.role === 'driver') {
+      req.driver = decoded;
+      res.locals.driver = decoded;
+    } else {
+      // Clear invalid cookie
+      res.clearCookie('driverToken');
+    }
+  }
   
   next();
 };
@@ -49,6 +63,14 @@ const isAuthenticated = (req, res, next) => {
     // Save original destination to redirect back after login
     res.cookie('redirectTo', req.originalUrl, { maxAge: 900000, httpOnly: true });
     return res.redirect('/login');
+  }
+  next();
+};
+
+// Check if driver is authenticated
+const isDriverAuthenticated = (req, res, next) => {
+  if (!req.driver) {
+    return res.redirect('/driver/login');
   }
   next();
 };
@@ -68,5 +90,6 @@ const isAdmin = (req, res, next) => {
 module.exports = {
   loadUserSession,
   isAuthenticated,
+  isDriverAuthenticated,
   isAdmin
 };

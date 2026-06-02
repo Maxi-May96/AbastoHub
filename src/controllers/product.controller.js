@@ -960,12 +960,12 @@ const getAdminDrivers = async (req, res, next) => {
 // POST Create Driver (Admin Only)
 const createDriver = async (req, res, next) => {
   try {
-    const { name, vehicle } = req.body;
-    if (!name || !vehicle) {
-      return res.redirect('/admin/drivers?error=' + encodeURIComponent('El nombre y los datos del vehículo son obligatorios.'));
+    const { name, vehicle, password } = req.body;
+    if (!name || !vehicle || !password) {
+      return res.redirect('/admin/drivers?error=' + encodeURIComponent('El nombre, vehículo y la contraseña son obligatorios.'));
     }
 
-    const driver = new Driver({ name, vehicle });
+    const driver = new Driver({ name, vehicle, password });
     await driver.save();
 
     res.redirect('/admin/drivers?success=' + encodeURIComponent(`Conductor ${name} registrado exitosamente.`));

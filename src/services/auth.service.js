@@ -15,6 +15,19 @@ const generateToken = (user) => {
   );
 };
 
+const generateDriverToken = (driver) => {
+  return jwt.sign(
+    { 
+      id: driver._id, 
+      name: driver.name,
+      vehicle: driver.vehicle,
+      role: 'driver'
+    },
+    env.jwtSecret,
+    { expiresIn: '30d' }
+  );
+};
+
 const verifyToken = (token) => {
   try {
     return jwt.verify(token, env.jwtSecret);
@@ -25,5 +38,6 @@ const verifyToken = (token) => {
 
 module.exports = {
   generateToken,
+  generateDriverToken,
   verifyToken
 };

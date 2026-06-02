@@ -1,7 +1,10 @@
 const User = require('../models/User');
 const Cart = require('../models/Cart');
-const { generateToken } = require('../services/auth.service');
+const Driver = require('../models/Driver');
+const Order = require('../models/Order');
+const { generateToken, generateDriverToken } = require('../services/auth.service');
 const { validateRegisterInput } = require('../utils/validators');
+const formatPrice = require('../utils/formatPrice');
 
 // GET Login Page
 const getLogin = (req, res) => {
@@ -148,10 +151,124 @@ const getLogout = (req, res) => {
   res.redirect('/');
 };
 
+// GET Driver Login Page
+const getDriverLogin = (req, res) => {
+  if (req.driver) return res.redirect('/driver/panel');
+  res.render('pages/driver-login', {
+    title: 'Iniciar Sesión - Conductor',
+    error: req.query.error || null,
+    success: req.query.success || null
+  });
+};
+
+// POST Driver Login Action
+const postDriverLogin = async (req, res, next) => {
+  try {
+    const { name, password } = req.body;
+
+    if (!name || !password) {
+      return res.render('pages/driver-login', {
+        title: 'Iniciar Sesión - Conductor',
+        error: 'Por favor complete todos los campos.',
+        success: null
+      });
+    }
+
+    // Case-insensitive name lookup
+    const driver = await Driver.findOne({ name: { $regex: new RegExp("^" + name.trim() + "$", "i") } });
+    if (!driver || !(await driver.comparePassword(password))) {
+      return res.render('pages/driver-login', {
+        title: 'Iniciar Sesión - Conductor',
+        error: 'Nombre de conductor o contraseña incorrectos.',
+        success: null
+      });
+    }
+
+    // Generate JWT token
+    const token = generateDriverToken(driver);
+
+    // Save token in cookie (expires in 30 days)
+    res.cookie('driverToken', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+    });
+
+    return res.redirect('/driver/panel');
+  } catch (error) {
+    next(error);
+  }
+};
+
+// POST Driver Logout
+const postDriverLogout = (req, res) => {
+  res.clearCookie('driverToken');
+  res.redirect('/driver/login?success=' + encodeURIComponent('Sesión de conductor cerrada.'));
+};
+
+// GET Driver Panel Dashboard
+const getDriverPanel = async (req, res, next) => {
+  try {
+    // Pending orders (in transit / status: 'shipped')
+    const pendingOrders = await Order.find({ 
+      driverName: req.driver.name, 
+      status: 'shipped' 
+    }).sort({ dispatchedAt: -1 });
+
+    // Recent delivered orders
+    const deliveredOrders = await Order.find({ 
+      driverName: req.driver.name, 
+      status: 'delivered' 
+    }).sort({ updatedAt: -1 }).limit(10);
+
+    res.render('pages/driver-panel', {
+      title: 'Panel de Reparto',
+      driver: req.driver,
+      pendingOrders,
+      deliveredOrders,
+      formatPrice,
+      success: req.query.success || null,
+      error: req.query.error || null
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// POST Deliver Order
+const deliverOrder = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const order = await Order.findById(id);
+
+    if (!order) {
+      return res.redirect('/driver/panel?error=' + encodeURIComponent('Pedido no encontrado.'));
+    }
+
+    // Verify order is assigned to this driver
+    if (order.driverName !== req.driver.name) {
+      return res.redirect('/driver/panel?error=' + encodeURIComponent('No tienes permiso para modificar este pedido.'));
+    }
+
+    // Update status
+    order.status = 'delivered';
+    await order.save();
+
+    res.redirect('/driver/panel?success=' + encodeURIComponent(`Pedido #${order._id.toString().substring(12).toUpperCase()} entregado con éxito.`));
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getLogin,
   postLogin,
   getRegister,
   postRegister,
-  getLogout
+  getLogout,
+  getDriverLogin,
+  postDriverLogin,
+  postDriverLogout,
+  getDriverPanel,
+  deliverOrder
 };

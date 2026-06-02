@@ -1,0 +1,275 @@
+<%- include('../partials/header') %>
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  
+  <!-- Dashboard Heading -->
+  <div class="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 pb-6">
+    <div>
+      <div class="flex items-center gap-2 mb-1.5 text-indigo-650">
+        <i class="fa-solid fa-truck-ramp-box text-xl"></i>
+        <span class="text-xs font-bold uppercase tracking-wider">Panel de Reparto</span>
+      </div>
+      <h1 class="display-font text-3xl font-extrabold tracking-tight text-slate-900">Hola, <%= driver.name %></h1>
+      <p class="text-xs text-slate-500 mt-1 flex items-center gap-1.5">
+        <i class="fa-solid fa-car text-indigo-500"></i> Vehículo Asignado: <strong><%= driver.vehicle %></strong>
+      </p>
+    </div>
+    
+    <div>
+      <form action="/driver/logout" method="POST">
+        <button type="submit" class="inline-flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 font-bold text-xs px-4 py-2.5 rounded-xl shadow-xs transition-all border border-slate-200">
+          <i class="fa-solid fa-right-from-bracket"></i>
+          <span>Cerrar Sesión</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Messages Feedback -->
+  <% if (locals.success) { %>
+    <div class="mb-6 bg-emerald-50 border border-emerald-100 text-emerald-700 p-4 rounded-2xl text-sm flex gap-2 items-center">
+      <i class="fa-solid fa-circle-check text-base"></i>
+      <span><%= success %></span>
+    </div>
+  <% } %>
+  <% if (locals.error) { %>
+    <div class="mb-6 bg-rose-50 border border-rose-100 text-rose-700 p-4 rounded-2xl text-sm flex gap-2 items-center">
+      <i class="fa-solid fa-circle-exclamation text-base"></i>
+      <span><%= error %></span>
+    </div>
+  <% } %>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    
+    <!-- Deliveries Column -->
+    <div class="lg:col-span-2 space-y-6">
+      
+      <!-- Pending Deliveries Header -->
+      <div class="flex items-center justify-between">
+        <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+          <i class="fa-solid fa-boxes-packing text-slate-400"></i>
+          Entregas Pendientes (En Camino)
+        </h2>
+        <span class="bg-indigo-50 text-indigo-750 font-bold text-xs px-2.5 py-1 rounded-full border border-indigo-100/50">
+          <%= pendingOrders.length %> Pedidos
+        </span>
+      </div>
+
+      <!-- Deliveries List -->
+      <div class="space-y-4">
+        <% if (pendingOrders.length === 0) { %>
+          <div class="bg-white border border-slate-200 rounded-3xl p-10 text-center text-slate-400">
+            <div class="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto text-slate-300 mb-4 border border-slate-100">
+              <i class="fa-solid fa-circle-check text-2xl"></i>
+            </div>
+            <p class="font-bold text-slate-700 text-sm">¡Al día!</p>
+            <p class="text-xs text-slate-500 mt-1">No tienes pedidos pendientes de entrega asignados en este momento.</p>
+          </div>
+        <% } else { %>
+          <% pendingOrders.forEach(order => { %>
+            <div class="bg-white border border-slate-250 hover:border-slate-350 rounded-3xl p-5 sm:p-6 shadow-sm transition-all space-y-4">
+              
+              <!-- Card Header -->
+              <div class="flex justify-between items-start gap-4 border-b border-slate-100 pb-3">
+                <div>
+                  <span class="text-[10px] font-bold text-indigo-650 uppercase bg-indigo-50 px-2 py-0.5 rounded-md">ID: #<%= order._id.toString().substring(12).toUpperCase() %></span>
+                  <p class="text-[11px] text-slate-400 mt-1">Despachado: <%= order.dispatchedAt ? order.dispatchedAt.toLocaleString('es-AR') : new Date(order.updatedAt).toLocaleString('es-AR') %></p>
+                </div>
+                <div class="text-right">
+                  <span class="text-[9px] text-slate-400 uppercase font-bold block">Artículos</span>
+                  <span class="font-black text-slate-800 text-xs"><%= order.products.reduce((sum, item) => sum + item.quantity, 0) %> u.</span>
+                </div>
+              </div>
+
+              <!-- Customer & Address Information -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                <div class="space-y-1.5">
+                  <p class="text-slate-500 uppercase text-[9px] font-bold tracking-wider">Cliente / Contacto</p>
+                  <p class="font-bold text-slate-900 text-sm"><%= order.shippingDetails.name %></p>
+                  <p class="text-slate-650 flex items-center gap-1.5 font-medium">
+                    <i class="fa-solid fa-phone text-[10px] text-slate-400"></i>
+                    <a href="tel:<%= order.shippingDetails.phone %>" class="hover:underline text-indigo-650"><%= order.shippingDetails.phone %></a>
+                  </p>
+                </div>
+
+                <div class="space-y-1.5">
+                  <p class="text-slate-500 uppercase text-[9px] font-bold tracking-wider">Dirección de Entrega</p>
+                  <p class="font-semibold text-slate-800"><%= order.shippingDetails.address %></p>
+                  <p class="text-slate-500"><%= order.shippingDetails.city %>, <%= order.shippingDetails.province %></p>
+                </div>
+              </div>
+
+              <!-- Order items list preview -->
+              <div class="bg-slate-50/75 border border-slate-150 rounded-2xl p-3.5 space-y-1">
+                <p class="text-slate-500 uppercase text-[9px] font-bold tracking-wider mb-1.5">Detalle del Pedido</p>
+                <% order.products.forEach(item => { %>
+                  <p class="text-xs text-slate-650 flex justify-between gap-4 font-medium">
+                    <span><%= item.quantity %> × <%= item.title %> (<%= item.unit %>)</span>
+                  </p>
+                <% }) %>
+              </div>
+
+              <!-- Notes / Special Instructions -->
+              <% if (order.shippingDetails.notes) { %>
+                <div class="bg-amber-50/50 border border-amber-100 text-amber-850 p-3 rounded-2xl text-xs flex gap-2">
+                  <i class="fa-solid fa-circle-info text-amber-500 text-sm mt-0.5 flex-shrink-0"></i>
+                  <div>
+                    <strong class="font-bold text-[10px] uppercase block tracking-wide">Notas de Entrega</strong>
+                    <p class="mt-0.5 leading-relaxed text-amber-900"><%= order.shippingDetails.notes %></p>
+                  </div>
+                </div>
+              <% } %>
+
+              <!-- Action buttons -->
+              <div class="flex flex-col sm:flex-row gap-3 pt-2">
+                <% if (order.shippingDetails.latitude && order.shippingDetails.longitude) { %>
+                  <a href="https://www.google.com/maps/search/?api=1&query=<%= order.shippingDetails.latitude %>,<%= order.shippingDetails.longitude %>" target="_blank"
+                    class="flex-1 text-center py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs rounded-xl shadow-xs border border-indigo-150 transition-all flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-location-arrow text-[11px]"></i>
+                    <span>Iniciar Navegación (GPS)</span>
+                  </a>
+                <% } else { %>
+                  <a href="https://www.google.com/maps/search/?api=1&query=<%= encodeURIComponent(order.shippingDetails.address + ', ' + order.shippingDetails.city + ', ' + order.shippingDetails.province + ', Argentina') %>" target="_blank"
+                    class="flex-1 text-center py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs rounded-xl shadow-xs border border-indigo-150 transition-all flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-map-location-dot text-[11px]"></i>
+                    <span>Buscar Dirección en Mapa</span>
+                  </a>
+                <% } %>
+
+                <form action="/driver/orders/<%= order._id %>/deliver" method="POST" class="flex-1"
+                  onsubmit="return confirm('¿Seguro que ya entregaste el pedido al cliente y deseas marcarlo como entregado?');">
+                  <button type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-circle-check text-[11px]"></i>
+                    <span>Marcar como Entregado</span>
+                  </button>
+                </form>
+              </div>
+
+            </div>
+          <% }) %>
+        <% } %>
+      </div>
+
+      <!-- Completed Deliveries Section (History) -->
+      <div class="pt-4">
+        <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2 mb-4">
+          <i class="fa-solid fa-clock-rotate-left text-slate-400"></i>
+          Historial Reciente de Entregas Realizadas
+        </h3>
+        
+        <% if (deliveredOrders.length === 0) { %>
+          <p class="text-xs text-slate-400 bg-slate-50 border border-slate-150 p-4 rounded-2xl text-center">No registras entregas entregadas en tu historial reciente.</p>
+        <% } else { %>
+          <div class="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs divide-y divide-slate-150">
+                <thead class="bg-slate-50 font-bold text-slate-500">
+                  <tr>
+                    <th class="px-4 py-3">Pedido</th>
+                    <th class="px-4 py-3">Cliente</th>
+                    <th class="px-4 py-3">Dirección</th>
+                    <th class="px-4 py-3">Fecha Entrega</th>
+                    <th class="px-4 py-3 text-right">Total</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 text-slate-700">
+                  <% deliveredOrders.forEach(order => { %>
+                    <tr class="hover:bg-slate-50/50">
+                      <td class="px-4 py-3 font-bold">#<%= order._id.toString().substring(12).toUpperCase() %></td>
+                      <td class="px-4 py-3"><%= order.shippingDetails.name %></td>
+                      <td class="px-4 py-3 truncate max-w-[150px]" title="<%= order.shippingDetails.address %>"><%= order.shippingDetails.address %></td>
+                      <td class="px-4 py-3 text-slate-400"><%= new Date(order.updatedAt).toLocaleString('es-AR') %></td>
+                      <td class="px-4 py-3 font-black text-right text-slate-800"><%= formatPrice(order.total) %></td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        <% } %>
+      </div>
+
+    </div>
+
+    <!-- Live Chat Support Column -->
+    <div class="lg:col-span-1">
+      <div class="bg-white border border-slate-200 rounded-3xl shadow-sm p-5 space-y-4 relative overflow-hidden flex flex-col h-[550px]">
+        
+        <!-- Glassmorphism Blur Banner for "In Development" -->
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-[3px] z-20 flex flex-col items-center justify-center p-6 text-center text-white space-y-3">
+          <div class="w-12 h-12 rounded-full bg-indigo-650 flex items-center justify-center text-xl shadow-lg border border-indigo-500/30">
+            <i class="fa-solid fa-comments"></i>
+          </div>
+          <div>
+            <span class="inline-block px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase bg-brand-500 text-white tracking-widest animate-pulse">En Desarrollo</span>
+            <h3 class="display-font text-base font-extrabold tracking-tight mt-1.5">Chat en Vivo con Central</h3>
+            <p class="text-[10px] text-slate-200 leading-relaxed mt-1 max-w-[200px]">Estamos trabajando para que te comuniques en tiempo real con soporte y el administrador.</p>
+          </div>
+        </div>
+
+        <!-- Simulated Chat Header -->
+        <div class="flex items-center gap-2.5 border-b border-slate-100 pb-3 z-10">
+          <div class="relative">
+            <div class="w-8 h-8 rounded-full bg-slate-100 text-slate-650 flex items-center justify-center font-bold text-xs">
+              <i class="fa-solid fa-headset text-xs"></i>
+            </div>
+            <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-white rounded-full"></span>
+          </div>
+          <div>
+            <h3 class="text-xs font-bold text-slate-800 leading-none">Central & Soporte</h3>
+            <span class="text-[9px] text-emerald-600 font-semibold mt-0.5 block">Online</span>
+          </div>
+        </div>
+
+        <!-- Simulated Chat Messages Container -->
+        <div class="flex-1 overflow-y-auto space-y-3 pr-1 text-xs z-10">
+          <!-- Central Msg -->
+          <div class="flex gap-2 items-start max-w-[85%]">
+            <div class="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] text-slate-500 flex-shrink-0">
+              <i class="fa-solid fa-headset"></i>
+            </div>
+            <div class="bg-slate-100 text-slate-700 p-2.5 rounded-2xl rounded-tl-none">
+              <p class="leading-relaxed">¡Hola <%= driver.name %>! ¿Pudiste encontrar la dirección del pedido #A102?</p>
+              <span class="text-[9px] text-slate-400 block text-right mt-1">10:15</span>
+            </div>
+          </div>
+
+          <!-- Driver Msg -->
+          <div class="flex gap-2 items-start max-w-[85%] ml-auto justify-end">
+            <div class="bg-indigo-600 text-white p-2.5 rounded-2xl rounded-tr-none">
+              <p class="leading-relaxed">Sí, el cliente me recibió todo en orden. Ya saliendo para la siguiente entrega.</p>
+              <span class="text-[9px] text-indigo-200 block text-right mt-1">10:17</span>
+            </div>
+            <div class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-[10px] font-bold flex-shrink-0">
+              <%= driver.name.charAt(0).toUpperCase() %>
+            </div>
+          </div>
+
+          <!-- Central Msg -->
+          <div class="flex gap-2 items-start max-w-[85%]">
+            <div class="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] text-slate-500 flex-shrink-0">
+              <i class="fa-solid fa-headset"></i>
+            </div>
+            <div class="bg-slate-100 text-slate-700 p-2.5 rounded-2xl rounded-tl-none">
+              <p class="leading-relaxed">Excelente. Recordá marcarlo como entregado en tu listado para actualizar el sistema.</p>
+              <span class="text-[9px] text-slate-400 block text-right mt-1">10:18</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Simulated Chat Input -->
+        <div class="border-t border-slate-100 pt-3 flex gap-2 items-center z-10">
+          <input type="text" disabled placeholder="Escribe un mensaje..."
+            class="flex-1 bg-slate-50 border border-slate-200 text-slate-400 px-3 py-2 rounded-xl text-xs outline-none cursor-not-allowed">
+          <button type="button" disabled class="p-2 rounded-xl bg-slate-100 text-slate-400 cursor-not-allowed">
+            <i class="fa-solid fa-paper-plane text-xs"></i>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<%- include('../partials/footer') %>
