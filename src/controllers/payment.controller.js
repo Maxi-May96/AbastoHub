@@ -404,6 +404,79 @@ const uploadReceipt = async (req, res, next) => {
   }
 };
 
+// Helper function to restore stock when an order is cancelled
+const restoreOrderStock = async (order) => {
+  try {
+    if (!order.stockSubtracted) {
+      console.log(`ℹ️ Stock was not subtracted for order ${order._id}, no need to restore.`);
+      return;
+    }
+
+    console.log(`📈 Restoring stock for order ${order._id}...`);
+    for (const item of order.products) {
+      const prod = await Product.findById(item.product);
+      if (prod) {
+        const newStock = prod.stock + item.quantity;
+        prod.stock = newStock;
+        await prod.save();
+        console.log(`   - Product: ${prod.title}. Restored stock: +${item.quantity}, new stock: ${prod.stock}`);
+      } else {
+        console.warn(`   ⚠️ Product not found when trying to restore stock: ${item.product}`);
+      }
+    }
+
+    order.stockSubtracted = false;
+    await order.save();
+    console.log(`✅ Stock restoration completed for order ${order._id}`);
+  } catch (error) {
+    console.error('Error restoring order stock:', error.message);
+  }
+};
+
+// POST Cancel Order and Request Refund (Customer side)
+const cancelOrderAndRequestRefund = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const order = await Order.findById(id);
+
+    if (!order) {
+      return res.status(404).render('pages/error', {
+        title: 'Pedido no encontrado',
+        status: 404,
+        message: 'No pudimos localizar la orden para realizar la cancelación.',
+        stack: null
+      });
+    }
+
+    // Verify order ownership
+    if (order.user.toString() !== req.user.id) {
+      return res.status(403).render('pages/error', {
+        title: 'No autorizado',
+        status: 403,
+        message: 'No tienes permisos para cancelar este pedido.',
+        stack: null
+      });
+    }
+
+    // Verify status allows cancellation (must be before shipping)
+    if (['shipped', 'delivered', 'cancelled'].includes(order.status)) {
+      return res.redirect('/orders/history?error=' + encodeURIComponent('No se puede cancelar la orden porque ya está en camino, entregada o ya fue cancelada.'));
+    }
+
+    // Cancel order
+    order.status = 'cancelled';
+    order.paymentStatus = 'cancelled';
+    await order.save();
+
+    // Restore stock if it was subtracted
+    await restoreOrderStock(order);
+
+    res.redirect('/orders/history?success=' + encodeURIComponent(`Pedido #${order._id.toString().substring(12).toUpperCase()} cancelado exitosamente y reembolso solicitado.`));
+  } catch (error) {
+    next(error);
+  }
+};
+
 // GET User's Order History Page
 const getOrderHistory = async (req, res, next) => {
   try {
@@ -412,7 +485,9 @@ const getOrderHistory = async (req, res, next) => {
     res.render('pages/orders-history', {
       title: 'Mis Compras',
       orders,
-      formatPrice
+      formatPrice,
+      success: req.query.success || null,
+      error: req.query.error || null
     });
   } catch (error) {
     next(error);
@@ -427,5 +502,6 @@ module.exports = {
   getSimulateCheckout,
   postSimulateCheckout,
   uploadReceipt,
+  cancelOrderAndRequestRefund,
   getOrderHistory
 };

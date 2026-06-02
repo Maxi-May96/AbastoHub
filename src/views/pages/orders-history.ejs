@@ -15,6 +15,19 @@
       <i class="fa-solid fa-bag-shopping"></i> Ir a la Tienda
     </a>
   </div>
+  <!-- Messages Feedback -->
+  <% if (locals.success) { %>
+    <div class="mb-6 bg-emerald-50 border border-emerald-100 text-emerald-700 p-4 rounded-2xl text-sm flex gap-2 items-center">
+      <i class="fa-solid fa-circle-check text-base"></i>
+      <span><%= success %></span>
+    </div>
+  <% } %>
+  <% if (locals.error) { %>
+    <div class="mb-6 bg-rose-50 border border-rose-100 text-rose-700 p-4 rounded-2xl text-sm flex gap-2 items-center">
+      <i class="fa-solid fa-circle-exclamation text-base"></i>
+      <span><%= error %></span>
+    </div>
+  <% } %>
 
   <% if (orders && orders.length > 0) { %>
     <!-- Orders List Container -->
@@ -99,6 +112,15 @@
               </div>
 
               <div class="flex flex-wrap gap-2 w-full justify-stretch md:justify-end mt-2">
+                <% if (!['shipped', 'delivered', 'cancelled'].includes(order.status)) { %>
+                  <form action="/orders/<%= order._id %>/cancel" method="POST" class="inline flex-1 md:flex-none"
+                    onsubmit="return confirm('¿Seguro deseas cancelar este pedido y solicitar un reembolso?');">
+                    <button type="submit" 
+                      class="w-full text-center px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs rounded-xl border border-rose-250 transition-all flex items-center justify-center gap-1.5">
+                      <i class="fa-solid fa-ban text-[11px]"></i> Cancelar y Reembolso
+                    </button>
+                  </form>
+                <% } %>
                 <a href="/orders/<%= order._id %>/ticket" target="_blank" 
                   class="flex-1 md:flex-none text-center px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5">
                   <i class="fa-solid fa-file-pdf text-[11px]"></i> Ticket PDF
