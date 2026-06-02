@@ -1097,6 +1097,178 @@ const deleteAllOrders = async (req, res, next) => {
   }
 };
 
+// GET Generate Catalog Price List PDF (Admin / Public)
+const generatePriceListPDF = async (req, res, next) => {
+  try {
+    const products = await Product.find({ active: true }).populate('category').sort({ title: 1 });
+    
+    // Group products by category
+    const grouped = {};
+    products.forEach(p => {
+      const catName = p.category ? p.category.name : 'Otros';
+      if (!grouped[catName]) {
+        grouped[catName] = [];
+      }
+      grouped[catName].push(p);
+    });
+
+    const doc = new PDFDocument({ size: 'A4', margin: 40 });
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename=lista-de-precios.pdf');
+    doc.pipe(res);
+    
+    // Color Palette
+    const primaryColor = '#10b981'; // Emerald Green
+    const darkSlate = '#0f172a'; // Deep slate
+    const textGray = '#475569';  // Slate gray
+    const bgGray = '#f8fafc';    // Soft slate background
+    const borderGray = '#e2e8f0';  // Very light gray border
+    
+    // 1. Decorative Brand Bar
+    doc.rect(40, 40, 515, 5).fill(primaryColor);
+    
+    // Logo & Header Brand
+    const logoPath = path.join(__dirname, '../../public/img/logo.png');
+    let headerTextX = 40;
+    try {
+      doc.image(logoPath, 40, 55, { height: 35 });
+      headerTextX = 90;
+    } catch (err) {
+      headerTextX = 40;
+    }
+    
+    doc.fillColor(darkSlate)
+       .fontSize(18)
+       .font('Helvetica-Bold')
+       .text('AbastoHub', headerTextX, 55)
+       .fontSize(8.5)
+       .font('Helvetica-Bold')
+       .fillColor(textGray)
+       .text('LISTA DE PRECIOS VIGENTE', headerTextX, 76);
+       
+    doc.fillColor(darkSlate)
+       .fontSize(10)
+       .font('Helvetica-Bold')
+       .text('Catálogo Oficial', 330, 55, { align: 'right', width: 225 })
+       .font('Helvetica')
+       .fontSize(8.5)
+       .fillColor(textGray)
+       .text(`Generada: ${new Date().toLocaleDateString('es-AR')}`, 330, 68, { align: 'right', width: 225 })
+       .text('Precios sujetos a cambio sin previo aviso', 330, 80, { align: 'right', width: 225 });
+
+    let currentY = 110;
+
+    // Draw lines for each category
+    const categoriesList = Object.keys(grouped).sort();
+    
+    if (categoriesList.length === 0) {
+      doc.fontSize(12)
+         .font('Helvetica')
+         .fillColor(textGray)
+         .text('No hay productos activos en el catálogo actualmente.', 40, currentY);
+    } else {
+      categoriesList.forEach((catName) => {
+        const catProducts = grouped[catName];
+        
+        // Manage page break if category header is too low
+        if (currentY > 700) {
+          doc.addPage();
+          doc.rect(40, 40, 515, 5).fill(primaryColor);
+          currentY = 60;
+        }
+
+        // Category Title Bar
+        doc.rect(40, currentY, 515, 20).fill(bgGray);
+        doc.rect(40, currentY, 515, 20).lineWidth(0.5).strokeColor(borderGray).stroke();
+        
+        doc.fillColor(primaryColor)
+           .font('Helvetica-Bold')
+           .fontSize(10)
+           .text(catName.toUpperCase(), 50, currentY + 5);
+
+        currentY += 25;
+
+        // Table Header
+        doc.rect(40, currentY, 515, 18).fill('#e2e8f0');
+        doc.fillColor(darkSlate)
+           .font('Helvetica-Bold')
+           .fontSize(8.5)
+           .text('PRODUCTO', 45, currentY + 5)
+           .text('UNIDAD', 260, currentY + 5)
+           .text('PRECIO MINORISTA', 340, currentY + 5, { width: 100, align: 'right' })
+           .text('PRECIO MAYORISTA (6+ u.)', 450, currentY + 5, { width: 100, align: 'right' });
+
+        currentY += 18;
+
+        catProducts.forEach((p, idx) => {
+          // Page break
+          if (currentY > 740) {
+            doc.addPage();
+            doc.rect(40, 40, 515, 5).fill(primaryColor);
+            
+            // Re-draw Table Header on new page
+            currentY = 60;
+            doc.rect(40, currentY, 515, 18).fill('#e2e8f0');
+            doc.fillColor(darkSlate)
+               .font('Helvetica-Bold')
+               .fontSize(8.5)
+               .text('PRODUCTO', 45, currentY + 5)
+               .text('UNIDAD', 260, currentY + 5)
+               .text('PRECIO MINORISTA', 340, currentY + 5, { width: 100, align: 'right' })
+               .text('PRECIO MAYORISTA (6+ u.)', 450, currentY + 5, { width: 100, align: 'right' });
+            currentY += 18;
+          }
+
+          // Zebra backgrounds
+          if (idx % 2 === 0) {
+            doc.rect(40, currentY, 515, 20).fill('#f8fafc');
+          } else {
+            doc.rect(40, currentY, 515, 20).fill('#ffffff');
+          }
+
+          const wholesale = p.wholesalePrice || p.price;
+
+          doc.fillColor(darkSlate)
+             .font('Helvetica-Bold')
+             .fontSize(8.5)
+             .text(p.title, 45, currentY + 6, { width: 210, truncate: true })
+             .font('Helvetica')
+             .fontSize(8)
+             .text(p.unit || 'unidades', 260, currentY + 6)
+             .font('Helvetica-Bold')
+             .fillColor(darkSlate)
+             .text(formatPrice(p.price), 340, currentY + 6, { width: 100, align: 'right' })
+             .fillColor(primaryColor)
+             .text(formatPrice(wholesale), 450, currentY + 6, { width: 100, align: 'right' });
+
+          doc.rect(40, currentY + 20, 515, 0.5).fill(borderGray);
+          currentY += 20;
+        });
+
+        currentY += 15; // Gap between categories
+      });
+    }
+
+    // Footer
+    if (currentY > 740) {
+      doc.addPage();
+      currentY = 40;
+    }
+    
+    const footerY = 780;
+    doc.rect(40, footerY, 515, 0.5).fill(borderGray);
+    doc.fillColor(textGray)
+       .font('Helvetica-Oblique')
+       .fontSize(7.5)
+       .text('AbastoHub - Tu distribuidora de confianza. Precios expresados en Pesos Argentinos ($).', 40, footerY + 10, { align: 'center', width: 515 });
+
+    doc.end();
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getProducts,
   getProductBySlug,
@@ -1121,5 +1293,6 @@ module.exports = {
   createDriver,
   deleteDriver,
   deleteOrder,
-  deleteAllOrders
+  deleteAllOrders,
+  generatePriceListPDF
 };

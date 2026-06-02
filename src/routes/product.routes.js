@@ -10,6 +10,7 @@ router.get('/products/:slug', productController.getProductBySlug);
 
 // Admin product management routes
 router.get('/admin', isAuthenticated, isAdmin, productController.getAdminPanel);
+router.get('/admin/products/download-prices', isAuthenticated, isAdmin, productController.generatePriceListPDF);
 router.post('/admin/products', isAuthenticated, isAdmin, upload.array('images', 3), productController.createProduct);
 router.post('/admin/products/:id/stock', isAuthenticated, isAdmin, productController.updateStock);
 router.post('/admin/products/:id/price', isAuthenticated, isAdmin, productController.updatePrice);
