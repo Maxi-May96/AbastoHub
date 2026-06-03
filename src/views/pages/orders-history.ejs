@@ -112,6 +112,15 @@
               </div>
 
               <div class="flex flex-wrap gap-2 w-full justify-stretch md:justify-end mt-2">
+                <% if (order.status === 'shipped') { %>
+                  <form action="/orders/<%= order._id %>/receive" method="POST" class="inline flex-1 md:flex-none"
+                    onsubmit="return confirm('¿Seguro que has recibido el pedido correctamente? Esto habilitará tu código para el sorteo.');">
+                    <button type="submit" 
+                      class="w-full text-center px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5">
+                      <i class="fa-solid fa-circle-check text-[11px]"></i> Confirmar Recepción
+                    </button>
+                  </form>
+                <% } %>
                 <% if (!['shipped', 'delivered', 'cancelled'].includes(order.status)) { %>
                   <form action="/orders/<%= order._id %>/cancel" method="POST" class="inline flex-1 md:flex-none"
                     onsubmit="return confirm('¿Seguro deseas cancelar este pedido y solicitar un reembolso?');">
@@ -131,6 +140,37 @@
                 </a>
               </div>
             </div>
+
+          <% if (order.raffleCode) { %>
+            <div class="mt-5 pt-4 border-t border-slate-100 w-full">
+              <% if (order.status === 'delivered') { %>
+                <div class="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-250/80 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+                  <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-600 text-lg flex-shrink-0">
+                      <i class="fa-solid fa-ticket"></i>
+                    </div>
+                    <div>
+                      <h4 class="font-bold text-slate-800 text-xs">Código de Sorteo Activado</h4>
+                      <p class="text-[10px] text-slate-500 mt-0.5">Usa este código para registrarte y participar en el sorteo de AbastoHub.</p>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-2 flex-shrink-0">
+                    <span class="bg-white border border-amber-200 text-amber-800 font-extrabold text-xs tracking-wider px-3.5 py-2 rounded-xl select-all font-mono">
+                      <%= order.raffleCode %>
+                    </span>
+                    <a href="/sorteo?code=<%= order.raffleCode %>" class="bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs px-4 py-2 rounded-xl transition-all shadow-xs flex items-center gap-1">
+                      <i class="fa-solid fa-trophy text-[10px]"></i> Participar
+                    </a>
+                  </div>
+                </div>
+              <% } else if (order.status !== 'cancelled') { %>
+                <div class="bg-slate-50 border border-slate-200/60 rounded-2xl p-3.5 flex items-center gap-2.5 text-slate-550 text-[11px] font-medium animate-pulse">
+                  <i class="fa-solid fa-circle-info text-slate-400 text-sm flex-shrink-0"></i>
+                  <p>El código de sorteo se activará cuando confirmes la recepción del pedido.</p>
+                </div>
+              <% } %>
+            </div>
+          <% } %>
 
           <% if (order.status === 'cancelled') { %>
             <div class="mt-4 bg-rose-50 border border-rose-150 rounded-2xl p-4 flex gap-3 items-start text-xs text-rose-800">

@@ -18,6 +18,7 @@ router.post('/payment/webhook', paymentController.handleWebhook);
 // Upload payment receipt
 router.post('/orders/:id/receipt', isAuthenticated, upload.single('receipt'), paymentController.uploadReceipt);
 router.post('/orders/:id/cancel', isAuthenticated, paymentController.cancelOrderAndRequestRefund);
+router.post('/orders/:id/receive', isAuthenticated, paymentController.receiveOrder);
 
 // Local checkout simulation (fallback when MP credentials are empty)
 router.get('/payment/simulate-checkout', paymentController.getSimulateCheckout);

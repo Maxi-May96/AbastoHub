@@ -462,9 +462,11 @@
                           </div>
                         </div>
                       <% } else { %>
-                        <span class="text-[10px] font-semibold text-slate-450 bg-slate-50 border border-slate-200/60 px-2.5 py-1.5 rounded-xl inline-flex items-center gap-1.5 shadow-2xs">
-                          <i class="fa-solid fa-clock-rotate-left text-[9px] text-slate-400"></i> Función en desarrollo
-                        </span>
+                        <form action="/partner/orders/<%= order._id %>/ship" method="POST" class="inline" onsubmit="return confirm('¿Seguro desea marcar este pedido como en camino?');">
+                          <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[10px] px-2.5 py-1.5 rounded-xl transition-all shadow-sm flex items-center gap-1">
+                            <i class="fa-solid fa-truck-fast text-[9px]"></i> Poner en Camino
+                          </button>
+                        </form>
                       <% } %>
                     </td>
 

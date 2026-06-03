@@ -569,6 +569,27 @@ const dispatchPartnerRoute = async (req, res, next) => {
   }
 };
 
+const shipOrder = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const order = await Order.findById(id);
+    if (!order) {
+      return res.redirect('/partner/panel?error=' + encodeURIComponent('Pedido no encontrado.'));
+    }
+    
+    order.status = 'shipped';
+    order.driverName = 'Logística del Socio';
+    order.driverVehicle = 'Particular';
+    order.dispatchedAt = new Date();
+    await order.save();
+    
+    res.redirect('/partner/panel?success=' + encodeURIComponent('El pedido ha sido marcado en camino.'));
+  } catch (error) {
+    console.error('Ship order error:', error.message);
+    res.redirect('/partner/panel?error=' + encodeURIComponent('Error al marcar el pedido en camino: ' + error.message));
+  }
+};
+
 module.exports = {
   getLogin,
   postLogin,
@@ -585,5 +606,6 @@ module.exports = {
   createPartnerDriver,
   deletePartnerDriver,
   assignDriverToOrder,
-  dispatchPartnerRoute
+  dispatchPartnerRoute,
+  shipOrder
 };

@@ -514,6 +514,46 @@ const getOrderHistory = async (req, res, next) => {
   }
 };
 
+// POST Confirm Order Received (Customer side)
+const receiveOrder = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const order = await Order.findById(id);
+
+    if (!order) {
+      return res.status(404).render('pages/error', {
+        title: 'Pedido no encontrado',
+        status: 404,
+        message: 'No pudimos localizar el pedido.',
+        stack: null
+      });
+    }
+
+    // Verify order ownership
+    if (order.user.toString() !== req.user.id) {
+      return res.status(403).render('pages/error', {
+        title: 'No autorizado',
+        status: 403,
+        message: 'No tienes permisos para modificar este pedido.',
+        stack: null
+      });
+    }
+
+    // Check status
+    if (order.status !== 'shipped') {
+      return res.redirect('/orders/history?error=' + encodeURIComponent('Solo se puede marcar como recibido un pedido que se encuentra En Camino.'));
+    }
+
+    order.status = 'delivered';
+    order.deliveredAt = new Date();
+    await order.save();
+
+    res.redirect('/orders/history?success=' + encodeURIComponent(`Pedido #${order._id.toString().substring(12).toUpperCase()} confirmado como recibido. ¡Ya puedes usar tu código de sorteo!`));
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getCheckout,
   processCheckout,
@@ -523,5 +563,6 @@ module.exports = {
   postSimulateCheckout,
   uploadReceipt,
   cancelOrderAndRequestRefund,
-  getOrderHistory
+  getOrderHistory,
+  receiveOrder
 };
