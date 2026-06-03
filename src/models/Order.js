@@ -49,6 +49,11 @@ const OrderSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  paymentMethod: {
+    type: String,
+    enum: ['mercadopago', 'transfer'],
+    default: 'mercadopago'
+  },
   paymentReceipt: {
     type: String,
     default: null

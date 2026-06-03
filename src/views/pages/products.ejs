@@ -33,20 +33,107 @@
     <aside class="w-full lg:w-64 flex-shrink-0">
       <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm sticky top-24 space-y-6">
         
-        <!-- Search bar input nested inside filters for completeness -->
-        <div>
-          <h3 class="display-font text-xs font-bold uppercase tracking-wider text-slate-450 mb-3">Buscar</h3>
-          <form action="/products" method="GET" class="relative">
-            <% if (activeCategory) { %>
-              <input type="hidden" name="category" value="<%= activeCategory.slug %>">
+        <form action="/products" method="GET" id="filters-form" class="space-y-6">
+          <% if (activeCategory) { %>
+            <input type="hidden" name="category" value="<%= activeCategory.slug %>">
+          <% } %>
+          
+          <!-- Hidden location coordinates -->
+          <input type="hidden" id="user-lat" name="userLat" value="<%= userLat %>">
+          <input type="hidden" id="user-lng" name="userLng" value="<%= userLng %>">
+
+          <!-- Search bar input -->
+          <div>
+            <h3 class="display-font text-xs font-bold uppercase tracking-wider text-slate-450 mb-2">Buscar</h3>
+            <div class="relative">
+              <input type="text" name="search" placeholder="Escribe aquí..." value="<%= search %>"
+                class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 pl-3 pr-8 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-xs">
+              <button type="submit" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-brand-600">
+                <i class="fa-solid fa-magnifying-glass text-xs"></i>
+              </button>
+            </div>
+          </div>
+
+          <hr class="border-slate-100">
+
+          <!-- Geolocation proximity filter -->
+          <div>
+            <h3 class="display-font text-xs font-bold uppercase tracking-wider text-slate-450 mb-2 flex items-center gap-1.5">
+              <i class="fa-solid fa-location-crosshairs text-brand-600"></i> Cercanía GPS
+            </h3>
+            
+            <% if (userLat && userLng) { %>
+              <div class="bg-emerald-50 border border-emerald-100 p-3 rounded-xl space-y-3 mb-3">
+                <div class="flex items-center justify-between">
+                  <span class="text-[10px] text-emerald-800 font-bold uppercase tracking-wider flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span> Activo
+                  </span>
+                  <button type="button" onclick="clearLocation()" class="text-[10px] text-rose-600 hover:text-rose-800 font-bold flex items-center gap-0.5">
+                    <i class="fa-solid fa-trash-can text-[9px]"></i> Quitar
+                  </button>
+                </div>
+                
+                <div class="space-y-1">
+                  <label for="max-distance" class="text-[10px] text-slate-500 font-semibold block">Rango: <span id="distance-val" class="font-extrabold text-brand-650"><%= maxDistance || '50' %></span> km</label>
+                  <input type="range" id="max-distance" name="maxDistance" min="5" max="150" step="5" value="<%= maxDistance || '50' %>" 
+                    oninput="document.getElementById('distance-val').innerText = this.value"
+                    onchange="this.form.submit()"
+                    class="w-full accent-brand-600 cursor-pointer h-1 bg-slate-200 rounded-lg appearance-none">
+                </div>
+              </div>
+            <% } else { %>
+              <button type="button" onclick="requestUserLocation(event)" 
+                class="w-full py-2.5 bg-slate-50 hover:bg-brand-50 hover:text-brand-700 text-slate-600 border border-slate-200 hover:border-brand-200 font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition-all">
+                <i class="fa-solid fa-location-arrow"></i>
+                Usar mi Ubicación
+              </button>
             <% } %>
-            <input type="text" name="search" placeholder="Escribe aquí..." value="<%= search %>"
-              class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 pl-3 pr-8 py-2 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-xs">
-            <button type="submit" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-brand-600">
-              <i class="fa-solid fa-magnifying-glass text-xs"></i>
-            </button>
-          </form>
-        </div>
+          </div>
+
+          <hr class="border-slate-100">
+
+          <!-- Province Filter -->
+          <div>
+            <h3 class="display-font text-xs font-bold uppercase tracking-wider text-slate-450 mb-2">Provincia</h3>
+            <select name="province" onchange="this.form.submit()" 
+              class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-700 outline-none focus:border-brand-500/40 focus:ring-4 focus:ring-brand-500/10 transition-all font-semibold">
+              <option value="">Todas las Provincias</option>
+              <% provinces.forEach(p => { %>
+                <option value="<%= p %>" <%= province === p ? 'selected' : '' %>><%= p %></option>
+              <% }); %>
+            </select>
+          </div>
+
+          <!-- Partner Filter -->
+          <div>
+            <h3 class="display-font text-xs font-bold uppercase tracking-wider text-slate-450 mb-2">Socio / Productor</h3>
+            <select name="partner" onchange="this.form.submit()" 
+              class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-700 outline-none focus:border-brand-500/40 focus:ring-4 focus:ring-brand-500/10 transition-all font-semibold">
+              <option value="">Todos los Productores</option>
+              <% partners.forEach(part => { %>
+                <option value="<%= part._id %>" <%= partner === part._id.toString() ? 'selected' : '' %>><%= part.name %></option>
+              <% }); %>
+            </select>
+          </div>
+
+          <hr class="border-slate-100">
+
+          <!-- Sorting -->
+          <div>
+            <h3 class="display-font text-xs font-bold uppercase tracking-wider text-slate-450 mb-2">Ordenar Por</h3>
+            <select name="sort" onchange="this.form.submit()" 
+              class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-700 outline-none focus:border-brand-500/40 focus:ring-4 focus:ring-brand-500/10 transition-all font-semibold">
+              <option value="" <%= sort === '' ? 'selected' : '' %>>Más recientes</option>
+              <% if (userLat && userLng) { %>
+                <option value="distance_asc" <%= sort === 'distance_asc' ? 'selected' : '' %>>Cercanía: Más cercanos</option>
+              <% } %>
+              <option value="price_asc" <%= sort === 'price_asc' ? 'selected' : '' %>>Precio: Menor a Mayor</option>
+              <option value="price_desc" <%= sort === 'price_desc' ? 'selected' : '' %>>Precio: Mayor a Menor</option>
+              <option value="title_asc" <%= sort === 'title_asc' ? 'selected' : '' %>>Nombre: A - Z</option>
+            </select>
+          </div>
+
+        </form>
 
         <hr class="border-slate-100">
 
@@ -55,15 +142,15 @@
           <h3 class="display-font text-xs font-bold uppercase tracking-wider text-slate-450 mb-3">Categorías</h3>
           <ul class="space-y-1.5 text-sm">
             <li>
-              <a href="/products<%= search ? `?search=${search}` : '' %>" 
-                class="flex items-center justify-between px-2.5 py-1.5 rounded-lg font-medium <%= !activeCategory ? 'text-brand-600 bg-brand-50/50' : 'text-slate-600 hover:bg-slate-50' %>">
+              <a href="/products<%= search ? `?search=${search}` : '' %><%= province ? `&province=${province}` : '' %><%= partner ? `&partner=${partner}` : '' %><%= userLat ? `&userLat=${userLat}&userLng=${userLng}` : '' %><%= maxDistance ? `&maxDistance=${maxDistance}` : '' %>" 
+                class="flex items-center justify-between px-2.5 py-1.5 rounded-lg font-medium <%= !activeCategory ? 'text-brand-600 bg-brand-50/50 font-bold' : 'text-slate-600 hover:bg-slate-50' %>">
                 <span>Todas</span>
                 <i class="fa-solid fa-chevron-right text-[9px] opacity-40"></i>
               </a>
             </li>
             <% categories.forEach(category => { %>
               <li>
-                <a href="/products?category=<%= category.slug %><%= search ? `&search=${search}` : '' %>" 
+                <a href="/products?category=<%= category.slug %><%= search ? `&search=${search}` : '' %><%= province ? `&province=${province}` : '' %><%= partner ? `&partner=${partner}` : '' %><%= userLat ? `&userLat=${userLat}&userLng=${userLng}` : '' %><%= maxDistance ? `&maxDistance=${maxDistance}` : '' %>" 
                   class="flex items-center justify-between px-2.5 py-1.5 rounded-lg font-medium <%= activeCategory && activeCategory.slug === category.slug ? 'text-brand-600 bg-brand-50/50 font-bold' : 'text-slate-600 hover:bg-slate-50' %>">
                   <span class="truncate"><%= category.name %></span>
                   <i class="fa-solid fa-chevron-right text-[9px] opacity-40"></i>
@@ -73,30 +160,8 @@
           </ul>
         </div>
 
-        <hr class="border-slate-100">
-
-        <!-- Sorting -->
-        <div>
-          <h3 class="display-font text-xs font-bold uppercase tracking-wider text-slate-450 mb-3">Ordenar Por</h3>
-          <form action="/products" method="GET" id="sort-form">
-            <% if (activeCategory) { %>
-              <input type="hidden" name="category" value="<%= activeCategory.slug %>">
-            <% } %>
-            <% if (search) { %>
-              <input type="hidden" name="search" value="<%= search %>">
-            <% } %>
-            <select name="sort" onchange="this.form.submit()" 
-              class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-700 outline-none focus:border-brand-500/40 focus:ring-4 focus:ring-brand-500/10">
-              <option value="" <%= sort === '' ? 'selected' : '' %>>Más recientes</option>
-              <option value="price_asc" <%= sort === 'price_asc' ? 'selected' : '' %>>Precio: Menor a Mayor</option>
-              <option value="price_desc" <%= sort === 'price_desc' ? 'selected' : '' %>>Precio: Mayor a Menor</option>
-              <option value="title_asc" <%= sort === 'title_asc' ? 'selected' : '' %>>Nombre: A - Z</option>
-            </select>
-          </form>
-        </div>
-
         <!-- Reset Button -->
-        <% if (activeCategory || search || sort) { %>
+        <% if (activeCategory || search || sort || province || partner || userLat) { %>
           <div class="pt-2">
             <a href="/products" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-colors">
               <i class="fa-solid fa-filter-circle-xmark"></i>
@@ -134,6 +199,26 @@
 
               <!-- Info Container -->
               <div class="p-5 flex flex-col flex-grow">
+                
+                <!-- Partner and Proximity Badges -->
+                <div class="flex flex-wrap gap-1.5 mb-2.5">
+                  <% if (product.partner) { %>
+                    <span class="bg-emerald-50 text-emerald-850 text-[9px] font-extrabold px-2 py-0.5 rounded-full border border-emerald-100 flex items-center gap-1">
+                      <i class="fa-solid fa-handshake"></i> <%= product.partner.name %> (<%= product.partner.province || 'S/D' %>)
+                    </span>
+                  <% } else { %>
+                    <span class="bg-slate-100 text-slate-750 text-[9px] font-bold px-2 py-0.5 rounded-full border border-slate-200 flex items-center gap-1">
+                      <i class="fa-solid fa-store"></i> AbastoHub Central
+                    </span>
+                  <% } %>
+                  
+                  <% if (product.distance !== undefined && product.distance !== null) { %>
+                    <span class="bg-indigo-50 text-indigo-700 text-[9px] font-extrabold px-2 py-0.5 rounded-full border border-indigo-150 flex items-center gap-1" title="Distancia aproximada">
+                      <i class="fa-solid fa-location-dot text-indigo-500 animate-pulse"></i> A <%= product.distance.toFixed(1) %> km
+                    </span>
+                  <% } %>
+                </div>
+
                 <a href="/products/<%= product.slug %>" class="block mb-1.5 group-hover:text-brand-600 transition-colors">
                   <h3 class="display-font text-base font-bold text-slate-900 leading-snug line-clamp-2"><%= product.title %></h3>
                 </a>
@@ -200,5 +285,50 @@
 
   </div>
 </div>
+
+<script>
+  function requestUserLocation(event) {
+    if (navigator.geolocation) {
+      const btn = event.currentTarget;
+      const originalText = btn.innerHTML;
+      btn.innerHTML = `<i class="fa-solid fa-circle-notch animate-spin text-xs text-brand-600"></i> Obteniendo...`;
+      btn.disabled = true;
+
+      navigator.geolocation.getCurrentPosition(
+        function(position) {
+          document.getElementById('user-lat').value = position.coords.latitude;
+          document.getElementById('user-lng').value = position.coords.longitude;
+          
+          const form = document.getElementById('filters-form');
+          if (!form.querySelector('input[name="maxDistance"]')) {
+            const maxDistInput = document.createElement('input');
+            maxDistInput.type = 'hidden';
+            maxDistInput.name = 'maxDistance';
+            maxDistInput.value = '50';
+            form.appendChild(maxDistInput);
+          }
+          
+          form.submit();
+        },
+        function(error) {
+          alert('No pudimos acceder a tu ubicación. Por favor, habilita los permisos de localización en tu navegador.');
+          btn.innerHTML = originalText;
+          btn.disabled = false;
+        }
+      );
+    } else {
+      alert('Tu navegador no soporta geolocalización.');
+    }
+  }
+
+  function clearLocation() {
+    document.getElementById('user-lat').value = '';
+    document.getElementById('user-lng').value = '';
+    const form = document.getElementById('filters-form');
+    const maxDist = form.querySelector('input[name="maxDistance"]');
+    if (maxDist) maxDist.remove();
+    form.submit();
+  }
+</script>
 
 <%- include('../partials/footer') %>

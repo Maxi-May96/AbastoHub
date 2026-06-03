@@ -322,6 +322,34 @@ const updateBankDetails = async (req, res, next) => {
   }
 };
 
+const updateLocation = async (req, res, next) => {
+  try {
+    const { province, latitude, longitude, address } = req.body;
+    
+    if (!province || !latitude || !longitude) {
+      return res.redirect('/partner/panel?error=' + encodeURIComponent('La provincia y la ubicación geográfica en el mapa son obligatorias.'));
+    }
+
+    const partner = await Partner.findById(req.partner.id);
+    if (!partner) {
+      return res.redirect('/partner/login');
+    }
+
+    partner.province = province.trim();
+    partner.latitude = Number(latitude);
+    partner.longitude = Number(longitude);
+    if (address !== undefined) {
+      partner.address = address.trim();
+    }
+    await partner.save();
+
+    res.redirect('/partner/panel?success=' + encodeURIComponent('Ubicación del negocio configurada con éxito.'));
+  } catch (error) {
+    console.error('Update location error:', error.message);
+    res.redirect('/partner/panel?error=' + encodeURIComponent('Error al actualizar la ubicación.'));
+  }
+};
+
 // POST Partner Request Payout/Withdrawal
 const requestWithdrawal = async (req, res, next) => {
   try {
@@ -552,6 +580,7 @@ module.exports = {
   updateProductDetails,
   deleteProduct,
   updateBankDetails,
+  updateLocation,
   requestWithdrawal,
   createPartnerDriver,
   deletePartnerDriver,

@@ -10,10 +10,23 @@ const formatPrice = require('../utils/formatPrice');
 const PDFDocument = require('pdfkit');
 const path = require('path');
 
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371; // Radius of the earth in km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const d = R * c; // Distance in km
+  return d;
+}
+
 // GET Catalog Page
 const getProducts = async (req, res, next) => {
   try {
-    const { category: categorySlug, search, minPrice, maxPrice, sort } = req.query;
+    const { category: categorySlug, search, minPrice, maxPrice, sort, partner: partnerId, province, userLat, userLng, maxDistance } = req.query;
     
     // Build query filter
     const query = { active: true };
@@ -40,6 +53,16 @@ const getProducts = async (req, res, next) => {
       if (minPrice) query.price.$gte = Number(minPrice);
       if (maxPrice) query.price.$lte = Number(maxPrice);
     }
+
+    // Filter by Partner
+    if (partnerId) {
+      query.partner = partnerId;
+    } else if (province) {
+      // Filter by Province (find all partners in that province)
+      const partnersInProvince = await Partner.find({ province }).select('_id');
+      const partnerIds = partnersInProvince.map(p => p._id);
+      query.partner = { $in: partnerIds };
+    }
     
     // Sort query
     let sortQuery = { createdAt: -1 };
@@ -50,9 +73,48 @@ const getProducts = async (req, res, next) => {
     }
     
     // Fetch products and categories
-    const products = await Product.find(query).populate('category').sort(sortQuery);
+    let products = await Product.find(query).populate('category').populate('partner').sort(sortQuery);
+    
+    // Calculate distance and filter if user sharing location
+    if (userLat && userLng) {
+      const uLat = parseFloat(userLat);
+      const uLng = parseFloat(userLng);
+      
+      products = products.map(prod => {
+        let distance = null;
+        let lat = -34.603722; // default central warehouse (Obelisco, Buenos Aires)
+        let lng = -58.381592;
+        
+        if (prod.partner && prod.partner.latitude !== null && prod.partner.longitude !== null) {
+          lat = prod.partner.latitude;
+          lng = prod.partner.longitude;
+          distance = calculateDistance(uLat, uLng, lat, lng);
+        } else {
+          // Assume central warehouse for global products
+          distance = calculateDistance(uLat, uLng, lat, lng);
+        }
+        
+        const pObj = prod.toObject ? prod.toObject() : { ...prod };
+        pObj.distance = distance;
+        return pObj;
+      });
+
+      // Filter by maxDistance if requested
+      if (maxDistance) {
+        const maxDistNum = parseFloat(maxDistance);
+        products = products.filter(p => p.distance <= maxDistNum);
+      }
+
+      // If sort is distance_asc or not specified, sort by proximity
+      if (!sort || sort === 'distance_asc') {
+        products.sort((a, b) => a.distance - b.distance);
+      }
+    }
+
     const categories = await Category.find({});
     const activeCategory = categorySlug ? await Category.findOne({ slug: categorySlug }) : null;
+    const partners = await Partner.find({ active: true }).sort({ name: 1 });
+    const provinces = await Partner.distinct('province', { active: true, province: { $ne: '' } });
 
     res.render('pages/products', {
       title: 'Catálogo de Productos',
@@ -63,6 +125,13 @@ const getProducts = async (req, res, next) => {
       minPrice: minPrice || '',
       maxPrice: maxPrice || '',
       sort: sort || '',
+      partner: partnerId || '',
+      province: province || '',
+      userLat: userLat || '',
+      userLng: userLng || '',
+      maxDistance: maxDistance || '',
+      partners,
+      provinces,
       formatPrice
     });
   } catch (error) {
@@ -332,7 +401,13 @@ const deleteProduct = async (req, res, next) => {
 const generatePDFTicket = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const order = await Order.findById(id).populate('user');
+    const order = await Order.findById(id)
+      .populate('user')
+      .populate({
+        path: 'products.product',
+        populate: { path: 'partner' }
+      });
+
     if (!order) {
       return res.status(404).send('Pedido no encontrado');
     }
@@ -351,7 +426,7 @@ const generatePDFTicket = async (req, res, next) => {
 
     // Color Palette
     const primaryColor = '#10b981'; // Emerald Green
-    const darkSlate = '#0f172a'; // Deep slate (almost black)
+    const darkSlate = '#0f172a'; // Deep slate
     const textGray = '#475569';  // Slate gray
     const bgGray = '#f8fafc';    // Soft slate background
     const borderGray = '#e2e8f0';  // Very light gray border
@@ -360,15 +435,15 @@ const generatePDFTicket = async (req, res, next) => {
     const statusAmber = '#fffbeb';
     const statusTextAmber = '#b45309';
 
-    // 1. Top Decorative Brand Bar
-    doc.rect(40, 40, 515, 5).fill(primaryColor);
+    // 1. Decorative Header Brand Bar
+    doc.rect(40, 40, 515, 6).fill(primaryColor);
     
     // Logo & Header Brand
     const logoPath = path.join(__dirname, '../../public/img/logo.png');
     let headerTextX = 40;
     try {
-      doc.image(logoPath, 40, 55, { height: 35 });
-      headerTextX = 90; // Adjust spacing if logo is present
+      doc.image(logoPath, 40, 55, { height: 38 });
+      headerTextX = 95;
     } catch (err) {
       headerTextX = 40;
     }
@@ -380,7 +455,7 @@ const generatePDFTicket = async (req, res, next) => {
        .fontSize(8.5)
        .font('Helvetica-Bold')
        .fillColor(textGray)
-       .text('TICKET DE PREPARACIÓN / HOJA DE RUTA', headerTextX, 76);
+       .text('DOCUMENTO DE PREPARACIÓN Y REMITO DE ENTREGA', headerTextX, 76);
 
     // Order ID & Date (Right Aligned)
     const shortId = order._id.toString().substring(12).toUpperCase();
@@ -397,11 +472,11 @@ const generatePDFTicket = async (req, res, next) => {
     const isPaid = order.paymentStatus === 'paid';
     const badgeBg = isPaid ? statusGreen : statusAmber;
     const badgeTextCol = isPaid ? statusTextGreen : statusTextAmber;
-    const badgeLabel = isPaid ? 'PAGADO' : 'PENDIENTE DE PAGO';
+    const badgeLabel = isPaid ? 'PAGADO' : 'PENDIENTE';
 
     doc.rect(465, 87, 90, 16).fill(badgeBg);
     doc.fillColor(badgeTextCol)
-       .fontSize(7.5)
+       .fontSize(8)
        .font('Helvetica-Bold')
        .text(badgeLabel, 465, 91, { align: 'center', width: 90 });
 
@@ -412,98 +487,101 @@ const generatePDFTicket = async (req, res, next) => {
          .text(`CÓDIGO SORTEO: ${order.raffleCode}`, 280, 91, { align: 'right', width: 175 });
     }
 
-    // 2. Client & Delivery Info Card
+    // 2. Client & Delivery Info Cards (Two-column layout)
     const clientBoxY = 120;
     
-    // Draw background block
-    doc.rect(40, clientBoxY, 515, 85).fill(bgGray);
-    // Draw left colored indicator border
-    doc.rect(40, clientBoxY, 4, 85).fill(primaryColor);
+    // Left card: Client details
+    doc.rect(40, clientBoxY, 250, 95).fill(bgGray);
+    doc.rect(40, clientBoxY, 3, 95).fill(primaryColor);
     
-    // Title inside card
     doc.fillColor(darkSlate)
-       .fontSize(9.5)
+       .fontSize(9)
        .font('Helvetica-Bold')
-       .text('DATOS DE ENTREGA Y CLIENTE', 55, clientBoxY + 12);
+       .text('INFORMACIÓN DEL CLIENTE', 50, clientBoxY + 10);
 
     const customerName = order.shippingDetails.name || (order.user ? `${order.user.name} ${order.user.lastname}` : 'Cliente Registrado');
     const customerPhone = order.shippingDetails.phone || (order.user ? order.user.phone : 'N/A');
     const customerEmail = order.user ? order.user.email : 'N/A';
-    const deliveryMethod = order.deliveryType === 'delivery' ? 'Envío a Domicilio' : 'Retiro por Local';
 
-    // Left Column Info
-    doc.fontSize(8.5)
+    doc.fontSize(8)
        .font('Helvetica-Bold')
        .fillColor(darkSlate)
-       .text('Cliente:', 55, clientBoxY + 32)
+       .text('Nombre:', 50, clientBoxY + 28)
        .font('Helvetica')
        .fillColor(textGray)
-       .text(customerName, 105, clientBoxY + 32)
+       .text(customerName, 95, clientBoxY + 28)
        
        .font('Helvetica-Bold')
        .fillColor(darkSlate)
-       .text('Teléfono:', 55, clientBoxY + 47)
+       .text('Teléfono:', 50, clientBoxY + 44)
        .font('Helvetica')
        .fillColor(textGray)
-       .text(customerPhone, 105, clientBoxY + 47)
+       .text(customerPhone, 95, clientBoxY + 44)
        
        .font('Helvetica-Bold')
        .fillColor(darkSlate)
-       .text('Email:', 55, clientBoxY + 62)
+       .text('Email:', 50, clientBoxY + 60)
        .font('Helvetica')
        .fillColor(textGray)
-       .text(customerEmail, 105, clientBoxY + 62);
-
-    // Right Column Info
-    doc.font('Helvetica-Bold')
+       .text(customerEmail, 95, clientBoxY + 60)
+       
+       .font('Helvetica-Bold')
        .fillColor(darkSlate)
-       .text('Método:', 300, clientBoxY + 20)
+       .text('Método:', 50, clientBoxY + 76)
        .font('Helvetica')
        .fillColor(textGray)
-       .text(deliveryMethod, 355, clientBoxY + 20);
+       .text(order.deliveryType === 'delivery' ? 'Envío a Domicilio' : 'Retiro por Local', 95, clientBoxY + 76);
 
-    let nextRightY = clientBoxY + 35;
-    if (order.scheduledDate) {
+    // Right card: Delivery details
+    doc.rect(305, clientBoxY, 250, 95).fill(bgGray);
+    doc.rect(305, clientBoxY, 3, 95).fill('#3b82f6'); // Indigo blue indicator
+    
+    doc.fillColor(darkSlate)
+       .fontSize(9)
+       .font('Helvetica-Bold')
+       .text('DETALLES DE DESPACHO / PAGO', 315, clientBoxY + 10);
+
+    const addressStr = order.deliveryType === 'delivery' 
+      ? (order.shippingDetails.address || 'No especificada') 
+      : 'Retiro en depósito central / AbastoHub';
+    
+    const payMethodName = order.paymentMethod === 'transfer' ? 'Transferencia Bancaria' : 'MercadoPago';
+
+    doc.fontSize(8)
+       .font('Helvetica-Bold')
+       .fillColor(darkSlate)
+       .text('Dirección:', 315, clientBoxY + 28)
+       .font('Helvetica')
+       .fillColor(textGray)
+       .text(addressStr, 365, clientBoxY + 28, { width: 180 })
+       
+       .font('Helvetica-Bold')
+       .fillColor(darkSlate)
+       .text('Pago:', 315, clientBoxY + 58)
+       .font('Helvetica')
+       .fillColor(textGray)
+       .text(payMethodName, 365, clientBoxY + 58);
+
+    if (order.driverName) {
       doc.font('Helvetica-Bold')
-         .fillColor(primaryColor)
-         .text('Reserva:', 300, nextRightY)
+         .fillColor(darkSlate)
+         .text('Chofer:', 315, clientBoxY + 74)
          .font('Helvetica-Bold')
-         .text(order.scheduledDate.toLocaleDateString('es-AR'), 355, nextRightY);
-      nextRightY += 15;
-    }
-
-    if (order.deliveryType === 'delivery') {
+         .fillColor('#1d4ed8')
+         .text(`${order.driverName} (${order.driverVehicle || 'Vehículo'})`, 365, clientBoxY + 74);
+    } else if (order.scheduledDate) {
       doc.font('Helvetica-Bold')
          .fillColor(darkSlate)
-         .text('Dirección:', 300, nextRightY)
-         .font('Helvetica')
-         .fillColor(textGray)
-         .text(order.shippingDetails.address || 'No especificada', 355, nextRightY, { width: 185 });
-    } else {
-      doc.font('Helvetica-Bold')
-         .fillColor(darkSlate)
-         .text('Dirección:', 300, nextRightY)
-         .font('Helvetica')
-         .fillColor(textGray)
-         .text('Retira en depósito central', 355, nextRightY, { width: 185 });
-    }
-
-    nextRightY += 20;
-
-    // Notes if present
-    if (order.shippingDetails.notes) {
-      doc.font('Helvetica-Bold')
-         .fillColor(darkSlate)
-         .text('Notas:', 300, nextRightY)
-         .font('Helvetica-Oblique')
-         .fillColor(textGray)
-         .text(order.shippingDetails.notes, 355, nextRightY, { width: 185, height: 18, truncate: true });
+         .text('Reserva:', 315, clientBoxY + 74)
+         .font('Helvetica-Bold')
+         .fillColor(primaryColor)
+         .text(order.scheduledDate.toLocaleDateString('es-AR'), 365, clientBoxY + 74);
     }
 
     // 3. Table Header Section
-    const tableTitleY = 220;
+    const tableTitleY = 232;
     doc.fillColor(darkSlate)
-       .fontSize(10.5)
+       .fontSize(10)
        .font('Helvetica-Bold')
        .text('ARTÍCULOS A RECOLECTAR (PICKING LIST)', 40, tableTitleY);
 
@@ -512,7 +590,7 @@ const generatePDFTicket = async (req, res, next) => {
     // Draw Header Background Row
     doc.rect(40, tableTop, 515, 20).fill('#e2e8f0');
     
-    // Header text labels
+    // Header labels
     doc.fillColor(darkSlate)
        .fontSize(8)
        .font('Helvetica-Bold')
@@ -526,44 +604,82 @@ const generatePDFTicket = async (req, res, next) => {
     // Table rows
     let currentY = tableTop + 20;
     
+    // Auto page addition checker
+    const checkPageBreak = (neededHeight) => {
+      if (currentY + neededHeight > 670) {
+        doc.addPage();
+        
+        // Redraw decorative top bar on new page
+        doc.rect(40, 40, 515, 5).fill(primaryColor);
+        
+        // Redraw Table Header on new page
+        doc.rect(40, 55, 515, 20).fill('#e2e8f0');
+        doc.fillColor(darkSlate)
+           .fontSize(8)
+           .font('Helvetica-Bold')
+           .text('OK', 45, 61, { width: 20, align: 'center' })
+           .text('PRODUCTO / DESCRIPCIÓN', 70, 61)
+           .text('CANT', 300, 61, { width: 45, align: 'center' })
+           .text('UNIDAD', 350, 61, { width: 55, align: 'center' })
+           .text('P. UNIT', 415, 61, { width: 65, align: 'right' })
+           .text('SUBTOTAL', 485, 61, { width: 65, align: 'right' });
+        
+        currentY = 75;
+      }
+    };
+
     order.products.forEach((item, index) => {
-      // Row zebra background
+      // Determine if item has a partner
+      const partnerName = item.product && item.product.partner ? item.product.partner.name : null;
+      const rowHeight = partnerName ? 28 : 22;
+      
+      checkPageBreak(rowHeight);
+
+      // Zebra row bg
       if (index % 2 === 0) {
-        doc.rect(40, currentY, 515, 22).fill('#f8fafc');
+        doc.rect(40, currentY, 515, rowHeight).fill('#f8fafc');
       } else {
-        doc.rect(40, currentY, 515, 22).fill('#ffffff');
+        doc.rect(40, currentY, 515, rowHeight).fill('#ffffff');
       }
 
-      // Draw Checkbox Square for Pickers
-      doc.rect(49, currentY + 5, 11, 11).lineWidth(1).strokeColor(textGray).stroke();
+      // Checkbox square
+      doc.rect(49, currentY + Math.floor((rowHeight - 11) / 2), 11, 11).lineWidth(1).strokeColor(textGray).stroke();
 
       doc.fillColor(darkSlate);
       const unitType = item.unit || 'unidades';
 
-      // Text Alignment and fonts
+      // Title & quantity alignment
       doc.font('Helvetica-Bold')
          .fontSize(8.5)
-         .text(item.title, 70, currentY + 7, { width: 220, truncate: true })
-         .font('Helvetica-Bold')
+         .text(item.title, 70, currentY + 6, { width: 220, truncate: true });
+
+      if (partnerName) {
+        doc.font('Helvetica-Oblique')
+           .fontSize(7.5)
+           .fillColor(primaryColor)
+           .text(`Producido por: ${partnerName}`, 70, currentY + 17, { width: 220, truncate: true });
+      }
+
+      doc.fillColor(darkSlate);
+      doc.font('Helvetica-Bold')
          .fontSize(9)
-         .text(item.quantity.toString(), 300, currentY + 7, { width: 45, align: 'center' })
+         .text(item.quantity.toString(), 300, currentY + Math.floor((rowHeight - 9) / 2), { width: 45, align: 'center' })
          .font('Helvetica')
          .fontSize(8.5)
-         .text(unitType, 350, currentY + 7, { width: 55, align: 'center' })
-         .text(formatPrice(item.price), 415, currentY + 7, { width: 65, align: 'right' })
+         .text(unitType, 350, currentY + Math.floor((rowHeight - 9) / 2), { width: 55, align: 'center' })
+         .text(formatPrice(item.price), 415, currentY + Math.floor((rowHeight - 9) / 2), { width: 65, align: 'right' })
          .font('Helvetica-Bold')
-         .text(formatPrice(item.price * item.quantity), 485, currentY + 7, { width: 65, align: 'right' });
+         .text(formatPrice(item.price * item.quantity), 485, currentY + Math.floor((rowHeight - 9) / 2), { width: 65, align: 'right' });
 
-      // Row thin bottom border divider
-      doc.rect(40, currentY + 22, 515, 0.5).fill('#e2e8f0');
-      currentY += 22;
+      // Row separator line
+      doc.rect(40, currentY + rowHeight, 515, 0.5).fill('#e2e8f0');
+      currentY += rowHeight;
     });
 
     // 4. Totals Row Box
-    doc.y = currentY + 12;
-    const totalsBoxY = doc.y;
+    checkPageBreak(55);
     
-    // Draw totals summary box
+    const totalsBoxY = currentY + 12;
     doc.rect(340, totalsBoxY, 215, 45).fill('#f8fafc');
     doc.rect(340, totalsBoxY, 215, 45).lineWidth(1).strokeColor('#e2e8f0').stroke();
 
@@ -582,32 +698,59 @@ const generatePDFTicket = async (req, res, next) => {
        .fontSize(11)
        .text(formatPrice(order.total), 450, totalsBoxY + 25, { width: 95, align: 'right' });
 
-    // 5. Signatures and control footer at the bottom of the page
-    const footerY = 715;
+    // 5. Tear-off remito / signatures section
+    checkPageBreak(110);
     
-    // Draw thin line divider above footer
-    doc.rect(40, footerY, 515, 0.5).fill(borderGray);
+    // Draw tear-off scissor line
+    const scissorY = currentY + 70;
+    doc.rect(40, scissorY, 515, 0.5).dash(4, { space: 4 }).strokeColor(textGray).stroke();
+    
+    // Scissor icon representation
+    doc.fillColor(textGray)
+       .fontSize(7.5)
+       .font('Helvetica-Oblique')
+       .text('--- CORTAR AQUÍ (TALONARIO DE ENTREGA CONFORME) ---', 40, scissorY + 5, { align: 'center', width: 515 });
 
-    // Operator Signatures
+    // Client Signature Box
+    const signY = scissorY + 18;
+    doc.rect(40, signY, 515, 80).fill('#fdfdfd');
+    doc.rect(40, signY, 515, 80).lineWidth(1).strokeColor(borderGray).stroke();
+
     doc.fillColor(darkSlate)
        .fontSize(8.5)
        .font('Helvetica-Bold')
-       .text('Armado / Preparado por:', 55, footerY + 20)
+       .text('CONFORMIDAD DE RECEPCIÓN (CLIENTE)', 50, signY + 10)
        .font('Helvetica')
-       .text('Firma: ___________________________', 55, footerY + 37)
-       .text('Nombre: __________________________', 55, footerY + 52)
+       .text('Firma: ___________________________', 50, signY + 32)
+       .text('Aclaración: ________________________', 50, signY + 50)
+       .text('DNI: ____________________________', 50, signY + 68)
+       
+       .text('Fecha: ____/____/2026', 330, signY + 32)
+       .text('Hora: ____:____ hs', 330, signY + 50)
+       .font('Helvetica-Bold')
+       .text('Nº Pedido: #' + shortId, 330, signY + 68);
+
+    // Operator Signatures
+    checkPageBreak(90);
+    const opSignY = doc.y + 100 > 715 ? doc.y + 20 : 715;
+    
+    doc.rect(40, opSignY, 515, 0.5).fill(borderGray);
+    doc.fillColor(darkSlate)
+       .fontSize(8)
+       .font('Helvetica-Bold')
+       .text('Armado / Preparado por:', 45, opSignY + 12)
+       .font('Helvetica')
+       .text('Firma: ___________________________', 45, opSignY + 28)
        
        .font('Helvetica-Bold')
-       .text('Controlado / Despachado por:', 320, footerY + 20)
+       .text('Controlado / Despachado por:', 320, opSignY + 12)
        .font('Helvetica')
-       .text('Firma: ___________________________', 320, footerY + 37)
-       .text('Nombre: __________________________', 320, footerY + 52);
+       .text('Firma: ___________________________', 320, opSignY + 28);
 
-    // Legal / Internal note
     doc.font('Helvetica-Oblique')
-       .fontSize(7.5)
+       .fontSize(7)
        .fillColor(textGray)
-       .text('Este ticket es un comprobante interno de preparación de mercadería y picking, no es válido como factura.', 40, footerY + 74, { align: 'center', width: 515 });
+       .text('Este ticket es un comprobante interno de preparación de mercadería y remito, no válido como factura fiscal.', 40, opSignY + 52, { align: 'center', width: 515 });
 
     doc.end();
 

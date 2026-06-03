@@ -20,6 +20,7 @@ router.post('/partner/products/:id/delete', isPartnerAuthenticated, partnerContr
 // Accounting & Payouts
 router.post('/partner/bank-details', isPartnerAuthenticated, partnerController.updateBankDetails);
 router.post('/partner/withdraw', isPartnerAuthenticated, partnerController.requestWithdrawal);
+router.post('/partner/location', isPartnerAuthenticated, partnerController.updateLocation);
 
 // Partner Driver Management
 router.post('/partner/drivers', isPartnerAuthenticated, partnerController.createPartnerDriver);

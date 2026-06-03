@@ -41,6 +41,19 @@ const PartnerSchema = new mongoose.Schema({
     trim: true,
     default: ''
   },
+  province: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  latitude: {
+    type: Number,
+    default: null
+  },
+  longitude: {
+    type: Number,
+    default: null
+  },
   alias: {
     type: String,
     trim: true,

@@ -4,14 +4,21 @@
   
   <div class="mb-8">
     <h1 class="display-font text-3xl font-extrabold tracking-tight text-slate-900">Checkout</h1>
-    <p class="text-sm text-slate-500 mt-1">Completa los datos de envío para finalizar tu compra con MercadoPago.</p>
+    <p class="text-sm text-slate-500 mt-1">Completa los datos de envío y selecciona tu método de pago preferido.</p>
   </div>
+
+  <% if (typeof error !== 'undefined' && error) { %>
+    <div class="mb-6 bg-rose-50 border border-rose-250 text-rose-800 p-4 rounded-2xl text-xs sm:text-sm font-semibold flex gap-2.5 items-center shadow-2xs">
+      <i class="fa-solid fa-circle-exclamation text-base text-rose-600"></i>
+      <span><%= error %></span>
+    </div>
+  <% } %>
 
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
     
     <!-- Delivery Details Form (Col Span 2) -->
     <div class="lg:col-span-2">
-      <form action="/checkout" method="POST" id="checkout-form" class="space-y-6">
+      <form action="/checkout" method="POST" id="checkout-form" enctype="multipart/form-data" class="space-y-6">
         
         <!-- Section 1: Customer Contact Details -->
         <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
@@ -166,6 +173,78 @@
             <label for="notes" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Instrucciones para la entrega (Opcional)</label>
             <textarea id="notes" name="notes" rows="3" placeholder="Tocar timbre en el portón verde. Dejar en recepción..."
               class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-sm resize-none"></textarea>
+          </div>
+        </div>
+
+        <!-- Section 6: Payment Method -->
+        <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
+          <h2 class="display-font text-lg font-bold text-slate-950 flex items-center gap-2 border-b border-slate-100 pb-3">
+            <span class="text-brand-600"><i class="fa-solid fa-credit-card"></i></span>
+            Método de Pago
+          </h2>
+
+          <div class="space-y-4">
+            <!-- Payment Selector Options -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <!-- MercadoPago Option -->
+              <label class="relative flex items-center justify-between p-4 border border-brand-500 bg-brand-50/20 rounded-2xl cursor-pointer hover:bg-slate-50/10 transition-all payment-method-card" id="card-mp">
+                <div class="flex items-center gap-3">
+                  <input type="radio" name="paymentMethod" value="mercadopago" checked onchange="togglePaymentMethod('mercadopago')" class="h-4.5 w-4.5 text-brand-600 border-slate-300 focus:ring-brand-500/20">
+                  <div>
+                    <span class="block text-sm font-bold text-slate-850">MercadoPago</span>
+                    <span class="block text-xs text-slate-500">Tarjetas, dinero en cuenta o PSE</span>
+                  </div>
+                </div>
+                <i class="fa-solid fa-wallet text-brand-600 text-lg"></i>
+              </label>
+
+              <!-- Bank Transfer Option -->
+              <label class="relative flex items-center justify-between p-4 border border-slate-200 rounded-2xl cursor-pointer hover:bg-slate-50/10 transition-all payment-method-card" id="card-transfer">
+                <div class="flex items-center gap-3">
+                  <input type="radio" name="paymentMethod" value="transfer" onchange="togglePaymentMethod('transfer')" class="h-4.5 w-4.5 text-brand-600 border-slate-300 focus:ring-brand-500/20">
+                  <div>
+                    <span class="block text-sm font-bold text-slate-850">Transferencia Bancaria</span>
+                    <span class="block text-xs text-slate-500">Pago directo vía alias CBU</span>
+                  </div>
+                </div>
+                <i class="fa-solid fa-bank text-slate-400 text-lg"></i>
+              </label>
+            </div>
+
+            <!-- Transfer Instructions & Upload Receipt Details (Hidden by default) -->
+            <div id="transfer-instructions" class="hidden bg-slate-50 border border-slate-200 rounded-2xl p-4.5 space-y-3.5 transition-all">
+              <div class="bg-indigo-50 border border-indigo-150 p-4 rounded-xl space-y-2 text-indigo-950">
+                <h4 class="font-extrabold text-xs uppercase tracking-wider text-indigo-900 flex items-center gap-1.5">
+                  <i class="fa-solid fa-circle-info text-sm text-indigo-650"></i>
+                  Instrucciones de Transferencia
+                </h4>
+                <p class="text-xs leading-relaxed font-medium">
+                  Realiza la transferencia desde tu homebanking o billetera virtual por el <strong>monto total de tu pedido</strong> utilizando el siguiente alias:
+                </p>
+                <div class="bg-white border border-indigo-200/60 rounded-xl px-4 py-2.5 flex items-center justify-between shadow-2xs">
+                  <div>
+                    <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Alias MercadoPago / Banco</span>
+                    <span class="text-sm font-mono font-black text-indigo-800 select-all tracking-wide">mayolstudio96</span>
+                  </div>
+                  <button type="button" onclick="navigator.clipboard.writeText('mayolstudio96'); alert('¡Alias copiado al portapapeles!');" class="p-2 bg-indigo-50 hover:bg-indigo-100 rounded-lg text-indigo-700 transition-all" title="Copiar Alias">
+                    <i class="fa-solid fa-copy text-sm"></i>
+                  </button>
+                </div>
+                <ul class="list-disc pl-4 text-[11px] space-y-1.5 mt-2 text-indigo-800 font-medium">
+                  <li>Transfiere el importe total correspondiente.</li>
+                  <li>Descarga o toma una captura de pantalla del <strong>comprobante de la transferencia</strong>.</li>
+                  <li>Sube el archivo (imagen o PDF) en el campo a continuación para que validemos tu pago.</li>
+                </ul>
+              </div>
+
+              <!-- Upload field -->
+              <div>
+                <label for="receipt" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Subir Comprobante de Transferencia (Obligatorio)</label>
+                <input type="file" id="receipt" name="receipt" accept="image/*,application/pdf"
+                  class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-500 file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 transition-all">
+                <p class="text-[10px] text-slate-400 mt-1.5">Formatos admitidos: JPG, JPEG, PNG, PDF. Tamaño máximo: 5MB.</p>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -345,6 +424,35 @@
     }
   }
 
+  function togglePaymentMethod(method) {
+    const cardMp = document.getElementById('card-mp');
+    const cardTransfer = document.getElementById('card-transfer');
+    const instructions = document.getElementById('transfer-instructions');
+    const receiptInput = document.getElementById('receipt');
+
+    if (method === 'transfer') {
+      cardTransfer.classList.add('border-brand-500', 'bg-brand-50/20');
+      cardTransfer.classList.remove('border-slate-200');
+      cardTransfer.querySelector('i').classList.replace('text-slate-400', 'text-brand-600');
+      
+      cardMp.classList.remove('border-brand-500', 'bg-brand-50/20');
+      cardMp.classList.add('border-slate-200');
+      
+      instructions.classList.remove('hidden');
+      receiptInput.setAttribute('required', 'required');
+    } else {
+      cardMp.classList.add('border-brand-500', 'bg-brand-50/20');
+      cardMp.classList.remove('border-slate-200');
+      
+      cardTransfer.classList.remove('border-brand-500', 'bg-brand-50/20');
+      cardTransfer.classList.add('border-slate-200');
+      cardTransfer.querySelector('i').classList.replace('text-brand-600', 'text-slate-400');
+      
+      instructions.classList.add('hidden');
+      receiptInput.removeAttribute('required');
+    }
+  }
+
   window.onload = function() {
     // Set minimum date to today
     const dateInput = document.getElementById('scheduledDate');
@@ -352,6 +460,9 @@
       const today = new Date().toISOString().split('T')[0];
       dateInput.min = today;
     }
+    
+    // Initialize default payment method selection
+    togglePaymentMethod('mercadopago');
   };
 </script>
 

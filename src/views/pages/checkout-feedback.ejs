@@ -30,10 +30,17 @@
         <div class="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center mx-auto text-white text-3xl">
           <i class="fa-solid fa-clock"></i>
         </div>
-        <h1 class="display-font text-2xl sm:text-3xl font-extrabold tracking-tight">Pago en Proceso</h1>
-        <p class="text-amber-105 text-sm max-w-md mx-auto">
-          Tu pago está siendo procesado por MercadoPago. En cuanto se acredite, recibirás la confirmación de envío.
-        </p>
+        <% if (order.paymentMethod === 'transfer') { %>
+          <h1 class="display-font text-2xl sm:text-3xl font-extrabold tracking-tight">Comprobante Recibido</h1>
+          <p class="text-amber-105 text-sm max-w-md mx-auto">
+            Hemos registrado tu comprobante de transferencia bancaria. Un administrador validará tu pago a la brevedad para habilitar el despacho de tu pedido.
+          </p>
+        <% } else { %>
+          <h1 class="display-font text-2xl sm:text-3xl font-extrabold tracking-tight">Pago en Proceso</h1>
+          <p class="text-amber-105 text-sm max-w-md mx-auto">
+            Tu pago está siendo procesado por MercadoPago. En cuanto se acredite, recibirás la confirmación de envío.
+          </p>
+        <% } %>
       </div>
     <% } else { %>
       <div class="bg-rose-600 text-white p-8 text-center space-y-3">
@@ -75,11 +82,11 @@
         </div>
         <div>
           <p class="text-slate-400 font-bold uppercase">Medio de Pago</p>
-          <p class="font-extrabold text-slate-800 mt-1">MercadoPago</p>
+          <p class="font-extrabold text-slate-800 mt-1"><%= order.paymentMethod === 'transfer' ? 'Transferencia' : 'MercadoPago' %></p>
         </div>
         <div>
           <p class="text-slate-400 font-bold uppercase">ID de Pago MP</p>
-          <p class="font-extrabold text-slate-850 mt-1 truncate" title="<%= order.paymentId %>"><%= order.paymentId || 'N/A' %></p>
+          <p class="font-extrabold text-slate-850 mt-1 truncate" title="<%= order.paymentId %>"><%= order.paymentMethod === 'transfer' ? 'N/A' : (order.paymentId || 'Pendiente') %></p>
         </div>
       </div>
 

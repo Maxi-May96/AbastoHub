@@ -38,7 +38,8 @@ const getCheckout = async (req, res, next) => {
       user,
       defaultAddress,
       total,
-      formatPrice
+      formatPrice,
+      error: req.query.error || null
     });
   } catch (error) {
     next(error);
@@ -48,7 +49,7 @@ const getCheckout = async (req, res, next) => {
 // POST Process Checkout Action
 const processCheckout = async (req, res, next) => {
   try {
-    const { name, phone, deliveryType, street, city, province, zipCode, notes, scheduledDate, latitude, longitude } = req.body;
+    const { name, phone, deliveryType, street, city, province, zipCode, notes, scheduledDate, latitude, longitude, paymentMethod } = req.body;
 
     const cart = await Cart.findOne({ user: req.user.id }).populate('products.product');
     if (!cart || cart.products.length === 0) {
@@ -75,6 +76,18 @@ const processCheckout = async (req, res, next) => {
       };
     });
 
+    // Handle receipt upload for bank transfers
+    let receiptUrl = null;
+    if (paymentMethod === 'transfer') {
+      if (!req.file) {
+        return res.redirect('/checkout?error=' + encodeURIComponent('Por favor, sube una foto o PDF del comprobante de transferencia bancaria.'));
+      }
+      receiptUrl = await uploadImage(req.file, 'receipts');
+      if (!receiptUrl) {
+        return res.redirect('/checkout?error=' + encodeURIComponent('Error al subir el comprobante de transferencia.'));
+      }
+    }
+
     // Generate a unique raffle code: e.g. AH-XXXXXX (6 alphanumeric chars)
     let raffleCode;
     let codeExists = true;
@@ -92,6 +105,8 @@ const processCheckout = async (req, res, next) => {
       products: orderProducts,
       total,
       paymentStatus: 'pending',
+      paymentMethod: paymentMethod || 'mercadopago',
+      paymentReceipt: receiptUrl || null,
       deliveryType: 'delivery', // Force delivery mode
       scheduledDate: scheduledDate ? new Date(scheduledDate + 'T00:00:00') : null,
       raffleCode,
@@ -148,6 +163,11 @@ const processCheckout = async (req, res, next) => {
     cart.products = [];
     cart.total = 0;
     await cart.save();
+
+    // If Bank Transfer, redirect directly to feedback
+    if (paymentMethod === 'transfer') {
+      return res.redirect(`/payment/feedback?status=pending&orderId=${newOrder._id}`);
+    }
 
     // 4. Create MercadoPago preference URL
     const hostUrl = `${req.protocol}://${req.get('host')}`;
