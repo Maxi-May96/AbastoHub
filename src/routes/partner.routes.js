@@ -28,5 +28,6 @@ router.post('/partner/drivers/:id/delete', isPartnerAuthenticated, partnerContro
 router.post('/partner/orders/:id/assign-driver', isPartnerAuthenticated, partnerController.assignDriverToOrder);
 router.post('/partner/orders/dispatch-route', isPartnerAuthenticated, partnerController.dispatchPartnerRoute);
 router.post('/partner/orders/:id/ship', isPartnerAuthenticated, partnerController.shipOrder);
+router.get('/partner/orders/:id/ticket', isPartnerAuthenticated, partnerController.generatePartnerPDFTicket);
 
 module.exports = router;

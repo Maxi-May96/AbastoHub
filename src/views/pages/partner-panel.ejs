@@ -368,6 +368,13 @@
                     <td class="px-6 py-4">
                       <div class="font-bold text-slate-800 text-sm">#<%= order._id.toString().substring(12).toUpperCase() %></div>
                       <div class="text-[10px] text-slate-400 mt-1"><%= new Date(order.createdAt).toLocaleString('es-AR') %></div>
+                      <div class="mt-2">
+                        <a href="/partner/orders/<%= order._id %>/ticket" target="_blank" 
+                          class="inline-flex items-center gap-1.5 px-2 py-0.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg text-[9px] font-bold border border-rose-150 transition-all"
+                          title="Descargar ticket de preparación (Exclusivo de tus artículos)">
+                          <i class="fa-solid fa-file-pdf text-[9px] text-rose-600"></i> Ver Ticket PDF
+                        </a>
+                      </div>
                     </td>
 
                     <!-- Customer Contact & Delivery Info -->
@@ -384,6 +391,14 @@
                       <% if (order.shippingDetails?.notes) { %>
                         <div class="text-[10px] text-slate-400 italic max-w-[220px] truncate" title="<%= order.shippingDetails.notes %>">
                           Obs: "<%= order.shippingDetails.notes %>"
+                        </div>
+                      <% } %>
+                      <% if (order.shippingDetails?.latitude && order.shippingDetails?.longitude) { %>
+                        <div class="pt-1">
+                          <a href="https://www.google.com/maps/search/?api=1&query=<%= order.shippingDetails.latitude %>,<%= order.shippingDetails.longitude %>" target="_blank"
+                            class="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg text-[9px] font-bold border border-indigo-100/50 transition-all">
+                            <i class="fa-solid fa-location-crosshairs text-[9px] text-indigo-500"></i> Ver GPS Maps
+                          </a>
                         </div>
                       <% } %>
                     </td>
@@ -406,6 +421,15 @@
                           </span>
                         <% } %>
                       </div>
+                      <% if (order.paymentReceipt) { %>
+                        <div>
+                          <a href="<%= order.paymentReceipt %>" target="_blank" 
+                            class="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg text-[9px] font-bold border border-emerald-150 transition-all"
+                            title="Ver comprobante de pago subido por el cliente">
+                            <i class="fa-solid fa-receipt text-[9px] text-emerald-600"></i> Ver Comprobante
+                          </a>
+                        </div>
+                      <% } %>
 
                       <!-- Logistics Status -->
                       <div>

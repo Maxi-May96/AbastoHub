@@ -7,6 +7,8 @@ const Driver = require('../models/Driver');
 const { uploadImage } = require('../services/firebase.service');
 const { generatePartnerToken } = require('../services/auth.service');
 const formatPrice = require('../utils/formatPrice');
+const PDFDocument = require('pdfkit');
+const path = require('path');
 
 // GET Partner Login Page
 const getLogin = async (req, res, next) => {
@@ -590,6 +592,337 @@ const shipOrder = async (req, res, next) => {
   }
 };
 
+const generatePartnerPDFTicket = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const partnerId = req.partner.id; // Logged-in partner ID
+    
+    const order = await Order.findById(id)
+      .populate('user')
+      .populate({
+        path: 'products.product',
+        populate: { path: 'partner' }
+      });
+
+    if (!order) {
+      return res.status(404).send('Pedido no encontrado');
+    }
+
+    // Filter items belonging to this partner
+    const partnerItems = order.products.filter(item => 
+      item.product && item.product.partner && item.product.partner._id.toString() === partnerId
+    );
+
+    if (partnerItems.length === 0) {
+      return res.status(403).send('No autorizado para ver este ticket (no contiene tus productos)');
+    }
+
+    const doc = new PDFDocument({ size: 'A4', margin: 40 });
+    
+    // Set headers to open PDF in a new tab / window
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename=ticket-socio-${order._id.toString().substring(12)}.pdf`);
+    doc.pipe(res);
+
+    // Color Palette
+    const primaryColor = '#10b981'; // Emerald Green
+    const darkSlate = '#0f172a'; // Deep slate
+    const textGray = '#475569';  // Slate gray
+    const bgGray = '#f8fafc';    // Soft slate background
+    const borderGray = '#e2e8f0';  // Very light gray border
+    const statusGreen = '#ecfdf5';
+    const statusTextGreen = '#047857';
+    const statusAmber = '#fffbeb';
+    const statusTextAmber = '#b45309';
+
+    // 1. Decorative Header Brand Bar
+    doc.rect(40, 40, 515, 6).fill(primaryColor);
+    
+    // Logo & Header Brand
+    const logoPath = path.join(__dirname, '../../public/img/logo.png');
+    let headerTextX = 40;
+    try {
+      doc.image(logoPath, 40, 55, { height: 38 });
+      headerTextX = 95;
+    } catch (err) {
+      headerTextX = 40;
+    }
+    
+    doc.fillColor(darkSlate)
+       .fontSize(18)
+       .font('Helvetica-Bold')
+       .text('AbastoHub', headerTextX, 55)
+       .fontSize(8.5)
+       .font('Helvetica-Bold')
+       .fillColor(textGray)
+       .text('REMITO DE PREPARACIÓN DE SOCIO / ASOCIADO', headerTextX, 76);
+
+    // Order ID & Date (Right Aligned)
+    const shortId = order._id.toString().substring(12).toUpperCase();
+    doc.fillColor(darkSlate)
+       .fontSize(11)
+       .font('Helvetica-Bold')
+       .text(`ORDEN: #${shortId}`, 350, 55, { align: 'right', width: 205 })
+       .fontSize(8.5)
+       .font('Helvetica')
+       .fillColor(textGray)
+       .text(`Fecha: ${order.createdAt.toLocaleString('es-AR')}`, 350, 72, { align: 'right', width: 205 });
+
+    // Payment Status Badge
+    const isPaid = order.paymentStatus === 'paid';
+    const badgeBg = isPaid ? statusGreen : statusAmber;
+    const badgeTextCol = isPaid ? statusTextGreen : statusTextAmber;
+    const badgeLabel = isPaid ? 'PAGADO' : 'PENDIENTE';
+
+    doc.rect(465, 87, 90, 16).fill(badgeBg);
+    doc.fillColor(badgeTextCol)
+       .fontSize(8)
+       .font('Helvetica-Bold')
+       .text(badgeLabel, 465, 91, { align: 'center', width: 90 });
+
+    // 2. Client & Delivery Info Cards (Two-column layout)
+    const clientBoxY = 120;
+    
+    // Left card: Client details
+    doc.rect(40, clientBoxY, 250, 95).fill(bgGray);
+    doc.rect(40, clientBoxY, 3, 95).fill(primaryColor);
+    
+    doc.fillColor(darkSlate)
+       .fontSize(9)
+       .font('Helvetica-Bold')
+       .text('INFORMACIÓN DEL CLIENTE', 50, clientBoxY + 10);
+
+    const customerName = order.shippingDetails.name || (order.user ? `${order.user.name} ${order.user.lastname}` : 'Cliente Registrado');
+    const customerPhone = order.shippingDetails.phone || (order.user ? order.user.phone : 'N/A');
+    const customerEmail = order.user ? order.user.email : 'N/A';
+
+    doc.fontSize(8)
+       .font('Helvetica-Bold')
+       .fillColor(darkSlate)
+       .text('Nombre:', 50, clientBoxY + 28)
+       .font('Helvetica')
+       .fillColor(textGray)
+       .text(customerName, 95, clientBoxY + 28)
+       
+       .font('Helvetica-Bold')
+       .fillColor(darkSlate)
+       .text('Teléfono:', 50, clientBoxY + 44)
+       .font('Helvetica')
+       .fillColor(textGray)
+       .text(customerPhone, 95, clientBoxY + 44)
+       
+       .font('Helvetica-Bold')
+       .fillColor(darkSlate)
+       .text('Email:', 50, clientBoxY + 60)
+       .font('Helvetica')
+       .fillColor(textGray)
+       .text(customerEmail, 95, clientBoxY + 60)
+       
+       .font('Helvetica-Bold')
+       .fillColor(darkSlate)
+       .text('Método:', 50, clientBoxY + 76)
+       .font('Helvetica')
+       .fillColor(textGray)
+       .text(order.deliveryType === 'delivery' ? 'Envío a Domicilio' : 'Retiro por Local', 95, clientBoxY + 76);
+
+    // Right card: Delivery details
+    doc.rect(305, clientBoxY, 250, 95).fill(bgGray);
+    doc.rect(305, clientBoxY, 3, 95).fill('#3b82f6'); // Indigo blue indicator
+    
+    doc.fillColor(darkSlate)
+       .fontSize(9)
+       .font('Helvetica-Bold')
+       .text('DETALLES DE SOCIO / LOGÍSTICA', 315, clientBoxY + 10);
+
+    const addressStr = order.deliveryType === 'delivery' 
+      ? (order.shippingDetails.address || 'No especificada') 
+      : 'Retiro en depósito central / AbastoHub';
+    
+    const payMethodName = order.paymentMethod === 'transfer' ? 'Transferencia Bancaria' : 'MercadoPago';
+
+    doc.fontSize(8)
+       .font('Helvetica-Bold')
+       .fillColor(darkSlate)
+       .text('Dirección:', 315, clientBoxY + 28)
+       .font('Helvetica')
+       .fillColor(textGray)
+       .text(addressStr, 365, clientBoxY + 28, { width: 180 })
+       
+       .font('Helvetica-Bold')
+       .fillColor(darkSlate)
+       .text('Pago:', 315, clientBoxY + 58)
+       .font('Helvetica')
+       .fillColor(textGray)
+       .text(payMethodName, 365, clientBoxY + 58);
+
+    if (order.driverName) {
+      doc.font('Helvetica-Bold')
+         .fillColor(darkSlate)
+         .text('Chofer:', 315, clientBoxY + 74)
+         .font('Helvetica-Bold')
+         .fillColor('#1d4ed8')
+         .text(`${order.driverName} (${order.driverVehicle || 'Vehículo'})`, 365, clientBoxY + 74);
+    } else if (order.scheduledDate) {
+      doc.font('Helvetica-Bold')
+         .fillColor(darkSlate)
+         .text('Reserva:', 315, clientBoxY + 74)
+         .font('Helvetica-Bold')
+         .fillColor(primaryColor)
+         .text(order.scheduledDate.toLocaleDateString('es-AR'), 365, clientBoxY + 74);
+    }
+
+    // 3. Table Header Section
+    const tableTitleY = 232;
+    doc.fillColor(darkSlate)
+       .fontSize(10)
+       .font('Helvetica-Bold')
+       .text('TUS ARTÍCULOS A PREPARAR (SOCIO)', 40, tableTitleY);
+
+    const tableTop = tableTitleY + 18;
+    
+    // Draw Header Background Row
+    doc.rect(40, tableTop, 515, 20).fill('#e2e8f0');
+    
+    // Header labels
+    doc.fillColor(darkSlate)
+       .fontSize(8)
+       .font('Helvetica-Bold')
+       .text('OK', 45, tableTop + 6, { width: 20, align: 'center' })
+       .text('PRODUCTO / DESCRIPCIÓN', 70, tableTop + 6)
+       .text('CANT', 300, tableTop + 6, { width: 45, align: 'center' })
+       .text('UNIDAD', 350, tableTop + 6, { width: 55, align: 'center' })
+       .text('P. UNIT', 415, tableTop + 6, { width: 65, align: 'right' })
+       .text('SUBTOTAL', 485, tableTop + 6, { width: 65, align: 'right' });
+
+    // Table rows
+    let currentY = tableTop + 20;
+    
+    // Auto page addition checker
+    const checkPageBreak = (neededHeight) => {
+      if (currentY + neededHeight > 670) {
+        doc.addPage();
+        
+        // Redraw decorative top bar on new page
+        doc.rect(40, 40, 515, 5).fill(primaryColor);
+        
+        // Redraw Table Header on new page
+        doc.rect(40, 55, 515, 20).fill('#e2e8f0');
+        doc.fillColor(darkSlate)
+           .fontSize(8)
+           .font('Helvetica-Bold')
+           .text('OK', 45, 61, { width: 20, align: 'center' })
+           .text('PRODUCTO / DESCRIPCIÓN', 70, 61)
+           .text('CANT', 300, 61, { width: 45, align: 'center' })
+           .text('UNIDAD', 350, 61, { width: 55, align: 'center' })
+           .text('P. UNIT', 415, 61, { width: 65, align: 'right' })
+           .text('SUBTOTAL', 485, 61, { width: 65, align: 'right' });
+        
+        currentY = 75;
+      }
+    };
+
+    partnerItems.forEach((item, index) => {
+      const rowHeight = 22;
+      checkPageBreak(rowHeight);
+
+      // Zebra row bg
+      if (index % 2 === 0) {
+        doc.rect(40, currentY, 515, rowHeight).fill('#f8fafc');
+      } else {
+        doc.rect(40, currentY, 515, rowHeight).fill('#ffffff');
+      }
+
+      // Checkbox square
+      doc.rect(49, currentY + Math.floor((rowHeight - 11) / 2), 11, 11).lineWidth(1).strokeColor(textGray).stroke();
+
+      doc.fillColor(darkSlate);
+      const unitType = item.unit || 'unidades';
+
+      // Title & quantity alignment
+      doc.font('Helvetica-Bold')
+         .fontSize(8.5)
+         .text(item.title, 70, currentY + 6, { width: 220, truncate: true });
+
+      doc.fillColor(darkSlate);
+      doc.font('Helvetica-Bold')
+         .fontSize(9)
+         .text(item.quantity.toString(), 300, currentY + Math.floor((rowHeight - 9) / 2), { width: 45, align: 'center' })
+         .font('Helvetica')
+         .fontSize(8.5)
+         .text(unitType, 350, currentY + Math.floor((rowHeight - 9) / 2), { width: 55, align: 'center' })
+         .text(formatPrice(item.price), 415, currentY + Math.floor((rowHeight - 9) / 2), { width: 65, align: 'right' })
+         .font('Helvetica-Bold')
+         .text(formatPrice(item.price * item.quantity), 485, currentY + Math.floor((rowHeight - 9) / 2), { width: 65, align: 'right' });
+
+      // Row separator line
+      doc.rect(40, currentY + rowHeight, 515, 0.5).fill('#e2e8f0');
+      currentY += rowHeight;
+    });
+
+    // 4. Totals Row Box
+    checkPageBreak(55);
+    
+    const partnerTotal = partnerItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+    const partnerBultos = partnerItems.reduce((acc, item) => acc + item.quantity, 0);
+
+    const totalsBoxY = currentY + 12;
+    doc.rect(340, totalsBoxY, 215, 45).fill('#f8fafc');
+    doc.rect(340, totalsBoxY, 215, 45).lineWidth(1).strokeColor('#e2e8f0').stroke();
+
+    doc.fillColor(textGray)
+       .fontSize(8.5)
+       .font('Helvetica')
+       .text('Cantidad de Bultos:', 355, totalsBoxY + 10)
+       .font('Helvetica-Bold')
+       .fillColor(darkSlate)
+       .text(partnerBultos.toString(), 460, totalsBoxY + 10)
+       
+       .font('Helvetica-Bold')
+       .fillColor(primaryColor)
+       .fontSize(10)
+       .text('TOTAL SOCIO:', 355, totalsBoxY + 26)
+       .fontSize(11)
+       .text(formatPrice(partnerTotal), 450, totalsBoxY + 25, { width: 95, align: 'right' });
+
+    // 5. Tear-off remito / signatures section
+    checkPageBreak(110);
+    
+    // Draw tear-off scissor line
+    const scissorY = currentY + 70;
+    doc.rect(40, scissorY, 515, 0.5).dash(4, { space: 4 }).strokeColor(textGray).stroke();
+    
+    // Scissor icon representation
+    doc.fillColor(textGray)
+       .fontSize(7.5)
+       .font('Helvetica-Oblique')
+       .text('--- TALÓN DE RETIRO / ENTREGA (PREPARACIÓN SOCIO) ---', 40, scissorY + 5, { align: 'center', width: 515 });
+
+    // Signature Box
+    const signY = scissorY + 18;
+    doc.rect(40, signY, 515, 80).fill('#fdfdfd');
+    doc.rect(40, signY, 515, 80).lineWidth(1).strokeColor(borderGray).stroke();
+
+    doc.fillColor(darkSlate)
+       .fontSize(8.5)
+       .font('Helvetica-Bold')
+       .text('CONFORMIDAD DE RETIRO (LOGÍSTICA / CADETE)', 50, signY + 10)
+       .font('Helvetica')
+       .text('Firma: ___________________________', 50, signY + 32)
+       .text('Aclaración: ________________________', 50, signY + 50)
+       .text('DNI/Patente: _______________________', 50, signY + 68)
+       
+       .text('Fecha: ____/____/2026', 330, signY + 32)
+       .text('Hora: ____:____ hs', 330, signY + 50)
+       .font('Helvetica-Bold')
+       .text('Nº Pedido: #' + shortId, 330, signY + 68);
+
+    doc.end();
+
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getLogin,
   postLogin,
@@ -607,5 +940,6 @@ module.exports = {
   deletePartnerDriver,
   assignDriverToOrder,
   dispatchPartnerRoute,
-  shipOrder
+  shipOrder,
+  generatePartnerPDFTicket
 };
