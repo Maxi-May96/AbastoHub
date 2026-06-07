@@ -597,6 +597,51 @@
             </form>
           </div>
 
+          <!-- Monthly Summary Download Form -->
+          <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
+            <h3 class="font-bold text-slate-800 text-sm mb-1.5 flex items-center gap-2">
+              <i class="fa-solid fa-file-invoice-dollar text-brand-650"></i>
+              Resumen de Cuenta Mensual
+            </h3>
+            <p class="text-slate-400 text-[11px] mb-4">Exporta un reporte en PDF de tus ventas, cobranzas y retiros procesados en el mes seleccionado.</p>
+            
+            <form action="/partner/download-summary" method="GET" target="_blank" class="space-y-4">
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label for="summary-month" class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Mes</label>
+                  <select id="summary-month" name="month" class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 px-3 py-2 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-xs font-semibold">
+                    <% 
+                      const months = [
+                        "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+                        "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+                      ];
+                      const currentMonth = new Date().getMonth();
+                      months.forEach((mName, index) => {
+                    %>
+                      <option value="<%= index + 1 %>" <%= index === currentMonth ? 'selected' : '' %>><%= mName %></option>
+                    <% }); %>
+                  </select>
+                </div>
+
+                <div>
+                  <label for="summary-year" class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Año</label>
+                  <select id="summary-year" name="year" class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 px-3 py-2 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-xs font-semibold">
+                    <% 
+                      const currentYear = new Date().getFullYear();
+                      for (let y = currentYear - 2; y <= currentYear; y++) {
+                    %>
+                      <option value="<%= y %>" <%= y === currentYear ? 'selected' : '' %>><%= y %></option>
+                    <% } %>
+                  </select>
+                </div>
+              </div>
+
+              <button type="submit" class="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs shadow-sm transition-all text-center flex items-center justify-center gap-1.5">
+                <i class="fa-solid fa-file-pdf text-rose-500 text-[13px]"></i> Descargar Resumen PDF
+              </button>
+            </form>
+          </div>
+
           <!-- Location Details Form -->
           <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
             <h3 class="font-bold text-slate-800 text-sm mb-1.5 flex items-center gap-2">

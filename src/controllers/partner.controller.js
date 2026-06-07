@@ -923,6 +923,333 @@ const generatePartnerPDFTicket = async (req, res, next) => {
   }
 };
 
+const downloadMonthlySummary = async (req, res, next) => {
+  try {
+    const partnerId = req.partner.id;
+    const partnerDoc = await Partner.findById(partnerId);
+    if (!partnerDoc) {
+      return res.status(404).send('Socio no encontrado');
+    }
+
+    const monthVal = req.query.month ? parseInt(req.query.month) : (new Date().getMonth() + 1);
+    const yearVal = req.query.year ? parseInt(req.query.year) : new Date().getFullYear();
+
+    const startDate = new Date(yearVal, monthVal - 1, 1);
+    const endDate = new Date(yearVal, monthVal, 1);
+
+    const products = await Product.find({ partner: partnerId });
+    const partnerProductIds = products.map(p => p._id);
+
+    // Fetch orders in date range containing partner products
+    const rawOrders = await Order.find({
+      'products.product': { $in: partnerProductIds },
+      createdAt: { $gte: startDate, $lt: endDate }
+    }).populate('user').sort({ createdAt: 1 });
+
+    // Format orders
+    const orders = rawOrders.map(order => {
+      const partnerItems = order.products.filter(item =>
+        partnerProductIds.some(pId => pId.toString() === item.product.toString())
+      );
+      const partnerSubtotal = partnerItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      const totalQuantity = partnerItems.reduce((sum, item) => sum + item.quantity, 0);
+
+      return {
+        _id: order._id,
+        createdAt: order.createdAt,
+        shippingDetails: order.shippingDetails,
+        user: order.user,
+        paymentStatus: order.paymentStatus,
+        status: order.status,
+        partnerSubtotal,
+        totalQuantity,
+        partnerItems
+      };
+    });
+
+    // Fetch withdrawals in date range
+    const withdrawals = await Withdrawal.find({
+      partner: partnerId,
+      createdAt: { $gte: startDate, $lt: endDate }
+    }).sort({ createdAt: 1 });
+
+    // Stats
+    const totalEarnings = orders.reduce((sum, o) => sum + (o.paymentStatus === 'paid' ? o.partnerSubtotal : 0), 0);
+    const pendingEarnings = orders.reduce((sum, o) => sum + (o.paymentStatus === 'pending' ? o.partnerSubtotal : 0), 0);
+    const totalBultos = orders.reduce((sum, o) => sum + o.totalQuantity, 0);
+    const approvedWithdrawals = withdrawals.filter(w => w.status === 'approved').reduce((sum, w) => sum + w.amount, 0);
+
+    // Group sold products
+    const productSalesMap = {};
+    orders.forEach(o => {
+      o.partnerItems.forEach(item => {
+        const prodId = item.product.toString();
+        if (!productSalesMap[prodId]) {
+          productSalesMap[prodId] = {
+            title: item.title,
+            quantity: 0,
+            revenue: 0,
+            unit: item.unit || 'unidades'
+          };
+        }
+        productSalesMap[prodId].quantity += item.quantity;
+        productSalesMap[prodId].revenue += item.price * item.quantity;
+      });
+    });
+    const productSales = Object.values(productSalesMap).sort((a, b) => b.quantity - a.quantity);
+
+    const doc = new PDFDocument({ size: 'A4', margin: 40 });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename=resumen-${partnerDoc.name.replace(/\s+/g, '_')}-${monthVal}-${yearVal}.pdf`);
+    doc.pipe(res);
+
+    // Styling Colors
+    const primaryColor = '#10b981'; // Emerald Green
+    const darkSlate = '#0f172a'; // Deep slate
+    const textGray = '#475569';  // Slate gray
+    const bgGray = '#f8fafc';    // Soft slate background
+    const borderGray = '#e2e8f0';  // Very light gray border
+
+    // Top Brand Accent
+    doc.rect(40, 40, 515, 6).fill(primaryColor);
+
+    // Header info
+    const logoPath = path.join(__dirname, '../../public/img/logo.png');
+    let headerTextX = 40;
+    try {
+      doc.image(logoPath, 40, 55, { height: 38 });
+      headerTextX = 95;
+    } catch (err) {
+      headerTextX = 40;
+    }
+
+    const getMonthName = (monthIndex) => {
+      const months = [
+        "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+        "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+      ];
+      return months[monthIndex];
+    };
+
+    const monthName = getMonthName(monthVal - 1);
+
+    doc.fillColor(darkSlate)
+       .fontSize(18)
+       .font('Helvetica-Bold')
+       .text(partnerDoc.name, headerTextX, 55)
+       .fontSize(9)
+       .font('Helvetica-Bold')
+       .fillColor(textGray)
+       .text('REPORTE MENSUAL DE CUENTA, VENTAS Y COBRANZAS', headerTextX, 76);
+
+    doc.fillColor(darkSlate)
+       .fontSize(12)
+       .font('Helvetica-Bold')
+       .text(`${monthName.toUpperCase()} ${yearVal}`, 350, 55, { align: 'right', width: 205 })
+       .fontSize(8)
+       .font('Helvetica')
+       .fillColor(textGray)
+       .text(`Generado: ${new Date().toLocaleString('es-AR')}`, 350, 72, { align: 'right', width: 205 });
+
+    // 1. Metric cards (Total Earnings, Pending, total orders, approved withdrawals)
+    const cardsY = 110;
+    
+    // Card 1: Total Facturado (Acreditado)
+    doc.rect(40, cardsY, 120, 50).fill('#ecfdf5');
+    doc.rect(40, cardsY, 120, 50).lineWidth(0.5).strokeColor('#a7f3d0').stroke();
+    doc.fillColor('#047857').fontSize(7).font('Helvetica-Bold').text('VENTAS COBRADAS', 45, cardsY + 8)
+       .fontSize(11).font('Helvetica-Bold').text(formatPrice(totalEarnings), 45, cardsY + 22);
+
+    // Card 2: Ventas Pendientes
+    doc.rect(170, cardsY, 120, 50).fill('#fffbeb');
+    doc.rect(170, cardsY, 120, 50).lineWidth(0.5).strokeColor('#fde68a').stroke();
+    doc.fillColor('#b45309').fontSize(7).font('Helvetica-Bold').text('VENTAS PENDIENTES', 175, cardsY + 8)
+       .fontSize(11).font('Helvetica-Bold').text(formatPrice(pendingEarnings), 175, cardsY + 22);
+
+    // Card 3: Total Pedidos y Bultos
+    doc.rect(300, cardsY, 120, 50).fill(bgGray);
+    doc.rect(300, cardsY, 120, 50).lineWidth(0.5).strokeColor(borderGray).stroke();
+    doc.fillColor(textGray).fontSize(7).font('Helvetica-Bold').text('PEDIDOS / BULTOS', 305, cardsY + 8)
+       .fontSize(11).font('Helvetica-Bold').text(`${orders.length} ord. / ${totalBultos} bult.`, 305, cardsY + 22);
+
+    // Card 4: Retiros Aprobados
+    doc.rect(430, cardsY, 125, 50).fill('#f0f9ff');
+    doc.rect(430, cardsY, 125, 50).lineWidth(0.5).strokeColor('#bae6fd').stroke();
+    doc.fillColor('#0369a1').fontSize(7).font('Helvetica-Bold').text('RETIROS APROBADOS', 435, cardsY + 8)
+       .fontSize(11).font('Helvetica-Bold').text(formatPrice(approvedWithdrawals), 435, cardsY + 22);
+
+    let currentY = cardsY + 70;
+
+    // 2. Table: Sales History (Ventas / Pedidos)
+    doc.fillColor(darkSlate).fontSize(10).font('Helvetica-Bold').text('1. DETALLE DE VENTAS / PEDIDOS DEL MES', 40, currentY);
+    currentY += 15;
+
+    // Table Header
+    doc.rect(40, currentY, 515, 16).fill('#e2e8f0');
+    doc.fillColor(darkSlate).fontSize(7).font('Helvetica-Bold')
+       .text('FECHA', 45, currentY + 4)
+       .text('ID PEDIDO', 105, currentY + 4)
+       .text('CLIENTE', 175, currentY + 4)
+       .text('BULTOS', 315, currentY + 4, { width: 35, align: 'center' })
+       .text('ESTADO PAGO', 360, currentY + 4)
+       .text('TOTAL SOCIO', 475, currentY + 4, { width: 75, align: 'right' });
+
+    currentY += 16;
+
+    const checkPageBreak = (neededHeight) => {
+      if (currentY + neededHeight > 730) {
+        doc.addPage();
+        doc.rect(40, 40, 515, 5).fill(primaryColor);
+        currentY = 60;
+      }
+    };
+
+    if (orders.length === 0) {
+      checkPageBreak(25);
+      doc.rect(40, currentY, 515, 20).fill('#ffffff');
+      doc.fillColor(textGray).fontSize(8).font('Helvetica-Oblique').text('No se registraron ventas en este periodo.', 45, currentY + 6, { align: 'center', width: 505 });
+      currentY += 20;
+    } else {
+      orders.forEach((o, index) => {
+        checkPageBreak(18);
+        
+        if (index % 2 === 0) {
+          doc.rect(40, currentY, 515, 18).fill('#f8fafc');
+        } else {
+          doc.rect(40, currentY, 515, 18).fill('#ffffff');
+        }
+
+        const clientName = o.shippingDetails?.name || (o.user ? `${o.user.name} ${o.user.lastname}` : 'Cliente General');
+        const payStatus = o.paymentStatus === 'paid' ? 'ACREDITADO' : o.paymentStatus === 'pending' ? 'PENDIENTE' : 'CANCELADO';
+        
+        doc.fillColor(textGray).fontSize(7.5).font('Helvetica')
+           .text(new Date(o.createdAt).toLocaleDateString('es-AR'), 45, currentY + 5)
+           .font('Helvetica-Bold')
+           .text(`#${o._id.toString().substring(12).toUpperCase()}`, 105, currentY + 5)
+           .font('Helvetica')
+           .text(clientName, 175, currentY + 5, { width: 130, truncate: true })
+           .text(o.totalQuantity.toString(), 315, currentY + 5, { width: 35, align: 'center' })
+           .font('Helvetica-Bold')
+           .fillColor(o.paymentStatus === 'paid' ? '#047857' : o.paymentStatus === 'pending' ? '#b45309' : '#b91c1c')
+           .text(payStatus, 360, currentY + 5)
+           .fillColor(darkSlate)
+           .text(formatPrice(o.partnerSubtotal), 475, currentY + 5, { width: 75, align: 'right' });
+
+        doc.rect(40, currentY + 18, 515, 0.5).fill('#e2e8f0');
+        currentY += 18;
+      });
+    }
+
+    currentY += 20;
+
+    // 3. Table: Withdrawals History (Historial de Cobranza / Retiros)
+    checkPageBreak(45);
+    doc.fillColor(darkSlate).fontSize(10).font('Helvetica-Bold').text('2. HISTORIAL DE RETIROS DE FONDOS', 40, currentY);
+    currentY += 15;
+
+    // Table Header
+    doc.rect(40, currentY, 515, 16).fill('#e2e8f0');
+    doc.fillColor(darkSlate).fontSize(7).font('Helvetica-Bold')
+       .text('FECHA', 45, currentY + 4)
+       .text('CBU / CVU DESTINO', 135, currentY + 4)
+       .text('BANCO / ENTIDAD', 285, currentY + 4)
+       .text('ESTADO RETIRO', 395, currentY + 4)
+       .text('MONTO RETIRADO', 475, currentY + 4, { width: 75, align: 'right' });
+
+    currentY += 16;
+
+    if (withdrawals.length === 0) {
+      checkPageBreak(25);
+      doc.rect(40, currentY, 515, 20).fill('#ffffff');
+      doc.fillColor(textGray).fontSize(8).font('Helvetica-Oblique').text('No se registraron solicitudes de retiro en este periodo.', 45, currentY + 6, { align: 'center', width: 505 });
+      currentY += 20;
+    } else {
+      withdrawals.forEach((w, index) => {
+        checkPageBreak(18);
+
+        if (index % 2 === 0) {
+          doc.rect(40, currentY, 515, 18).fill('#f8fafc');
+        } else {
+          doc.rect(40, currentY, 515, 18).fill('#ffffff');
+        }
+
+        const wStatus = w.status === 'approved' ? 'APROBADO' : w.status === 'pending' ? 'PENDIENTE' : 'RECHAZADO';
+
+        doc.fillColor(textGray).fontSize(7.5).font('Helvetica')
+           .text(new Date(w.createdAt).toLocaleDateString('es-AR'), 45, currentY + 5)
+           .text(w.cbu || 'N/A', 135, currentY + 5)
+           .text(w.bankName || 'N/A', 285, currentY + 5)
+           .font('Helvetica-Bold')
+           .fillColor(w.status === 'approved' ? '#047857' : w.status === 'pending' ? '#b45309' : '#b91c1c')
+           .text(wStatus, 395, currentY + 5)
+           .fillColor(darkSlate)
+           .text(formatPrice(w.amount), 475, currentY + 5, { width: 75, align: 'right' });
+
+        doc.rect(40, currentY + 18, 515, 0.5).fill('#e2e8f0');
+        currentY += 18;
+      });
+    }
+
+    currentY += 20;
+
+    // 4. Table: Product Performance (Productos más vendidos)
+    checkPageBreak(45);
+    doc.fillColor(darkSlate).fontSize(10).font('Helvetica-Bold').text('3. RENDIMIENTO DE PRODUCTOS EN EL MES', 40, currentY);
+    currentY += 15;
+
+    // Table Header
+    doc.rect(40, currentY, 515, 16).fill('#e2e8f0');
+    doc.fillColor(darkSlate).fontSize(7).font('Helvetica-Bold')
+       .text('PRODUCTO', 45, currentY + 4)
+       .text('UNIDAD DE MEDIDA', 285, currentY + 4)
+       .text('UNIDADES VENDIDAS', 385, currentY + 4, { width: 85, align: 'center' })
+       .text('FACTURADO TOTAL', 475, currentY + 4, { width: 75, align: 'right' });
+
+    currentY += 16;
+
+    if (productSales.length === 0) {
+      checkPageBreak(25);
+      doc.rect(40, currentY, 515, 20).fill('#ffffff');
+      doc.fillColor(textGray).fontSize(8).font('Helvetica-Oblique').text('No se registraron ventas de productos en este periodo.', 45, currentY + 6, { align: 'center', width: 505 });
+      currentY += 20;
+    } else {
+      productSales.forEach((ps, index) => {
+        checkPageBreak(18);
+
+        if (index % 2 === 0) {
+          doc.rect(40, currentY, 515, 18).fill('#f8fafc');
+        } else {
+          doc.rect(40, currentY, 515, 18).fill('#ffffff');
+        }
+
+        doc.fillColor(darkSlate).fontSize(7.5).font('Helvetica-Bold')
+           .text(ps.title, 45, currentY + 5, { width: 230, truncate: true })
+           .font('Helvetica')
+           .fillColor(textGray)
+           .text(ps.unit, 285, currentY + 5)
+           .font('Helvetica-Bold')
+           .text(ps.quantity.toString(), 385, currentY + 5, { width: 85, align: 'center' })
+           .text(formatPrice(ps.revenue), 475, currentY + 5, { width: 75, align: 'right' });
+
+        doc.rect(40, currentY + 18, 515, 0.5).fill('#e2e8f0');
+        currentY += 18;
+      });
+    }
+
+    // Footer signature & notice
+    checkPageBreak(70);
+    doc.rect(40, 755, 515, 0.5).fill(borderGray);
+    doc.fillColor(textGray).fontSize(6.5).font('Helvetica-Oblique')
+       .text('Este documento es un resumen administrativo oficial del panel de asociados de AbastoHub.', 40, 765, { align: 'center', width: 515 });
+
+    doc.end();
+
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getLogin,
   postLogin,
@@ -941,5 +1268,6 @@ module.exports = {
   assignDriverToOrder,
   dispatchPartnerRoute,
   shipOrder,
-  generatePartnerPDFTicket
+  generatePartnerPDFTicket,
+  downloadMonthlySummary
 };
