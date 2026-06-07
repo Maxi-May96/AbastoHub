@@ -662,6 +662,11 @@
                       </form>
                     </td>
                     <td class="px-6 py-4 text-center whitespace-nowrap">
+                      <!-- View Details Button -->
+                      <button type="button" onclick="showPartnerDetails('<%= partner._id %>')" class="px-3 py-1.5 rounded-xl border border-blue-100 hover:bg-blue-50 text-blue-650 hover:border-blue-250 text-xs font-bold transition-all mr-1.5">
+                        <i class="fa-solid fa-eye mr-1"></i>Ver Datos
+                      </button>
+
                       <!-- Reset Password Form -->
                       <form action="/admin/partners/<%= partner._id %>/reset-password" method="POST" class="inline-block mr-1.5" onsubmit="return confirm('¿Estás seguro de que deseas restablecer la contraseña de este socio/afiliado? Se generará una clave aleatoria con 6 letras, 4 números y 1 símbolo.')">
                         <button type="submit" class="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 hover:border-slate-300 text-xs font-bold transition-all">
@@ -1014,11 +1019,241 @@
   </div>
 </div>
 
+<!-- Modal for Viewing Partner Details -->
+<div id="partner-details-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm hidden">
+  <div class="bg-white rounded-3xl border border-slate-200 shadow-xl max-w-2xl w-full overflow-hidden transition-all transform scale-95 duration-150" id="partner-details-card">
+    <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+      <h3 class="display-font text-base font-extrabold text-slate-900 flex items-center gap-2">
+        <i class="fa-solid fa-address-card text-brand-650"></i>
+        <span>Ficha de Socio / Afiliado</span>
+      </h3>
+      <button onclick="closePartnerDetailsModal()" class="text-slate-400 hover:text-slate-650 p-1.5 rounded-lg hover:bg-slate-100 transition-all">
+        <i class="fa-solid fa-xmark text-sm"></i>
+      </button>
+    </div>
+    
+    <div class="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
+      <!-- Top Profile Header -->
+      <div class="flex flex-col sm:flex-row items-center gap-4.5 bg-slate-50 border border-slate-150 p-4.5 rounded-2xl">
+        <div class="w-20 h-20 rounded-xl bg-white border border-slate-200 flex items-center justify-center p-2 shrink-0 overflow-hidden shadow-2xs">
+          <img id="partner-detail-logo" src="" alt="" class="max-w-full max-h-full object-contain">
+        </div>
+        <div class="text-center sm:text-left space-y-1">
+          <h4 id="partner-detail-name" class="display-font text-lg font-black text-slate-900 leading-none"></h4>
+          <div class="flex flex-wrap items-center gap-2 justify-center sm:justify-start">
+            <span id="partner-detail-type" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border capitalize"></span>
+            <span id="partner-detail-active" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border">Activo</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Information Sections Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <!-- Contact & Web Info -->
+        <div class="border border-slate-200/80 rounded-2xl p-4 space-y-3">
+          <h5 class="text-[10px] font-black uppercase tracking-wider text-slate-400 border-b border-slate-100 pb-1.5 flex items-center gap-1.5">
+            <i class="fa-solid fa-envelope"></i> Contacto y Enlaces
+          </h5>
+          <div class="space-y-2 text-xs">
+            <div>
+              <span class="text-slate-450 block font-medium">Correo Electrónico:</span>
+              <strong id="partner-detail-email" class="text-slate-800 break-all"></strong>
+            </div>
+            <div>
+              <span class="text-slate-450 block font-medium">Teléfono / Celular:</span>
+              <strong id="partner-detail-phone" class="text-slate-800"></strong>
+            </div>
+            <div>
+              <span class="text-slate-450 block font-medium">Sitio Web:</span>
+              <strong id="partner-detail-web" class="text-slate-800"></strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Billing & Transfer Details -->
+        <div class="border border-slate-200/80 rounded-2xl p-4 space-y-3">
+          <h5 class="text-[10px] font-black uppercase tracking-wider text-slate-400 border-b border-slate-100 pb-1.5 flex items-center gap-1.5">
+            <i class="fa-solid fa-piggy-bank"></i> Datos Bancarios (Cobro)
+          </h5>
+          <div class="space-y-2 text-xs">
+            <div>
+              <span class="text-slate-450 block font-medium">Banco:</span>
+              <strong id="partner-detail-bank" class="text-slate-800"></strong>
+            </div>
+            <div>
+              <span class="text-slate-450 block font-medium">CBU / CVU:</span>
+              <strong id="partner-detail-cbu" class="text-slate-800 font-mono tracking-wider break-all select-all"></strong>
+            </div>
+            <div>
+              <span class="text-slate-450 block font-medium">Alias:</span>
+              <strong id="partner-detail-alias" class="text-slate-800 font-mono select-all"></strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Primary Location details -->
+        <div class="border border-slate-200/80 rounded-2xl p-4 space-y-3 sm:col-span-2">
+          <h5 class="text-[10px] font-black uppercase tracking-wider text-slate-400 border-b border-slate-100 pb-1.5 flex items-center gap-1.5">
+            <i class="fa-solid fa-location-dot"></i> Dirección Principal
+          </h5>
+          <div class="space-y-2 text-xs">
+            <div class="flex flex-col sm:flex-row justify-between items-start gap-4">
+              <div>
+                <span class="text-slate-450 block font-medium">Dirección:</span>
+                <strong id="partner-detail-address" class="text-slate-800"></strong>
+              </div>
+              <div>
+                <span class="text-slate-450 block font-medium">Provincia:</span>
+                <strong id="partner-detail-province" class="text-slate-800"></strong>
+              </div>
+              <div id="partner-detail-coords-container">
+                <span class="text-slate-450 block font-medium">Coordenadas:</span>
+                <a id="partner-detail-coords" href="" target="_blank" class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-bold border border-emerald-100 hover:bg-emerald-100 transition-colors">
+                  <i class="fa-solid fa-map-location-dot"></i> GPS Maps
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sub-branches / Locations list -->
+        <div class="border border-slate-200/80 rounded-2xl p-4 space-y-3 sm:col-span-2">
+          <h5 class="text-[10px] font-black uppercase tracking-wider text-slate-400 border-b border-slate-100 pb-1.5 flex items-center gap-1.5">
+            <i class="fa-solid fa-house-chimney-user"></i> Sub-sucursales / Sedes Alternativas
+          </h5>
+          <div id="partner-detail-locations-list" class="space-y-2 divide-y divide-slate-100 max-h-48 overflow-y-auto pt-1">
+            <!-- Dynamic list of locations -->
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-end">
+      <button type="button" onclick="closePartnerDetailsModal()" class="px-5 py-2 rounded-xl bg-slate-250 hover:bg-slate-300 text-slate-700 font-bold text-xs transition-all">
+        Cerrar Ficha
+      </button>
+    </div>
+  </div>
+</div>
+
 <form id="discount-action-form" method="POST" style="display: none;">
   <input type="hidden" name="discount" id="discount-form-value">
 </form>
 
 <script>
+  const allPartnersList = <%- JSON.stringify(partners) %>;
+
+  function showPartnerDetails(partnerId) {
+    const partner = allPartnersList.find(p => p._id === partnerId);
+    if (!partner) return;
+
+    // Populate header details
+    document.getElementById('partner-detail-logo').src = partner.logo || '/images/default-logo.png';
+    document.getElementById('partner-detail-logo').alt = partner.name;
+    document.getElementById('partner-detail-name').innerText = partner.name;
+    
+    // Type badge style
+    const typeBadge = document.getElementById('partner-detail-type');
+    typeBadge.innerText = partner.type || 'Socio';
+    if (partner.type === 'socio') {
+      typeBadge.className = "inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border capitalize bg-indigo-50 text-indigo-700 border-indigo-100";
+    } else {
+      typeBadge.className = "inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border capitalize bg-teal-50 text-teal-700 border-teal-100";
+    }
+
+    // Active status
+    const activeStatus = document.getElementById('partner-detail-active');
+    if (partner.active) {
+      activeStatus.innerText = 'Activo';
+      activeStatus.className = "inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border bg-emerald-50 text-emerald-700 border-emerald-100";
+    } else {
+      activeStatus.innerText = 'Inactivo';
+      activeStatus.className = "inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border bg-slate-50 text-slate-400 border-slate-200";
+    }
+
+    // Contact details
+    document.getElementById('partner-detail-email').innerText = partner.email || 'No registrado';
+    document.getElementById('partner-detail-phone').innerText = partner.phone || 'No registrado';
+    
+    const webEl = document.getElementById('partner-detail-web');
+    if (partner.website) {
+      webEl.innerHTML = `<a href="${partner.website}" target="_blank" class="text-brand-650 hover:underline inline-flex items-center gap-1">${partner.website} <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i></a>`;
+    } else {
+      webEl.innerText = 'No registrado';
+    }
+
+    // Bank Details
+    document.getElementById('partner-detail-bank').innerText = partner.bankName || 'No registrado';
+    document.getElementById('partner-detail-cbu').innerText = partner.cbu || 'No registrado';
+    document.getElementById('partner-detail-alias').innerText = partner.alias || 'No registrado';
+
+    // Address & GPS
+    document.getElementById('partner-detail-address').innerText = partner.address || 'No registrado';
+    document.getElementById('partner-detail-province').innerText = partner.province || 'No registrado';
+
+    const gpsContainer = document.getElementById('partner-detail-coords-container');
+    const gpsLink = document.getElementById('partner-detail-coords');
+    if (partner.latitude !== null && partner.longitude !== null && partner.latitude !== undefined && partner.longitude !== undefined) {
+      gpsLink.href = `https://www.google.com/maps/search/?api=1&query=${partner.latitude},${partner.longitude}`;
+      gpsContainer.style.display = 'block';
+    } else {
+      gpsContainer.style.display = 'none';
+    }
+
+    // Sub-locations list
+    const locsList = document.getElementById('partner-detail-locations-list');
+    locsList.innerHTML = '';
+    if (partner.locations && partner.locations.length > 0) {
+      partner.locations.forEach(loc => {
+        const item = document.createElement('div');
+        item.className = "py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs";
+        
+        let gpsHtml = '';
+        if (loc.latitude !== null && loc.longitude !== null && loc.latitude !== undefined && loc.longitude !== undefined) {
+          gpsHtml = `
+            <a href="https://www.google.com/maps/search/?api=1&query=${loc.latitude},${loc.longitude}" target="_blank" class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-bold border border-emerald-100 hover:bg-emerald-100 transition-colors shrink-0">
+              <i class="fa-solid fa-map-location-dot"></i> GPS
+            </a>
+          `;
+        }
+
+        item.innerHTML = `
+          <div>
+            <strong class="text-slate-800 font-bold block">${loc.name}</strong>
+            <span class="text-slate-500">${loc.address} (${loc.province})</span>
+          </div>
+          <div>
+            ${gpsHtml}
+          </div>
+        `;
+        locsList.appendChild(item);
+      });
+    } else {
+      locsList.innerHTML = '<p class="text-xs text-slate-450 italic py-2">No se registraron sedes alternativas para este socio.</p>';
+    }
+
+    // Open Modal
+    const modal = document.getElementById('partner-details-modal');
+    const card = document.getElementById('partner-details-card');
+    
+    modal.classList.remove('hidden');
+    setTimeout(() => {
+      card.classList.remove('scale-95');
+      card.classList.add('scale-100');
+    }, 10);
+  }
+
+  function closePartnerDetailsModal() {
+    const modal = document.getElementById('partner-details-modal');
+    const card = document.getElementById('partner-details-card');
+    
+    card.classList.remove('scale-100');
+    card.classList.add('scale-95');
+    setTimeout(() => {
+      modal.classList.add('hidden');
+    }, 150);
+  }
+
   function switchTab(tabId, buttonElement) {
     // Hide all panels
     const panels = document.querySelectorAll('.tab-panel');
