@@ -21,6 +21,8 @@ router.post('/partner/products/:id/delete', isPartnerAuthenticated, partnerContr
 router.post('/partner/bank-details', isPartnerAuthenticated, partnerController.updateBankDetails);
 router.post('/partner/withdraw', isPartnerAuthenticated, partnerController.requestWithdrawal);
 router.post('/partner/location', isPartnerAuthenticated, partnerController.updateLocation);
+router.post('/partner/locations', isPartnerAuthenticated, partnerController.addLocation);
+router.post('/partner/locations/:id/delete', isPartnerAuthenticated, partnerController.deleteLocation);
 
 // Partner Driver Management
 router.post('/partner/drivers', isPartnerAuthenticated, partnerController.createPartnerDriver);

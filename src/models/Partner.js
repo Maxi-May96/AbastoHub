@@ -74,6 +74,13 @@ const PartnerSchema = new mongoose.Schema({
     ref: 'Driver',
     default: null
   },
+  locations: [{
+    name: { type: String, required: true },
+    address: { type: String, default: '' },
+    province: { type: String, default: '' },
+    latitude: { type: Number, default: null },
+    longitude: { type: Number, default: null }
+  }],
   active: {
     type: Boolean,
     default: true

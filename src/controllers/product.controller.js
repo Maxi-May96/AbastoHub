@@ -58,8 +58,13 @@ const getProducts = async (req, res, next) => {
     if (partnerId) {
       query.partner = partnerId;
     } else if (province) {
-      // Filter by Province (find all partners in that province)
-      const partnersInProvince = await Partner.find({ province }).select('_id');
+      // Find all partners that have ANY location in this province (primary or in locations array)
+      const partnersInProvince = await Partner.find({
+        $or: [
+          { province: province },
+          { 'locations.province': province }
+        ]
+      }).select('_id');
       const partnerIds = partnersInProvince.map(p => p._id);
       query.partner = { $in: partnerIds };
     }
@@ -74,6 +79,20 @@ const getProducts = async (req, res, next) => {
     
     // Fetch products and categories
     let products = await Product.find(query).populate('category').populate('partner').sort(sortQuery);
+
+    // If province filter is active, filter in-memory to ensure only products in that location's province are returned
+    if (province && !partnerId) {
+      products = products.filter(prod => {
+        if (!prod.partner) return false;
+        // If product has custom location, check its province
+        if (prod.location && prod.partner.locations && prod.partner.locations.length > 0) {
+          const loc = prod.partner.locations.id(prod.location);
+          return loc && loc.province === province;
+        }
+        // Fallback to partner's primary province
+        return prod.partner.province === province;
+      });
+    }
     
     // Calculate distance and filter if user sharing location
     if (userLat && userLng) {
@@ -85,9 +104,20 @@ const getProducts = async (req, res, next) => {
         let lat = -34.603722; // default central warehouse (Obelisco, Buenos Aires)
         let lng = -58.381592;
         
-        if (prod.partner && prod.partner.latitude !== null && prod.partner.longitude !== null) {
-          lat = prod.partner.latitude;
-          lng = prod.partner.longitude;
+        if (prod.partner) {
+          if (prod.location && prod.partner.locations && prod.partner.locations.length > 0) {
+            const loc = prod.partner.locations.id(prod.location);
+            if (loc && loc.latitude !== null && loc.longitude !== null) {
+              lat = loc.latitude;
+              lng = loc.longitude;
+            } else if (prod.partner.latitude !== null && prod.partner.longitude !== null) {
+              lat = prod.partner.latitude;
+              lng = prod.partner.longitude;
+            }
+          } else if (prod.partner.latitude !== null && prod.partner.longitude !== null) {
+            lat = prod.partner.latitude;
+            lng = prod.partner.longitude;
+          }
           distance = calculateDistance(uLat, uLng, lat, lng);
         } else {
           // Assume central warehouse for global products

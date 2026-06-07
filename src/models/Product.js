@@ -47,6 +47,10 @@ const ProductSchema = new mongoose.Schema({
     ref: 'Partner',
     default: null
   },
+  location: {
+    type: mongoose.Schema.Types.ObjectId,
+    default: null
+  },
   unit: {
     type: String,
     default: 'unidades', // e.g. "kg", "unidades", "cajón"

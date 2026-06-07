@@ -245,7 +245,27 @@
                         </div>
                         <div>
                           <div class="font-bold text-slate-800 text-xs sm:text-sm"><%= prod.title %></div>
-                          <div class="text-[10px] text-slate-400 mt-0.5 line-clamp-1 max-w-[240px]" title="<%= prod.description %>">
+                          <div class="flex items-center gap-1.5 mt-0.5">
+                            <% if (prod.location && partner.locations && partner.locations.length > 0) { %>
+                              <% 
+                                const matchedLoc = partner.locations.find(l => l._id.toString() === prod.location.toString());
+                              %>
+                              <% if (matchedLoc) { %>
+                                <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-indigo-50 border border-indigo-100 text-indigo-700 text-[9px] font-bold">
+                                  <i class="fa-solid fa-map-pin text-[8px]"></i> <%= matchedLoc.name %>
+                                </span>
+                              <% } else { %>
+                                <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-slate-50 border border-slate-200 text-slate-500 text-[9px] font-bold">
+                                  Principal
+                                </span>
+                              <% } %>
+                            <% } else { %>
+                              <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-slate-50 border border-slate-200 text-slate-500 text-[9px] font-bold">
+                                Principal
+                              </span>
+                            <% } %>
+                          </div>
+                          <div class="text-[10px] text-slate-400 mt-1 line-clamp-1 max-w-[240px]" title="<%= prod.description %>">
                             <%= prod.description || 'Sin descripción' %>
                           </div>
                         </div>
@@ -298,6 +318,7 @@
                                 data-title="<%= prod.title %>"
                                 data-description="<%= prod.description || '' %>"
                                 data-category="<%= prod.category ? prod.category._id : '' %>"
+                                data-location="<%= prod.location || '' %>"
                                 onclick="triggerEditProduct(this)"
                                 class="px-3 py-1.5 rounded-xl border border-indigo-100 hover:bg-indigo-50 text-indigo-650 text-xs font-bold transition-all flex items-center gap-1" 
                                 title="Editar Nombre, Descripción y Categoría">
@@ -703,6 +724,108 @@
             </form>
           </div>
 
+          <!-- Additional Branches / Locations Management -->
+          <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
+            <h3 class="font-bold text-slate-800 text-sm mb-1.5 flex items-center gap-2">
+              <i class="fa-solid fa-map-pin text-brand-650"></i>
+              Sucursales / Locaciones Adicionales
+            </h3>
+            <p class="text-slate-400 text-[11px] mb-4">Administra tus sedes adicionales para asociarlas a tus productos en catálogo.</p>
+
+            <!-- List of existing locations -->
+            <div class="space-y-3 mb-4">
+              <% if (partner.locations && partner.locations.length > 0) { %>
+                <% partner.locations.forEach(loc => { %>
+                  <div class="p-3 bg-slate-50 border border-slate-200 rounded-2xl flex justify-between items-center gap-3">
+                    <div>
+                      <p class="font-bold text-slate-800 text-xs"><%= loc.name %></p>
+                      <p class="text-[10px] text-slate-500 mt-0.5"><%= loc.address %> - <%= loc.province %></p>
+                      <% if (loc.latitude && loc.longitude) { %>
+                        <p class="text-[9px] text-slate-400 font-mono mt-0.5"><%= loc.latitude.toFixed(4) %>, <%= loc.longitude.toFixed(4) %></p>
+                      <% } %>
+                    </div>
+                    <form action="/partner/locations/<%= loc._id %>/delete" method="POST" onsubmit="return confirm('¿Seguro que deseas eliminar esta sucursal? Los productos asociados volverán a la ubicación principal.');">
+                      <button type="submit" class="text-slate-400 hover:text-rose-600 p-1.5 transition-colors">
+                        <i class="fa-solid fa-trash-can text-xs"></i>
+                      </button>
+                    </form>
+                  </div>
+                <% }); %>
+              <% } else { %>
+                <p class="text-center text-slate-400 text-[11px] py-2 bg-slate-50/50 border border-dashed border-slate-250 rounded-2xl">
+                  No tienes sucursales adicionales registradas.
+                </p>
+              <% } %>
+            </div>
+
+            <!-- Form to add new location -->
+            <form action="/partner/locations" method="POST" class="space-y-3 pt-3 border-t border-slate-100">
+              <p class="font-bold text-slate-700 text-xs mb-1">Nueva Sucursal</p>
+              
+              <div>
+                <label for="loc-name" class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-0.5">Nombre / Identificador *</label>
+                <input type="text" id="loc-name" name="name" required placeholder="Ej. Sucursal Posadas, Sede Tucumán"
+                  class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-3 py-1.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-xs font-semibold">
+              </div>
+
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label for="loc-province" class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-0.5">Provincia *</label>
+                  <select id="loc-province" name="province" required
+                    class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 px-3 py-1.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-xs font-semibold">
+                    <option value="" disabled selected>Selecciona...</option>
+                    <option value="Buenos Aires">Buenos Aires</option>
+                    <option value="CABA">CABA</option>
+                    <option value="Catamarca">Catamarca</option>
+                    <option value="Chaco">Chaco</option>
+                    <option value="Chubut">Chubut</option>
+                    <option value="Córdoba">Córdoba</option>
+                    <option value="Corrientes">Corrientes</option>
+                    <option value="Entre Ríos">Entre Ríos</option>
+                    <option value="Formosa">Formosa</option>
+                    <option value="Jujuy">Jujuy</option>
+                    <option value="La Pampa">La Pampa</option>
+                    <option value="La Rioja">La Rioja</option>
+                    <option value="Mendoza">Mendoza</option>
+                    <option value="Misiones">Misiones</option>
+                    <option value="Neuquén">Neuquén</option>
+                    <option value="Río Negro">Río Negro</option>
+                    <option value="Salta">Salta</option>
+                    <option value="San Juan">San Juan</option>
+                    <option value="San Luis">San Luis</option>
+                    <option value="Santa Cruz">Santa Cruz</option>
+                    <option value="Santa Fe">Santa Fe</option>
+                    <option value="Santiago del Estero">Santiago del Estero</option>
+                    <option value="Tierra del Fuego">Tierra del Fuego</option>
+                    <option value="Tucumán">Tucumán</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="loc-address" class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-0.5">Dirección</label>
+                  <input type="text" id="loc-address" name="address" placeholder="Ej. Calle 123"
+                    class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-3 py-1.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-xs font-semibold">
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label for="loc-lat" class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-0.5">Latitud</label>
+                  <input type="number" id="loc-lat" name="latitude" step="any" placeholder="-27.367"
+                    class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-3 py-1.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-xs font-semibold">
+                </div>
+                <div>
+                  <label for="loc-lng" class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-0.5">Longitud</label>
+                  <input type="number" id="loc-lng" name="longitude" step="any" placeholder="-55.896"
+                    class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-3 py-1.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-xs font-semibold">
+                </div>
+              </div>
+
+              <button type="submit" class="w-full py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs shadow-sm transition-all text-center">
+                Agregar Sucursal
+              </button>
+            </form>
+          </div>
+
           <!-- Request Payout Form -->
           <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
             <h3 class="font-bold text-slate-800 text-sm mb-1.5 flex items-center gap-2">
@@ -828,7 +951,7 @@
         </div>
 
         <form action="/partner/products" method="POST" enctype="multipart/form-data" class="space-y-5">
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <!-- Title -->
             <div>
               <label for="prod-title" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Nombre del Producto *</label>
@@ -844,6 +967,20 @@
                 <% categories.forEach(cat => { %>
                   <option value="<%= cat._id %>"><%= cat.name %></option>
                 <% }); %>
+              </select>
+            </div>
+
+            <!-- Location / Branch -->
+            <div>
+              <label for="prod-location" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Sucursal / Locación</label>
+              <select id="prod-location" name="locationId"
+                class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-sm font-semibold">
+                <option value="">Ubicación Principal (<%= partner.province %>)</option>
+                <% if (partner.locations && partner.locations.length > 0) { %>
+                  <% partner.locations.forEach(loc => { %>
+                    <option value="<%= loc._id %>"><%= loc.name %> (<%= loc.province %>)</option>
+                  <% }); %>
+                <% } %>
               </select>
             </div>
           </div>
@@ -965,6 +1102,19 @@
       </div>
 
       <div>
+        <label for="edit-location" class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Sucursal / Locación</label>
+        <select id="edit-location" name="locationId"
+          class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-xs font-medium">
+          <option value="">Ubicación Principal (<%= partner.province %>)</option>
+          <% if (partner.locations && partner.locations.length > 0) { %>
+            <% partner.locations.forEach(loc => { %>
+              <option value="<%= loc._id %>"><%= loc.name %> (<%= loc.province %>)</option>
+            <% }); %>
+          <% } %>
+        </select>
+      </div>
+
+      <div>
         <label for="edit-description" class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Descripción</label>
         <textarea id="edit-description" name="description" rows="4"
           class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-xs font-medium resize-none"></textarea>
@@ -1042,6 +1192,7 @@
     const title = button.getAttribute('data-title');
     const description = button.getAttribute('data-description');
     const categoryId = button.getAttribute('data-category');
+    const locationId = button.getAttribute('data-location') || '';
     
     const modal = document.getElementById('edit-partner-product-modal');
     const card = document.getElementById('edit-modal-card');
@@ -1051,6 +1202,7 @@
     document.getElementById('edit-title').value = title;
     document.getElementById('edit-description').value = description || '';
     document.getElementById('edit-category').value = categoryId || '';
+    document.getElementById('edit-location').value = locationId;
     
     modal.classList.remove('hidden');
     setTimeout(() => {

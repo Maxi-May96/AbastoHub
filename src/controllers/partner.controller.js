@@ -161,7 +161,7 @@ const getPanel = async (req, res, next) => {
 // POST Partner Create Product
 const createProduct = async (req, res, next) => {
   try {
-    const { title, description, price, wholesalePrice, stock, categoryId, unit } = req.body;
+    const { title, description, price, wholesalePrice, stock, categoryId, unit, locationId } = req.body;
     
     if (!title || !price || !stock || !categoryId) {
       return res.redirect('/partner/panel?error=' + encodeURIComponent('Por favor complete todos los campos obligatorios.'));
@@ -191,6 +191,7 @@ const createProduct = async (req, res, next) => {
       category: categoryId,
       unit: unit || 'unidades',
       partner: req.partner.id, // Associated with partner!
+      location: locationId && locationId !== '' ? locationId : null, // Associated with branch/location!
       active: true
     });
 
@@ -257,7 +258,7 @@ const updatePrice = async (req, res, next) => {
 const updateProductDetails = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { title, description, categoryId } = req.body;
+    const { title, description, categoryId, locationId } = req.body;
     
     if (!title || !title.trim() || !categoryId) {
       return res.redirect('/partner/panel?error=' + encodeURIComponent('El nombre y la categoría del producto son obligatorios.'));
@@ -271,6 +272,7 @@ const updateProductDetails = async (req, res, next) => {
     product.title = title.trim();
     product.description = (description || '').trim();
     product.category = categoryId;
+    product.location = locationId && locationId !== '' ? locationId : null;
     
     await product.save();
 
@@ -349,6 +351,55 @@ const updateLocation = async (req, res, next) => {
   } catch (error) {
     console.error('Update location error:', error.message);
     res.redirect('/partner/panel?error=' + encodeURIComponent('Error al actualizar la ubicación.'));
+  }
+};
+
+const addLocation = async (req, res, next) => {
+  try {
+    const { name, address, province, latitude, longitude } = req.body;
+    if (!name || !province) {
+      return res.redirect('/partner/panel?error=' + encodeURIComponent('El nombre y la provincia son obligatorios para la sucursal.'));
+    }
+
+    const partner = await Partner.findById(req.partner.id);
+    if (!partner) {
+      return res.redirect('/partner/login');
+    }
+
+    partner.locations.push({
+      name: name.trim(),
+      address: (address || '').trim(),
+      province: province.trim(),
+      latitude: latitude && latitude.trim() !== '' ? Number(latitude) : null,
+      longitude: longitude && longitude.trim() !== '' ? Number(longitude) : null
+    });
+
+    await partner.save();
+    res.redirect('/partner/panel?success=' + encodeURIComponent('Nueva sucursal / locación agregada exitosamente.'));
+  } catch (error) {
+    console.error('Partner add location error:', error.message);
+    res.redirect('/partner/panel?error=' + encodeURIComponent('Error al agregar locación: ' + error.message));
+  }
+};
+
+const deleteLocation = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const partner = await Partner.findById(req.partner.id);
+    if (!partner) {
+      return res.redirect('/partner/login');
+    }
+
+    partner.locations.pull({ _id: id });
+    await partner.save();
+
+    // Set any products associated with this location back to null (default)
+    await Product.updateMany({ partner: partner._id, location: id }, { location: null });
+
+    res.redirect('/partner/panel?success=' + encodeURIComponent('Sucursal / locación eliminada exitosamente.'));
+  } catch (error) {
+    console.error('Partner delete location error:', error.message);
+    res.redirect('/partner/panel?error=' + encodeURIComponent('Error al eliminar locación.'));
   }
 };
 
@@ -1262,6 +1313,8 @@ module.exports = {
   deleteProduct,
   updateBankDetails,
   updateLocation,
+  addLocation,
+  deleteLocation,
   requestWithdrawal,
   createPartnerDriver,
   deletePartnerDriver,
