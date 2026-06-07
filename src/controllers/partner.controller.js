@@ -721,10 +721,14 @@ const generatePartnerPDFTicket = async (req, res, next) => {
       return res.status(404).send('Pedido no encontrado');
     }
 
-    // Filter items belonging to this partner
-    const partnerItems = order.products.filter(item => 
-      item.product && item.product.partner && item.product.partner._id.toString() === partnerId
-    );
+    // Filter items belonging to this partner safely under all populate states
+    const partnerItems = order.products.filter(item => {
+      if (!item.product) return false;
+      const partnerRef = item.product.partner;
+      if (!partnerRef) return false;
+      const itemPartnerId = partnerRef._id ? partnerRef._id.toString() : partnerRef.toString();
+      return itemPartnerId === partnerId;
+    });
 
     if (partnerItems.length === 0) {
       return res.status(403).send('No autorizado para ver este ticket (no contiene tus productos)');
