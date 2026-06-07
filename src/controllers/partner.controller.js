@@ -9,6 +9,8 @@ const { generatePartnerToken } = require('../services/auth.service');
 const formatPrice = require('../utils/formatPrice');
 const PDFDocument = require('pdfkit');
 const path = require('path');
+const Message = require('../models/Message');
+const mongoose = require('mongoose');
 
 // GET Partner Login Page
 const getLogin = async (req, res, next) => {
@@ -133,6 +135,25 @@ const getPanel = async (req, res, next) => {
     // Available balance
     const availableBalance = totalEarnings - totalApprovedWithdrawals - totalPendingWithdrawals;
 
+    // Fetch active chats (grouped by roomId/user) in the last 72 hours
+    let activeChats = [];
+    try {
+      activeChats = await Message.aggregate([
+        { $match: { partnerId: new mongoose.Types.ObjectId(partnerId) } },
+        { $sort: { createdAt: -1 } },
+        { $group: {
+            _id: '$roomId',
+            userId: { $first: '$userId' },
+            userName: { $first: '$userName' },
+            lastMessage: { $first: '$text' },
+            lastMessageTime: { $first: '$createdAt' }
+        }},
+        { $sort: { lastMessageTime: -1 } }
+      ]);
+    } catch (err) {
+      console.error('Error fetching partner active chats:', err.message);
+    }
+
     res.render('pages/partner-panel', {
       title: 'Panel de Socio - AbastoHub',
       partner: partnerDoc,
@@ -149,6 +170,7 @@ const getPanel = async (req, res, next) => {
       totalApprovedWithdrawals,
       totalPendingWithdrawals,
       availableBalance,
+      activeChats,
       formatPrice,
       success: req.query.success,
       error: req.query.error
