@@ -11,7 +11,10 @@ const { uploadImage } = require('../services/firebase.service');
 // GET Checkout Page
 const getCheckout = async (req, res, next) => {
   try {
-    const cart = await Cart.findOne({ user: req.user.id }).populate('products.product');
+    const cart = await Cart.findOne({ user: req.user.id }).populate({
+      path: 'products.product',
+      populate: { path: 'partner' }
+    });
     
     if (!cart || cart.products.length === 0) {
       return res.redirect('/cart');
