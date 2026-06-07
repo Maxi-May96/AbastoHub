@@ -173,7 +173,7 @@ const getProducts = async (req, res, next) => {
 const getProductBySlug = async (req, res, next) => {
   try {
     const { slug } = req.params;
-    const product = await Product.findOne({ slug, active: true }).populate('category');
+    const product = await Product.findOne({ slug, active: true }).populate('category').populate('partner');
     
     if (!product) {
       return res.status(404).render('pages/error', {

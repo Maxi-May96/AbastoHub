@@ -203,8 +203,19 @@
                 <!-- Partner and Proximity Badges -->
                 <div class="flex flex-wrap gap-1.5 mb-2.5">
                   <% if (product.partner) { %>
+                    <% 
+                      let locationName = '';
+                      let locationProvince = product.partner.province || 'S/D';
+                      if (product.location && product.partner.locations && product.partner.locations.length > 0) {
+                        const matchedLoc = product.partner.locations.find(l => l._id.toString() === product.location.toString());
+                        if (matchedLoc) {
+                          locationName = ' - ' + matchedLoc.name;
+                          locationProvince = matchedLoc.province;
+                        }
+                      }
+                    %>
                     <span class="bg-emerald-50 text-emerald-850 text-[9px] font-extrabold px-2 py-0.5 rounded-full border border-emerald-100 flex items-center gap-1">
-                      <i class="fa-solid fa-handshake"></i> <%= product.partner.name %> (<%= product.partner.province || 'S/D' %>)
+                      <i class="fa-solid fa-handshake"></i> <%= product.partner.name %><%= locationName %> (<%= locationProvince %>)
                     </span>
                   <% } else { %>
                     <span class="bg-slate-100 text-slate-750 text-[9px] font-bold px-2 py-0.5 rounded-full border border-slate-200 flex items-center gap-1">
