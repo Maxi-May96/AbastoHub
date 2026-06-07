@@ -86,7 +86,7 @@ const getProducts = async (req, res, next) => {
         if (!prod.partner) return false;
         // If product has custom location, check its province
         if (prod.location && prod.partner.locations && prod.partner.locations.length > 0) {
-          const loc = prod.partner.locations.id(prod.location);
+          const loc = prod.partner.locations.find(l => l._id && l._id.toString() === prod.location.toString());
           return loc && loc.province === province;
         }
         // Fallback to partner's primary province
@@ -144,7 +144,9 @@ const getProducts = async (req, res, next) => {
     const categories = await Category.find({});
     const activeCategory = categorySlug ? await Category.findOne({ slug: categorySlug }) : null;
     const partners = await Partner.find({ active: true }).sort({ name: 1 });
-    const provinces = await Partner.distinct('province', { active: true, province: { $ne: '' } });
+    const primaryProvinces = await Partner.distinct('province', { active: true, province: { $ne: '' } });
+    const branchProvinces = await Partner.distinct('locations.province', { active: true, 'locations.province': { $ne: '' } });
+    const provinces = Array.from(new Set([...primaryProvinces, ...branchProvinces])).sort();
 
     res.render('pages/products', {
       title: 'Catálogo de Productos',
