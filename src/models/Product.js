@@ -76,10 +76,27 @@ const ProductSchema = new mongoose.Schema({
   }
 });
 
-ProductSchema.pre('save', function () {
-  if (this.isModified('title')) {
-    this.slug = slugifyHelper(this.title);
+ProductSchema.pre('save', async function (next) {
+  if (this.isModified('title') || !this.slug) {
+    const baseSlug = slugifyHelper(this.title);
+    let uniqueSlug = baseSlug;
+    let counter = 1;
+    
+    // Dynamically find a unique slug
+    while (true) {
+      const existing = await mongoose.models.Product.findOne({ 
+        slug: uniqueSlug,
+        _id: { $ne: this._id } 
+      });
+      if (!existing) {
+        break;
+      }
+      uniqueSlug = `${baseSlug}-${counter}`;
+      counter++;
+    }
+    this.slug = uniqueSlug;
   }
+  next();
 });
 
 module.exports = mongoose.model('Product', ProductSchema);
