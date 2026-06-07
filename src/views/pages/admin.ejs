@@ -669,6 +669,14 @@
                         </button>
                       </form>
 
+                      <!-- Toggle Featured 72h Form -->
+                      <% const isPartnerFeatured = partner.featuredUntil && partner.featuredUntil > new Date(); %>
+                      <form action="/admin/partners/<%= partner._id %>/toggle-featured-72h" method="POST" class="inline-block mr-1.5">
+                        <button type="submit" class="px-3 py-1.5 rounded-xl border <%= isPartnerFeatured ? 'bg-amber-500 border-amber-500 text-white hover:bg-amber-600 hover:border-amber-600' : 'border-amber-200 hover:bg-amber-50 text-amber-700' %> text-xs font-bold transition-all">
+                          <i class="fa-solid fa-star mr-1"></i><%= isPartnerFeatured ? 'Destacado' : 'Destacar 72h' %>
+                        </button>
+                      </form>
+
                       <!-- Delete Form -->
                       <form action="/admin/partners/<%= partner._id %>/delete" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro de que deseas eliminar este socio/afiliado?')">
                         <button type="submit" class="px-3 py-1.5 rounded-xl border border-red-100 hover:bg-red-50 text-red-600 text-xs font-bold transition-all">

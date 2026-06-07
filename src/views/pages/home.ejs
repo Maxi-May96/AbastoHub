@@ -106,6 +106,40 @@
   </div>
 </section>
 
+<% if (typeof featuredPartner !== 'undefined' && featuredPartner) { %>
+  <!-- Featured Partner 72h Banner -->
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12">
+    <div class="relative rounded-3xl overflow-hidden bg-gradient-to-r from-amber-500 via-orange-500 to-brand-650 p-8 sm:p-12 shadow-xl shadow-amber-500/10 flex flex-col md:flex-row items-center justify-between gap-8">
+      <!-- Background pattern -->
+      <div class="absolute inset-0 bg-[radial-gradient(circle_at_20%_30%,rgba(255,255,255,0.15),transparent)] pointer-events-none"></div>
+      
+      <div class="flex items-center gap-6 relative z-10 flex-col sm:flex-row text-center sm:text-left">
+        <!-- Partner Logo -->
+        <div class="w-24 h-24 rounded-2xl bg-white p-3 shadow-md flex items-center justify-center shrink-0 border-4 border-amber-250">
+          <img src="<%= featuredPartner.logo %>" alt="<%= featuredPartner.name %>" class="max-w-full max-h-full object-contain">
+        </div>
+        
+        <div class="space-y-2 text-white">
+          <div class="inline-flex items-center gap-1 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider">
+            <i class="fa-solid fa-crown text-amber-300"></i> Productor Destacado de la Semana
+          </div>
+          <h3 class="display-font text-2xl sm:text-3xl font-black"><%= featuredPartner.name %></h3>
+          <p class="text-amber-50 text-sm max-w-xl font-medium leading-relaxed">
+            ¡Comprá fresco y directo! Aprovechá esta semana los mejores productos cosechados y distribuidos directamente por <%= featuredPartner.name %> desde <%= featuredPartner.province || 'nuestro campo local' %>.
+          </p>
+        </div>
+      </div>
+
+      <div class="relative z-10 shrink-0">
+        <a href="/products?partner=<%= featuredPartner._id %>" class="px-6 py-3.5 rounded-full font-bold text-slate-900 bg-white hover:bg-slate-50 shadow-lg transition-all text-sm flex items-center gap-2 hover:-translate-y-0.5">
+          <span>Ver sus Productos</span>
+          <i class="fa-solid fa-basket-shopping text-brand-600"></i>
+        </a>
+      </div>
+    </div>
+  </section>
+<% } %>
+
 <!-- Categories Grid -->
 <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
   <div class="flex items-end justify-between mb-8">
@@ -141,17 +175,17 @@
   </div>
 </section>
 
-<!-- Featured Products Section -->
+<!-- Bestsellers Section (Top 7) -->
 <section id="ofertas" class="bg-slate-100/50 border-y border-slate-200 py-16">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     
     <div class="flex flex-col sm:flex-row sm:items-end justify-between mb-8 gap-4">
       <div>
         <h2 class="display-font text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-950 flex items-center gap-2">
-          <span class="text-brand-600"><i class="fa-solid fa-fire"></i></span>
-          Productos Destacados
+          <span class="text-brand-600"><i class="fa-solid fa-fire text-amber-500 animate-pulse"></i></span>
+          Los 7 Más Vendidos
         </h2>
-        <p class="text-sm text-slate-500">Seleccionados por calidad y precio.</p>
+        <p class="text-sm text-slate-500">Nuestros productos más populares y solicitados por la comunidad.</p>
       </div>
       <a href="/products" class="inline-flex items-center justify-center px-5 py-2.5 rounded-full bg-white border border-slate-200 shadow-sm hover:bg-slate-50 font-semibold text-slate-700 text-sm transition-all duration-200">
         Ver todo el catálogo
@@ -160,10 +194,15 @@
 
     <!-- Products Grid -->
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-      <% if (featuredProducts && featuredProducts.length > 0) { %>
-        <% featuredProducts.forEach(product => { %>
-          <div class="bg-white rounded-3xl border border-slate-200/80 overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-250 flex flex-col h-full group">
+      <% if (typeof bestSellers !== 'undefined' && bestSellers && bestSellers.length > 0) { %>
+        <% bestSellers.forEach((product, idx) => { %>
+          <div class="bg-white rounded-3xl border border-slate-200/80 overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-250 flex flex-col h-full group relative">
             
+            <!-- Rank Badge -->
+            <span class="absolute top-3 left-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[10px] font-black px-2.5 py-1 rounded-full shadow-md z-10 flex items-center gap-1.5">
+              <i class="fa-solid fa-trophy text-[9px]"></i> Top <%= idx + 1 %>
+            </span>
+
             <!-- Image Frame -->
             <a href="/products/<%= product.slug %>" class="block relative aspect-[4/3] bg-slate-50 overflow-hidden">
               <% if (product.images && product.images.length > 0) { %>
@@ -172,9 +211,9 @@
                 <div class="w-full h-full flex items-center justify-center text-slate-350"><i class="fa-regular fa-image text-4xl"></i></div>
               <% } %>
               
-              <!-- Tag Category -->
+              <!-- Tag Category (Top-right) -->
               <% if (product.category) { %>
-                <span class="absolute top-3 left-3 bg-white/90 backdrop-blur-sm border border-slate-200 text-slate-700 text-[10px] font-bold px-2.5 py-0.5 rounded-full"><%= product.category.name %></span>
+                <span class="absolute top-3 right-3 bg-white/90 backdrop-blur-sm border border-slate-200 text-slate-700 text-[10px] font-bold px-2.5 py-0.5 rounded-full"><%= product.category.name %></span>
               <% } %>
 
               <!-- Unit Badge -->
@@ -238,7 +277,7 @@
       <% } else { %>
         <div class="col-span-full py-12 text-center text-slate-400 bg-white rounded-3xl border border-slate-200/70 shadow-sm">
           <i class="fa-solid fa-box-open text-4xl mb-3 text-slate-300"></i>
-          <p class="font-medium text-sm">No hay productos destacados por el momento.</p>
+          <p class="font-medium text-sm">No hay productos más vendidos registrados por el momento.</p>
         </div>
       <% } %>
     </div>

@@ -35,6 +35,7 @@ router.post('/admin/drivers/:id/delete', isAuthenticated, isAdmin, productContro
 router.post('/admin/partners', isAuthenticated, isAdmin, upload.single('logo'), productController.createPartner);
 router.post('/admin/partners/:id/delete', isAuthenticated, isAdmin, productController.deletePartner);
 router.post('/admin/partners/:id/reset-password', isAuthenticated, isAdmin, productController.resetPartnerPassword);
+router.post('/admin/partners/:id/toggle-featured-72h', isAuthenticated, isAdmin, productController.togglePartnerFeatured72h);
 router.post('/admin/partners/:id/assign-driver', isAuthenticated, isAdmin, productController.assignDriverToPartner);
 router.post('/admin/withdrawals/:id/status', isAuthenticated, isAdmin, productController.updateWithdrawalStatus);
 

@@ -85,6 +85,10 @@ const PartnerSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  featuredUntil: {
+    type: Date,
+    default: null
+  },
   createdAt: {
     type: Date,
     default: Date.now

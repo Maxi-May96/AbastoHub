@@ -889,6 +889,31 @@ const resetPartnerPassword = async (req, res, next) => {
   }
 };
 
+// POST Toggle Partner Featured Status for 72 Hours (Admin Only)
+const togglePartnerFeatured72h = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const partner = await Partner.findById(id);
+    if (!partner) {
+      return res.redirect('/admin?error=' + encodeURIComponent('Socio/Afiliado no encontrado.'));
+    }
+
+    const isFeatured = partner.featuredUntil && partner.featuredUntil > new Date();
+    if (isFeatured) {
+      partner.featuredUntil = null;
+      await partner.save();
+      res.redirect('/admin?success=' + encodeURIComponent(`Destacado removido para "${partner.name}".`));
+    } else {
+      partner.featuredUntil = new Date(Date.now() + 72 * 60 * 60 * 1000);
+      await partner.save();
+      res.redirect('/admin?success=' + encodeURIComponent(`"${partner.name}" destacado por 72 horas con éxito.`));
+    }
+  } catch (error) {
+    console.error('Toggle partner featured 72h error:', error.message);
+    res.redirect('/admin?error=' + encodeURIComponent('Error al destacar el socio: ' + error.message));
+  }
+};
+
 // POST Assign Driver to Partner (Admin Only)
 const assignDriverToPartner = async (req, res, next) => {
   try {
@@ -1574,6 +1599,7 @@ module.exports = {
   createPartner,
   deletePartner,
   resetPartnerPassword,
+  togglePartnerFeatured72h,
   assignDriverToPartner,
   generateOrdersSummaryPDF,
   markOrderAsPaid,
