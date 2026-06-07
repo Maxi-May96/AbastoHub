@@ -661,8 +661,16 @@
                         </select>
                       </form>
                     </td>
-                    <td class="px-6 py-4 text-center">
-                      <form action="/admin/partners/<%= partner._id %>/delete" method="POST" class="inline" onsubmit="return confirm('¿Estás seguro de que deseas eliminar este socio/afiliado?')">
+                    <td class="px-6 py-4 text-center whitespace-nowrap">
+                      <!-- Reset Password Form -->
+                      <form action="/admin/partners/<%= partner._id %>/reset-password" method="POST" class="inline-block mr-1.5" onsubmit="return confirm('¿Estás seguro de que deseas restablecer la contraseña de este socio/afiliado? Se generará una clave aleatoria con 6 letras, 4 números y 1 símbolo.')">
+                        <button type="submit" class="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 hover:border-slate-300 text-xs font-bold transition-all">
+                          <i class="fa-solid fa-key mr-1"></i>Restablecer Clave
+                        </button>
+                      </form>
+
+                      <!-- Delete Form -->
+                      <form action="/admin/partners/<%= partner._id %>/delete" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro de que deseas eliminar este socio/afiliado?')">
                         <button type="submit" class="px-3 py-1.5 rounded-xl border border-red-100 hover:bg-red-50 text-red-600 text-xs font-bold transition-all">
                           <i class="fa-solid fa-trash-can mr-1"></i>Eliminar
                         </button>

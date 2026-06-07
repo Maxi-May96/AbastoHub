@@ -846,6 +846,49 @@ const deletePartner = async (req, res, next) => {
   }
 };
 
+// POST Reset Partner Password Action (Admin Only)
+const resetPartnerPassword = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const partner = await Partner.findById(id);
+    if (!partner) {
+      return res.redirect('/admin?error=' + encodeURIComponent('Socio/Afiliado no encontrado.'));
+    }
+
+    // Generate random password: 6 letters, 4 numbers, 1 symbol
+    const letters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const numbers = '0123456789';
+    const symbols = '!@#$%^&*()_+-=[]{}|;:,.<>?';
+
+    let passwordArr = [];
+    // 6 letters
+    for (let i = 0; i < 6; i++) {
+      passwordArr.push(letters.charAt(Math.floor(Math.random() * letters.length)));
+    }
+    // 4 numbers
+    for (let i = 0; i < 4; i++) {
+      passwordArr.push(numbers.charAt(Math.floor(Math.random() * numbers.length)));
+    }
+    // 1 symbol
+    passwordArr.push(symbols.charAt(Math.floor(Math.random() * symbols.length)));
+
+    // Shuffle the array
+    for (let i = passwordArr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [passwordArr[i], passwordArr[j]] = [passwordArr[j], passwordArr[i]];
+    }
+
+    const generatedPassword = passwordArr.join('');
+    partner.password = generatedPassword;
+    await partner.save();
+
+    res.redirect('/admin?success=' + encodeURIComponent(`Contraseña para "${partner.name}" restablecida con éxito. Nueva contraseña: ${generatedPassword}`));
+  } catch (error) {
+    console.error('Reset partner password error:', error.message);
+    res.redirect('/admin?error=' + encodeURIComponent('Error al restablecer la contraseña: ' + error.message));
+  }
+};
+
 // POST Assign Driver to Partner (Admin Only)
 const assignDriverToPartner = async (req, res, next) => {
   try {
@@ -1530,6 +1573,7 @@ module.exports = {
   generatePDFTicket,
   createPartner,
   deletePartner,
+  resetPartnerPassword,
   assignDriverToPartner,
   generateOrdersSummaryPDF,
   markOrderAsPaid,
