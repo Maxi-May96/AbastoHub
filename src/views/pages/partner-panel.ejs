@@ -973,6 +973,7 @@
                 class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-sm font-semibold">
                 <option value="">Ubicación Principal (<%= partner.province %>)</option>
                 <% if (partner.locations && partner.locations.length > 0) { %>
+                  <option value="all" class="text-brand-650 font-bold bg-brand-50">Todas las Sucursales</option>
                   <% partner.locations.forEach(loc => { %>
                     <option value="<%= loc._id %>"><%= loc.name %> (<%= loc.province %>)</option>
                   <% }); %>

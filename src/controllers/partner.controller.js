@@ -181,6 +181,46 @@ const createProduct = async (req, res, next) => {
       imageUrls.push('/img/placeholder-product.png');
     }
 
+    if (locationId === 'all') {
+      // Create primary location product
+      const mainProduct = new Product({
+        title,
+        description,
+        price: Number(price),
+        wholesalePrice: wholesalePrice ? Number(wholesalePrice) : Number(price),
+        stock: Number(stock),
+        images: imageUrls,
+        category: categoryId,
+        unit: unit || 'unidades',
+        partner: req.partner.id,
+        location: null,
+        active: true
+      });
+      await mainProduct.save();
+
+      // Create branch location products
+      const partner = await Partner.findById(req.partner.id);
+      if (partner && partner.locations && partner.locations.length > 0) {
+        for (const loc of partner.locations) {
+          const duplicateProduct = new Product({
+            title,
+            description,
+            price: Number(price),
+            wholesalePrice: wholesalePrice ? Number(wholesalePrice) : Number(price),
+            stock: Number(stock),
+            images: imageUrls,
+            category: categoryId,
+            unit: unit || 'unidades',
+            partner: req.partner.id,
+            location: loc._id,
+            active: true
+          });
+          await duplicateProduct.save();
+        }
+      }
+      return res.redirect('/partner/panel?success=' + encodeURIComponent('Producto creado exitosamente en todas tus sucursales y catálogo principal.'));
+    }
+
     const newProduct = new Product({
       title,
       description,
