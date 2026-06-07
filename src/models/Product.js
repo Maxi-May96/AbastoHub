@@ -76,7 +76,7 @@ const ProductSchema = new mongoose.Schema({
   }
 });
 
-ProductSchema.pre('save', async function (next) {
+ProductSchema.pre('save', async function () {
   if (this.isModified('title') || !this.slug) {
     const baseSlug = slugifyHelper(this.title);
     let uniqueSlug = baseSlug;
@@ -96,7 +96,6 @@ ProductSchema.pre('save', async function (next) {
     }
     this.slug = uniqueSlug;
   }
-  next();
 });
 
 module.exports = mongoose.model('Product', ProductSchema);
