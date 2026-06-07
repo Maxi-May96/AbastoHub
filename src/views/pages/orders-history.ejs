@@ -91,6 +91,35 @@
                   </div>
                 <% }) %>
               </div>
+              
+              <!-- Contact with Producers -->
+              <% 
+                const orderPartners = [];
+                order.products.forEach(item => {
+                  if (item.product && item.product.partner) {
+                    const partner = item.product.partner;
+                    if (!orderPartners.some(p => p._id.toString() === partner._id.toString())) {
+                      orderPartners.push(partner);
+                    }
+                  }
+                });
+                if (orderPartners.length > 0) {
+              %>
+                <div class="mt-3 pt-3 border-t border-slate-150/80 space-y-2">
+                  <span class="text-[9px] text-slate-400 font-bold uppercase tracking-wider block flex items-center gap-1">
+                    <i class="fa-solid fa-comments text-indigo-500"></i> Consultas sobre el Pedido:
+                  </span>
+                  <div class="flex flex-wrap gap-2">
+                    <% orderPartners.forEach(partner => { %>
+                      <button type="button" onclick="openClientChatWidget('<%= user._id %>', '<%= partner._id %>', '<%= partner.name %>')"
+                        class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-indigo-200 bg-indigo-50/40 hover:bg-indigo-50 text-indigo-750 font-bold text-[10px] transition-all shadow-3xs">
+                        <i class="fa-solid fa-message text-[9px]"></i>
+                        Chatear con <%= partner.name %>
+                      </button>
+                    <% }) %>
+                  </div>
+                </div>
+              <% } %>
             </div>
 
             <!-- Delivery / Logistics Details (1/3 width on desktop) -->
@@ -268,6 +297,152 @@
     </div>
   <% } %>
 
+<!-- Client Floating Chat Widget (Hidden by default) -->
+<div id="client-chat-widget" class="fixed bottom-6 right-6 z-50 w-80 sm:w-96 bg-white rounded-3xl border border-slate-200 shadow-2xl flex flex-col overflow-hidden transition-all transform translate-y-10 opacity-0 pointer-events-none duration-300 max-h-[500px]">
+  <!-- Header -->
+  <div class="px-5 py-3.5 bg-indigo-650 text-white flex items-center justify-between shadow-sm">
+    <div class="flex items-center gap-2.5">
+      <div class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center font-bold text-xs shrink-0 border border-white/20 uppercase" id="client-chat-avatar-text">
+        P
+      </div>
+      <div>
+        <h4 class="text-xs font-black tracking-tight" id="client-chat-partner-name">Productor</h4>
+        <span class="text-[8px] opacity-80 font-bold flex items-center gap-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span> Chat en vivo
+        </span>
+      </div>
+    </div>
+    <button onclick="closeClientChatWidget()" class="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors">
+      <i class="fa-solid fa-xmark text-sm"></i>
+    </button>
+  </div>
+
+  <!-- Messages -->
+  <div class="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50/50 h-80 flex flex-col" id="client-chat-messages">
+    <!-- Populated dynamically -->
+  </div>
+
+  <!-- Footer Input Form -->
+  <form id="client-chat-form" onsubmit="sendClientChatMessage(event)" class="p-3 border-t border-slate-150 bg-white flex gap-2">
+    <input type="text" id="client-chat-input" placeholder="Pregúntale al productor..." autocomplete="off"
+      class="flex-1 bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-3.5 py-2 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-xs font-medium">
+    <button type="submit" class="px-4 py-2 rounded-xl bg-indigo-650 hover:bg-indigo-700 text-white font-bold text-xs transition-all shadow flex items-center justify-center shrink-0">
+      <i class="fa-solid fa-paper-plane"></i>
+    </button>
+  </form>
 </div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  let clientChatSocket = null;
+  let activeClientChatRoomId = null;
+
+  function openClientChatWidget(userId, partnerId, partnerName) {
+    if (!userId) {
+      window.location.href = '/login';
+      return;
+    }
+
+    const roomId = `${userId}_${partnerId}`;
+    activeClientChatRoomId = roomId;
+
+    document.getElementById('client-chat-partner-name').innerText = partnerName;
+    document.getElementById('client-chat-avatar-text').innerText = partnerName.charAt(0).toUpperCase();
+
+    // Show widget
+    const widget = document.getElementById('client-chat-widget');
+    widget.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-10');
+    widget.classList.add('opacity-100', 'translate-y-0');
+
+    // Initialize socket if not already done
+    if (!clientChatSocket && typeof io !== 'undefined') {
+      clientChatSocket = io();
+
+      clientChatSocket.on('message_history', (history) => {
+        const stream = document.getElementById('client-chat-messages');
+        stream.innerHTML = '';
+        if (history && history.length > 0) {
+          history.forEach(msg => appendClientMessage(msg));
+        } else {
+          stream.innerHTML = `
+            <div class="flex items-center justify-center h-full text-slate-400 text-[10px] italic text-center p-4">
+              Aún no hay mensajes. Escribe uno abajo para contactar al productor en tiempo real.
+            </div>
+          `;
+        }
+      });
+
+      clientChatSocket.on('new_message', (msg) => {
+        if (msg.roomId === activeClientChatRoomId) {
+          const stream = document.getElementById('client-chat-messages');
+          if (stream.querySelector('.italic')) {
+            stream.innerHTML = '';
+          }
+          appendClientMessage(msg);
+        }
+      });
+    }
+
+    // Join room
+    if (clientChatSocket) {
+      clientChatSocket.emit('join_room', { roomId });
+    }
+  }
+
+  function closeClientChatWidget() {
+    const widget = document.getElementById('client-chat-widget');
+    widget.classList.remove('opacity-100', 'translate-y-0');
+    widget.classList.add('opacity-0', 'pointer-events-none', 'translate-y-10');
+  }
+
+  function escapeHtml(text) {
+    return text
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function appendClientMessage(msg) {
+    const stream = document.getElementById('client-chat-messages');
+    if (!stream) return;
+    const isMe = msg.senderType === 'user';
+
+    const div = document.createElement('div');
+    div.className = `flex ${isMe ? 'justify-end' : 'justify-start'} w-full`;
+
+    const timeStr = new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    div.innerHTML = `
+      <div class="max-w-[75%] space-y-0.5">
+        <div class="px-3 py-2 rounded-2xl text-[11px] font-medium leading-relaxed ${
+          isMe
+            ? 'bg-indigo-650 text-white rounded-tr-none'
+            : 'bg-slate-100 text-slate-800 rounded-tl-none border border-slate-150'
+        }">
+          ${escapeHtml(msg.text)}
+        </div>
+        <span class="block text-[8px] text-slate-400 ${isMe ? 'text-right' : 'text-left'}">${timeStr}</span>
+      </div>
+    `;
+
+    stream.appendChild(div);
+    stream.scrollTop = stream.scrollHeight;
+  }
+
+  function sendClientChatMessage(event) {
+    if (event) event.preventDefault();
+
+    const input = document.getElementById('client-chat-input');
+    const text = input.value.trim();
+    if (!text || !activeClientChatRoomId) return;
+
+    if (clientChatSocket) {
+      clientChatSocket.emit('send_message', { roomId: activeClientChatRoomId, text });
+      input.value = '';
+    }
+  }
+</script>
 
 <%- include('../partials/footer') %>
