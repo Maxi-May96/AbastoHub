@@ -801,24 +801,20 @@
                   </select>
                 </div>
                 <div>
-                  <label for="loc-address" class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-0.5">Dirección</label>
-                  <input type="text" id="loc-address" name="address" placeholder="Ej. Calle 123"
+                  <label for="loc-address" class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-0.5">Dirección / Localidad *</label>
+                  <input type="text" id="loc-address" name="address" required placeholder="Ej. Av. de Mayo 1234, Ramos Mejía"
                     class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-3 py-1.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-xs font-semibold">
                 </div>
               </div>
 
-              <div class="grid grid-cols-2 gap-2">
-                <div>
-                  <label for="loc-lat" class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-0.5">Latitud</label>
-                  <input type="number" id="loc-lat" name="latitude" step="any" placeholder="-27.367"
-                    class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-3 py-1.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-xs font-semibold">
-                </div>
-                <div>
-                  <label for="loc-lng" class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-0.5">Longitud</label>
-                  <input type="number" id="loc-lng" name="longitude" step="any" placeholder="-55.896"
-                    class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-3 py-1.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-xs font-semibold">
-                </div>
+              <!-- Map for Selecting Branch Location Coordinates -->
+              <div class="space-y-1">
+                <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500">Ubicación GPS de la Sucursal (Haz click en el mapa para actualizar)</label>
+                <div id="branch-new-map" class="w-full h-44 rounded-xl border border-slate-200"></div>
               </div>
+
+              <input type="hidden" id="loc-lat" name="latitude" required>
+              <input type="hidden" id="loc-lng" name="longitude" required>
 
               <button type="submit" class="w-full py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs shadow-sm transition-all text-center">
                 Agregar Sucursal
@@ -1153,8 +1149,13 @@
     // Highlight clicked button
     buttonElement.className = "tab-btn pb-4 border-b-2 border-brand-650 text-brand-650 font-bold transition-all";
 
-    if (tabId === 'accounting-tab' && typeof initUpdateMap === 'function') {
-      setTimeout(initUpdateMap, 150);
+    if (tabId === 'accounting-tab') {
+      if (typeof initUpdateMap === 'function') {
+        setTimeout(initUpdateMap, 150);
+      }
+      if (typeof initBranchMap === 'function') {
+        setTimeout(initBranchMap, 150);
+      }
     }
   }
 
@@ -1399,6 +1400,76 @@
         latInput.value = place.geometry.location.lat();
         lngInput.value = place.geometry.location.lng();
       });
+  }
+
+  let branchMap;
+  let branchMarker;
+
+  function initBranchMap() {
+    const latInput = document.getElementById('loc-lat');
+    const lngInput = document.getElementById('loc-lng');
+    const branchMapEl = document.getElementById('branch-new-map');
+    if (!latInput || !lngInput || !branchMapEl) return;
+
+    const defaultLat = parseFloat(document.getElementById('update-lat')?.value) || -34.603722;
+    const defaultLng = parseFloat(document.getElementById('update-lng')?.value) || -58.381592;
+    const currentPos = { lat: defaultLat, lng: defaultLng };
+
+    // Set initial values if they are empty
+    if (!latInput.value) latInput.value = defaultLat;
+    if (!lngInput.value) lngInput.value = defaultLng;
+
+    branchMap = new google.maps.Map(branchMapEl, {
+      center: currentPos,
+      zoom: 13,
+      mapTypeControl: false,
+      streetViewControl: false,
+      fullscreenControl: true
+    });
+
+    branchMarker = new google.maps.Marker({
+      position: currentPos,
+      map: branchMap,
+      draggable: true,
+      animation: google.maps.Animation.DROP
+    });
+
+    // Drag event
+    google.maps.event.addListener(branchMarker, 'dragend', function() {
+      const pos = branchMarker.getPosition();
+      latInput.value = pos.lat();
+      lngInput.value = pos.lng();
+    });
+
+    // Click on map event
+    branchMap.addListener('click', function(e) {
+      const clickedPos = e.latLng;
+      branchMarker.setPosition(clickedPos);
+      latInput.value = clickedPos.lat();
+      lngInput.value = clickedPos.lng();
+    });
+
+    // Google Places Autocomplete for branch address
+    const branchAddressInput = document.getElementById('loc-address');
+    if (branchAddressInput) {
+      const branchAutocomplete = new google.maps.places.Autocomplete(branchAddressInput, {
+        types: ['geocode', 'establishment'],
+        componentRestrictions: { country: 'AR' }
+      });
+      
+      branchAutocomplete.addListener('place_changed', function() {
+        const place = branchAutocomplete.getPlace();
+        if (!place.geometry || !place.geometry.location) {
+          return;
+        }
+        
+        branchMap.setCenter(place.geometry.location);
+        branchMap.setZoom(17);
+        branchMarker.setPosition(place.geometry.location);
+        
+        latInput.value = place.geometry.location.lat();
+        lngInput.value = place.geometry.location.lng();
+      });
     }
   }
 
@@ -1407,6 +1478,10 @@
     const updateMapEl = document.getElementById('partner-update-map');
     if (updateMapEl && updateMapEl.offsetParent !== null) {
       initUpdateMap();
+    }
+    const branchMapEl = document.getElementById('branch-new-map');
+    if (branchMapEl && branchMapEl.offsetParent !== null) {
+      initBranchMap();
     }
   }
 </script>
