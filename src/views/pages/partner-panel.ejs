@@ -1076,7 +1076,7 @@
       <div class="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm flex flex-col md:flex-row h-[600px]">
         
         <!-- Left Side: Active Chats Sidebar -->
-        <div class="w-full md:w-80 border-r border-slate-150 flex flex-col bg-slate-50/50">
+        <div class="w-full md:w-80 border-r border-slate-150 flex flex-col bg-slate-50/50" id="partner-chat-sidebar">
           <div class="p-4 border-b border-slate-150 bg-white">
             <h3 class="display-font text-sm font-black text-slate-800 flex items-center gap-2">
               <i class="fa-solid fa-comments text-brand-650"></i>
@@ -1116,7 +1116,7 @@
         </div>
 
         <!-- Right Side: Active Chat Window -->
-        <div class="flex-1 flex flex-col bg-white" id="partner-chat-window">
+        <div class="flex-1 flex flex-col bg-white hidden md:flex" id="partner-chat-window">
           <!-- Placeholder state -->
           <div class="flex-1 flex flex-col items-center justify-center p-8 text-center text-slate-400" id="partner-chat-placeholder">
             <div class="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center text-slate-350 mb-3 border border-slate-100">
@@ -1131,6 +1131,11 @@
             <!-- Chat Header -->
             <div class="px-6 py-4 border-b border-slate-150 flex items-center justify-between bg-slate-50/30">
               <div class="flex items-center gap-3">
+                <!-- Mobile Back Button -->
+                <button type="button" onclick="backToChatList()" class="md:hidden text-slate-500 hover:text-slate-800 p-1.5 rounded-xl hover:bg-slate-100 transition-all flex items-center justify-center">
+                  <i class="fa-solid fa-chevron-left text-sm"></i>
+                </button>
+                
                 <div class="w-9 h-9 rounded-full bg-brand-50 text-brand-700 flex items-center justify-center font-bold text-xs border border-brand-100 uppercase" id="partner-chat-avatar-text">
                   C
                 </div>
@@ -1340,9 +1345,36 @@
     document.getElementById('partner-chat-placeholder').classList.add('hidden');
     document.getElementById('partner-chat-active-container').classList.remove('hidden');
 
+    // Toggle mobile views
+    const sidebar = document.getElementById('partner-chat-sidebar');
+    const win = document.getElementById('partner-chat-window');
+    if (sidebar && win) {
+      sidebar.classList.add('hidden');
+      sidebar.classList.remove('flex');
+      sidebar.classList.add('md:flex');
+      win.classList.remove('hidden');
+      win.classList.add('flex');
+    }
+
     // Join room & fetch history
     if (socket) {
       socket.emit('join_room', { roomId });
+    }
+  }
+
+  function backToChatList() {
+    activePartnerChatRoomId = null;
+    activePartnerChatCustomerName = null;
+
+    // Toggle mobile views back to sidebar
+    const sidebar = document.getElementById('partner-chat-sidebar');
+    const win = document.getElementById('partner-chat-window');
+    if (sidebar && win) {
+      sidebar.classList.remove('hidden');
+      sidebar.classList.add('flex');
+      win.classList.add('hidden');
+      win.classList.remove('flex');
+      win.classList.add('md:flex');
     }
   }
 
