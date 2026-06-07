@@ -50,11 +50,11 @@
             Método de Entrega
           </h2>
 
-          <div class="grid grid-cols-1 gap-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <!-- Delivery Option Card -->
-            <label class="relative flex items-center justify-between p-4 border border-brand-500/35 bg-brand-50/20 rounded-2xl cursor-pointer hover:bg-slate-50/10 transition-all" id="opt-delivery-label">
+            <label class="relative flex items-center justify-between p-4 border border-brand-500 bg-brand-50/20 rounded-2xl cursor-pointer hover:bg-slate-50/10 transition-all delivery-type-card" id="card-delivery-type-delivery">
               <div class="flex items-center gap-3">
-                <input type="radio" name="deliveryType" value="delivery" checked class="h-4.5 w-4.5 text-brand-600 border-slate-300 focus:ring-brand-500/20">
+                <input type="radio" name="deliveryType" value="delivery" checked onchange="toggleDeliveryType('delivery')" class="h-4.5 w-4.5 text-brand-600 border-slate-300 focus:ring-brand-500/20">
                 <div>
                   <span class="block text-sm font-bold text-slate-850">Envío a Domicilio</span>
                   <span class="block text-xs text-slate-500">Recibe en tu casa o comercio</span>
@@ -63,11 +63,86 @@
               <i class="fa-solid fa-house-chimney text-brand-600 text-lg"></i>
             </label>
 
-            <!-- Disabled Pickup Info -->
-            <div class="flex items-start gap-2.5 p-3.5 bg-slate-50 border border-slate-150 rounded-2xl text-[11px] text-slate-500">
-              <i class="fa-solid fa-circle-info text-slate-400 mt-0.5 text-xs"></i>
-              <span>El retiro por sucursal se encuentra deshabilitado de forma temporal debido a que no contamos con una central física habilitada para entregas en este momento.</span>
+            <!-- Pickup Option Card -->
+            <label class="relative flex items-center justify-between p-4 border border-slate-200 rounded-2xl cursor-pointer hover:bg-slate-50/10 transition-all delivery-type-card" id="card-delivery-type-pickup">
+              <div class="flex items-center gap-3">
+                <input type="radio" name="deliveryType" value="pickup" onchange="toggleDeliveryType('pickup')" class="h-4.5 w-4.5 text-brand-600 border-slate-300 focus:ring-brand-500/20">
+                <div>
+                  <span class="block text-sm font-bold text-slate-850">Retiro por Local</span>
+                  <span class="block text-xs text-slate-500">Retira en los puntos de venta</span>
+                </div>
+              </div>
+              <i class="fa-solid fa-store text-slate-400 text-lg"></i>
+            </label>
+          </div>
+
+          <!-- Cost Explanation info -->
+          <div id="delivery-info-box" class="flex items-start gap-2.5 p-3.5 bg-brand-50/25 border border-brand-200/40 rounded-2xl text-[11px] text-brand-900 shadow-3xs leading-relaxed">
+            <i class="fa-solid fa-circle-info text-brand-650 mt-0.5 text-xs"></i>
+            <span><strong>Envío a Domicilio:</strong> El costo del envío se cobra <strong>por separado</strong> del total de los productos comprados en la plataforma, a coordinar directamente con el transportista/conductor asignado.</span>
+          </div>
+
+          <!-- Pickup locations list (Hidden by default, shown when pickup is chosen) -->
+          <div id="pickup-locations-box" class="hidden space-y-3 p-4 bg-slate-50 border border-slate-150 rounded-2xl">
+            <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-200/60 pb-1.5">
+              <i class="fa-solid fa-map-location-dot text-brand-600"></i>
+              Locales / Sucursales para Retiro
+            </h4>
+            <div class="space-y-2 max-h-48 overflow-y-auto pr-1">
+              <% 
+                const pickupLocations = [];
+                cart.products.forEach(item => {
+                  if (item.product && item.product.partner) {
+                    const partner = item.product.partner;
+                    if (item.product.location && partner.locations && partner.locations.length > 0) {
+                      const loc = partner.locations.find(l => l._id.toString() === item.product.location.toString());
+                      if (loc) {
+                        const locKey = loc._id.toString();
+                        if (!pickupLocations.some(p => p.id === locKey)) {
+                          pickupLocations.push({
+                            id: locKey,
+                            name: `${partner.name} - Sucursal: ${loc.name}`,
+                            address: `${loc.address}, ${loc.province}`,
+                            lat: loc.latitude,
+                            lng: loc.longitude
+                          });
+                        }
+                      }
+                    } else {
+                      const locKey = partner._id.toString() + '_main';
+                      if (!pickupLocations.some(p => p.id === locKey)) {
+                        pickupLocations.push({
+                          id: locKey,
+                          name: `${partner.name} (Ubicación Principal)`,
+                          address: `${partner.address}, ${partner.province}`,
+                          lat: partner.latitude,
+                          lng: partner.longitude
+                        });
+                      }
+                    }
+                  }
+                });
+                if (pickupLocations.length === 0) {
+              %>
+                <p class="text-xs text-slate-500 italic">No hay locales registrados para los productos de tu carrito. Retiro en administración central.</p>
+              <% } else { 
+                pickupLocations.forEach(loc => { %>
+                  <div class="text-xs bg-white p-2.5 rounded-xl border border-slate-200 flex items-center justify-between gap-3 shadow-3xs">
+                    <div>
+                      <p class="font-bold text-slate-850"><%= loc.name %></p>
+                      <p class="text-slate-500 text-[10px] mt-0.5"><%= loc.address %></p>
+                    </div>
+                    <% if (loc.lat && loc.lng) { %>
+                      <a href="https://www.google.com/maps/search/?api=1&query=<%= loc.lat %>,<%= loc.lng %>" target="_blank"
+                        class="p-2 bg-brand-50 hover:bg-brand-100 text-brand-700 rounded-lg transition-all" title="Ver en Google Maps">
+                        <i class="fa-solid fa-map-location text-sm"></i>
+                      </a>
+                    <% } %>
+                  </div>
+                <% }); 
+              } %>
             </div>
+            <p class="text-[9px] text-slate-450 mt-1.5">Debes retirar tus productos en las direcciones arriba indicadas correspondientes a cada productor de tu pedido.</p>
           </div>
         </div>
 
@@ -424,6 +499,61 @@
     }
   }
 
+  function toggleDeliveryType(type) {
+    const cardDelivery = document.getElementById('card-delivery-type-delivery');
+    const cardPickup = document.getElementById('card-delivery-type-pickup');
+    const addressSection = document.getElementById('address-section');
+    const pickupBox = document.getElementById('pickup-locations-box');
+    const deliveryInfoBox = document.getElementById('delivery-info-box');
+    
+    // Inputs to toggle required attribute
+    const streetInput = document.getElementById('street');
+    const provinceSelect = document.getElementById('province');
+    const cityInput = document.getElementById('city');
+    const zipInput = document.getElementById('zipCode');
+
+    if (type === 'pickup') {
+      cardPickup.classList.add('border-brand-500', 'bg-brand-50/20');
+      cardPickup.classList.remove('border-slate-200');
+      cardPickup.querySelector('i').classList.replace('text-slate-400', 'text-brand-605');
+
+      cardDelivery.classList.remove('border-brand-500', 'bg-brand-50/20');
+      cardDelivery.classList.add('border-slate-200');
+      cardDelivery.querySelector('i').classList.replace('text-brand-605', 'text-slate-400');
+
+      addressSection.classList.add('hidden');
+      pickupBox.classList.remove('hidden');
+      deliveryInfoBox.classList.add('hidden');
+
+      streetInput.removeAttribute('required');
+      provinceSelect.removeAttribute('required');
+      cityInput.removeAttribute('required');
+      zipInput.removeAttribute('required');
+    } else {
+      cardDelivery.classList.add('border-brand-500', 'bg-brand-50/20');
+      cardDelivery.classList.remove('border-slate-200');
+      cardDelivery.querySelector('i').classList.replace('text-slate-400', 'text-brand-605');
+
+      cardPickup.classList.remove('border-brand-500', 'bg-brand-50/20');
+      cardPickup.classList.add('border-slate-200');
+      cardPickup.querySelector('i').classList.replace('text-brand-605', 'text-slate-400');
+
+      addressSection.classList.remove('hidden');
+      pickupBox.classList.add('hidden');
+      deliveryInfoBox.classList.remove('hidden');
+
+      streetInput.setAttribute('required', 'required');
+      provinceSelect.setAttribute('required', 'required');
+      cityInput.setAttribute('required', 'required');
+      zipInput.setAttribute('required', 'required');
+      
+      // Trigger google map resize in case it was hidden and is now shown
+      if (typeof google !== 'undefined' && google.maps && map) {
+        google.maps.event.trigger(map, 'resize');
+      }
+    }
+  }
+
   function togglePaymentMethod(method) {
     const cardMp = document.getElementById('card-mp');
     const cardTransfer = document.getElementById('card-transfer');
@@ -461,8 +591,9 @@
       dateInput.min = today;
     }
     
-    // Initialize default payment method selection
+    // Initialize default payment method and delivery type selection
     togglePaymentMethod('mercadopago');
+    toggleDeliveryType('delivery');
   };
 </script>
 

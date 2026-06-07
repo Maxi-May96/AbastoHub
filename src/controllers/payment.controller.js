@@ -107,48 +107,50 @@ const processCheckout = async (req, res, next) => {
       paymentStatus: 'pending',
       paymentMethod: paymentMethod || 'mercadopago',
       paymentReceipt: receiptUrl || null,
-      deliveryType: 'delivery', // Force delivery mode
+      deliveryType: deliveryType === 'pickup' ? 'pickup' : 'delivery',
       scheduledDate: scheduledDate ? new Date(scheduledDate + 'T00:00:00') : null,
       raffleCode,
       shippingDetails: {
         name: name || `${req.user.name} ${req.user.lastname}`,
         phone: phone || '',
-        address: street || '',
-        city: city || '',
-        province: province || '',
-        zipCode: zipCode || '',
+        address: deliveryType === 'pickup' ? 'Retiro por local del productor' : (street || ''),
+        city: deliveryType === 'pickup' ? '' : (city || ''),
+        province: deliveryType === 'pickup' ? '' : (province || ''),
+        zipCode: deliveryType === 'pickup' ? '' : (zipCode || ''),
         notes: notes || '',
-        latitude: latitude ? parseFloat(latitude) : null,
-        longitude: longitude ? parseFloat(longitude) : null
+        latitude: deliveryType === 'pickup' ? null : (latitude ? parseFloat(latitude) : null),
+        longitude: deliveryType === 'pickup' ? null : (longitude ? parseFloat(longitude) : null)
       }
     });
 
     await newOrder.save();
 
-    // 3. Update or save default address in User profile so next time it is prefilled
+    // 3. Update or save default address in User profile so next time it is prefilled (only for delivery)
     const userObj = await User.findById(req.user.id);
     if (userObj) {
-      const newAddressData = {
-        street: street || '',
-        city: city || '',
-        province: province || '',
-        state: province || '', // compatibility
-        zipCode: zipCode || '',
-        latitude: latitude ? parseFloat(latitude) : null,
-        longitude: longitude ? parseFloat(longitude) : null,
-        isDefault: true
-      };
+      if (deliveryType !== 'pickup') {
+        const newAddressData = {
+          street: street || '',
+          city: city || '',
+          province: province || '',
+          state: province || '', // compatibility
+          zipCode: zipCode || '',
+          latitude: latitude ? parseFloat(latitude) : null,
+          longitude: longitude ? parseFloat(longitude) : null,
+          isDefault: true
+        };
 
-      // Set all other user addresses to isDefault = false
-      userObj.addresses.forEach(addr => {
-        addr.isDefault = false;
-      });
+        // Set all other user addresses to isDefault = false
+        userObj.addresses.forEach(addr => {
+          addr.isDefault = false;
+        });
 
-      // Update first address or push new one
-      if (userObj.addresses.length > 0) {
-        userObj.addresses[0] = { ...userObj.addresses[0].toObject(), ...newAddressData };
-      } else {
-        userObj.addresses.push(newAddressData);
+        // Update first address or push new one
+        if (userObj.addresses.length > 0) {
+          userObj.addresses[0] = { ...userObj.addresses[0].toObject(), ...newAddressData };
+        } else {
+          userObj.addresses.push(newAddressData);
+        }
       }
 
       // Also update user's phone if provided
@@ -500,7 +502,14 @@ const cancelOrderAndRequestRefund = async (req, res, next) => {
 // GET User's Order History Page
 const getOrderHistory = async (req, res, next) => {
   try {
-    const orders = await Order.find({ user: req.user.id }).sort({ createdAt: -1 });
+    const orders = await Order.find({ user: req.user.id })
+      .populate({
+        path: 'products.product',
+        populate: {
+          path: 'partner'
+        }
+      })
+      .sort({ createdAt: -1 });
     
     res.render('pages/orders-history', {
       title: 'Mis Compras',
