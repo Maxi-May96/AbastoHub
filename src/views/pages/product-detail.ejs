@@ -328,7 +328,8 @@
   let activeClientChatRoomId = null;
 
   function openClientChatWidget(userId, partnerId, partnerName) {
-    if (!userId) {
+    if (!userId || userId === 'undefined') {
+      document.cookie = "redirectTo=" + encodeURIComponent(window.location.pathname + window.location.search) + "; path=/; max-age=900";
       window.location.href = '/login';
       return;
     }
