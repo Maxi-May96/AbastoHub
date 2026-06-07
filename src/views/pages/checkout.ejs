@@ -356,17 +356,21 @@
           <span>Envío</span>
           <span id="summary-shipping-cost" class="font-medium text-emerald-600">A coordinar</span>
         </div>
+        <div class="flex justify-between text-slate-500 hidden" id="tax-row">
+          <span>IVA y Recargos MP (19%)</span>
+          <span id="tax-amount" class="font-semibold text-rose-600">+$0.00</span>
+        </div>
       </div>
 
       <hr class="border-slate-100">
 
       <div class="flex justify-between items-baseline">
         <span class="display-font text-base font-extrabold text-slate-900">Total</span>
-        <span class="display-font text-2xl font-black text-brand-700"><%= formatPrice(total) %></span>
+        <span class="display-font text-2xl font-black text-brand-700" id="summary-total"><%= formatPrice(total) %></span>
       </div>
 
       <!-- Secure check outline info -->
-      <div class="bg-slate-50 border border-slate-150 p-3.5 rounded-2xl flex gap-3 items-start text-[11px] text-slate-500 leading-normal">
+      <div id="secure-info-box" class="bg-slate-50 border border-slate-150 p-3.5 rounded-2xl flex gap-3 items-start text-[11px] text-slate-500 leading-normal">
         <i class="fa-solid fa-shield-halved text-brand-600 text-base mt-0.5"></i>
         <span>
           Serás redirigido a <strong>MercadoPago</strong> de forma 100% segura para abonar tu orden. Aceptamos tarjetas de débito/crédito y dinero en cuenta.
@@ -387,6 +391,7 @@
 <script>
   let map;
   let marker;
+  const baseTotal = <%= total %>;
   
   // Set default starting lat/lng from user's defaultAddress if present
   const defaultLat = <%= (defaultAddress && defaultAddress.latitude) ? defaultAddress.latitude : -34.6037 %>;
@@ -554,11 +559,25 @@
     }
   }
 
+  function formatPriceJS(val) {
+    return new Intl.NumberFormat('es-AR', {
+      style: 'currency',
+      currency: 'ARS',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(val);
+  }
+
   function togglePaymentMethod(method) {
     const cardMp = document.getElementById('card-mp');
     const cardTransfer = document.getElementById('card-transfer');
     const instructions = document.getElementById('transfer-instructions');
     const receiptInput = document.getElementById('receipt');
+    
+    const taxRow = document.getElementById('tax-row');
+    const taxAmountSpan = document.getElementById('tax-amount');
+    const summaryTotalSpan = document.getElementById('summary-total');
+    const secureInfoBox = document.getElementById('secure-info-box');
 
     if (method === 'transfer') {
       cardTransfer.classList.add('border-brand-500', 'bg-brand-50/20');
@@ -570,6 +589,13 @@
       
       instructions.classList.remove('hidden');
       receiptInput.setAttribute('required', 'required');
+
+      // Update Summary: hide tax and set base total
+      taxRow.classList.add('hidden');
+      summaryTotalSpan.textContent = formatPriceJS(baseTotal);
+
+      // Update Info box text
+      secureInfoBox.innerHTML = '<i class="fa-solid fa-clock text-indigo-600 text-base mt-0.5"></i><span>Una vez realizado el pago de transferencia, recuerda <strong>subir la captura del comprobante</strong> de pago para que el administrador valide tu compra.</span>';
     } else {
       cardMp.classList.add('border-brand-500', 'bg-brand-50/20');
       cardMp.classList.remove('border-slate-200');
@@ -580,6 +606,16 @@
       
       instructions.classList.add('hidden');
       receiptInput.removeAttribute('required');
+
+      // Update Summary: calculate 19% tax and update total
+      const tax = baseTotal * 0.19;
+      const finalTotal = baseTotal + tax;
+      taxAmountSpan.textContent = `+ ` + formatPriceJS(tax);
+      taxRow.classList.remove('hidden');
+      summaryTotalSpan.textContent = formatPriceJS(finalTotal);
+
+      // Update Info box text
+      secureInfoBox.innerHTML = '<i class="fa-solid fa-shield-halved text-brand-600 text-base mt-0.5"></i><span>Serás redirigido a <strong>MercadoPago</strong> de forma 100% segura para abonar tu orden. Aceptamos tarjetas de débito/crédito y dinero en cuenta.</span>';
     }
   }
 

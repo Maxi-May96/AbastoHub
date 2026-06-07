@@ -16,6 +16,20 @@ const createOrderPreference = async (order, hostUrl) => {
     currency_id: 'ARS'
   }));
 
+  // If the payment method is Mercado Pago, add the 19% VAT & Taxes item
+  if (order.paymentMethod === 'mercadopago') {
+    const productsSubtotal = order.products.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const taxAmount = Number((productsSubtotal * 0.19).toFixed(2));
+    
+    items.push({
+      id: 'tax_mp_19',
+      title: 'Impuestos y Recargos Mercado Pago (19%)',
+      quantity: 1,
+      unit_price: taxAmount,
+      currency_id: 'ARS'
+    });
+  }
+
   // Force HTTPS for production callback URLs
   let secureHostUrl = hostUrl;
   if (!hostUrl.includes('localhost') && hostUrl.startsWith('http://')) {
