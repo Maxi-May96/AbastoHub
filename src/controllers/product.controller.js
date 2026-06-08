@@ -231,6 +231,56 @@ const getAdminPanel = async (req, res, next) => {
     // Load global drivers to assign to partners
     const drivers = await Driver.find({ partner: null }).sort({ name: 1 });
 
+    // Calculate best selling statistics (Top Products & Top Partners)
+    const bestSellingStats = await Order.aggregate([
+      { $match: { paymentStatus: 'paid' } },
+      { $unwind: '$products' },
+      { $group: {
+        _id: '$products.product',
+        totalQty: { $sum: '$products.quantity' },
+        totalRevenue: { $sum: { $multiply: ['$products.price', '$products.quantity'] } }
+      }},
+      { $sort: { totalQty: -1 } },
+      { $limit: 20 }
+    ]);
+
+    const populatedStats = await Promise.all(bestSellingStats.map(async (stat) => {
+      const product = await Product.findById(stat._id).populate('partner').populate('category');
+      return {
+        ...stat,
+        product
+      };
+    }));
+
+    const bestSellers = populatedStats.filter(item => item.product !== null);
+
+    // Group sales by Partner in memory
+    const partnerSalesMap = {};
+    for (const stat of bestSellers) {
+      if (stat.product && stat.product.partner) {
+        const pId = stat.product.partner._id.toString();
+        if (!partnerSalesMap[pId]) {
+          partnerSalesMap[pId] = {
+            partner: stat.product.partner,
+            totalQty: 0,
+            totalRevenue: 0
+          };
+        }
+        partnerSalesMap[pId].totalQty += stat.totalQty;
+        partnerSalesMap[pId].totalRevenue += stat.totalRevenue;
+      }
+    }
+    const bestPartners = Object.values(partnerSalesMap).sort((a, b) => b.totalRevenue - a.totalRevenue);
+
+    // Global Sales performance metrics
+    const totalPaidOrders = await Order.find({ paymentStatus: 'paid' });
+    const globalStats = {
+      totalRevenue: totalPaidOrders.reduce((sum, o) => sum + o.total, 0),
+      totalOrdersCount: totalPaidOrders.length,
+      averageTicket: totalPaidOrders.length > 0 ? (totalPaidOrders.reduce((sum, o) => sum + o.total, 0) / totalPaidOrders.length) : 0,
+      totalQtySold: bestSellers.reduce((sum, item) => sum + item.totalQty, 0)
+    };
+
     res.render('pages/admin', {
       title: 'Panel de Control',
       products,
@@ -240,6 +290,9 @@ const getAdminPanel = async (req, res, next) => {
       withdrawals,
       drivers,
       raffleCount,
+      bestSellers,
+      bestPartners,
+      globalStats,
       formatPrice,
       partnerInviteToken: config.partnerInviteToken,
       success: req.query.success || null,

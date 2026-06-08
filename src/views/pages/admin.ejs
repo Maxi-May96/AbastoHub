@@ -78,6 +78,10 @@
           <span class="ml-1 bg-indigo-100 text-indigo-700 text-[10px] px-2 py-0.5 rounded-full font-bold"><%= raffleCount %></span>
         <% } %>
       </button>
+      <button onclick="switchTab('stats-tab', this)" class="tab-btn pb-4 border-b-2 border-transparent text-slate-400 hover:text-slate-650 transition-all">
+        <i class="fa-solid fa-chart-pie mr-1.5 text-xs text-brand-650"></i>
+        Estadísticas (Más Vendidos)
+      </button>
     </nav>
   </div>
 
@@ -993,6 +997,173 @@
       </div>
     </div>
 
+    <!-- Tab 8: Estadísticas (Más Vendidos) -->
+    <div id="stats-tab" class="tab-panel hidden space-y-6">
+      
+      <!-- Metrics Dashboard Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <!-- Revenue Card -->
+        <div class="bg-emerald-50/50 border border-emerald-100 rounded-3xl p-6 shadow-xs flex items-center gap-4">
+          <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center text-xl shrink-0">
+            <i class="fa-solid fa-money-bill-trend-up"></i>
+          </div>
+          <div>
+            <span class="text-[10px] text-emerald-600 font-bold uppercase tracking-wider block">Total Facturado</span>
+            <p class="text-2xl font-black text-slate-800 display-font mt-1"><%= formatPrice(globalStats.totalRevenue) %></p>
+          </div>
+        </div>
+
+        <!-- Orders Card -->
+        <div class="bg-brand-50/50 border border-brand-100 rounded-3xl p-6 shadow-xs flex items-center gap-4">
+          <div class="w-12 h-12 rounded-2xl bg-brand-500/10 text-brand-600 flex items-center justify-center text-xl shrink-0">
+            <i class="fa-solid fa-cart-shopping"></i>
+          </div>
+          <div>
+            <span class="text-[10px] text-brand-600 font-bold uppercase tracking-wider block">Pedidos Pagados</span>
+            <p class="text-2xl font-black text-slate-800 display-font mt-1"><%= globalStats.totalOrdersCount %></p>
+          </div>
+        </div>
+
+        <!-- Ticket Card -->
+        <div class="bg-indigo-50/50 border border-indigo-100 rounded-3xl p-6 shadow-xs flex items-center gap-4">
+          <div class="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-600 flex items-center justify-center text-xl shrink-0">
+            <i class="fa-solid fa-ticket"></i>
+          </div>
+          <div>
+            <span class="text-[10px] text-indigo-600 font-bold uppercase tracking-wider block">Ticket Promedio</span>
+            <p class="text-2xl font-black text-slate-800 display-font mt-1"><%= formatPrice(globalStats.averageTicket) %></p>
+          </div>
+        </div>
+
+        <!-- Items Card -->
+        <div class="bg-amber-50/30 border border-amber-100 rounded-3xl p-6 shadow-xs flex items-center gap-4">
+          <div class="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center text-xl shrink-0">
+            <i class="fa-solid fa-box-open"></i>
+          </div>
+          <div>
+            <span class="text-[10px] text-amber-600 font-bold uppercase tracking-wider block">Productos Vendidos</span>
+            <p class="text-2xl font-black text-slate-800 display-font mt-1"><%= globalStats.totalQtySold %></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Two Column Grid for Top Tables -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <!-- Left Column: Top Best-Selling Products -->
+        <div class="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm flex flex-col">
+          <div class="px-6 py-5 border-b border-slate-100 bg-slate-50/50">
+            <h3 class="text-sm font-black text-slate-800 flex items-center gap-2">
+              <i class="fa-solid fa-crown text-amber-500"></i>
+              <span>Top 20 Productos Más Vendidos</span>
+            </h3>
+            <p class="text-[10px] text-slate-400 mt-1">Listado de productos con mayor número de unidades vendidas.</p>
+          </div>
+
+          <div class="flex-1 overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr class="bg-slate-50 border-b border-slate-100 text-slate-500 font-bold uppercase tracking-wider text-[9px]">
+                  <th class="px-6 py-3">Producto</th>
+                  <th class="px-4 py-3">Socio Comercial</th>
+                  <th class="px-4 py-3 text-center">Cant. Vendida</th>
+                  <th class="px-6 py-3 text-right">Total Recaudado</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
+                <% if (bestSellers && bestSellers.length > 0) { %>
+                  <% bestSellers.forEach((item, index) => { %>
+                    <tr class="hover:bg-slate-50/50 transition-colors">
+                      <td class="px-6 py-3 flex items-center gap-3">
+                        <span class="text-[10px] font-black text-slate-350 w-4 shrink-0">#<%= index + 1 %></span>
+                        <div class="w-10 h-10 rounded-xl overflow-hidden bg-slate-50 border border-slate-150 flex items-center justify-center shrink-0">
+                          <img src="<%= item.product.images && item.product.images.length > 0 ? item.product.images[0] : '/images/default-product.png' %>" alt="" class="w-full h-full object-cover">
+                        </div>
+                        <div class="truncate max-w-[150px]">
+                          <span class="font-bold text-slate-800 block truncate"><%= item.product.title %></span>
+                          <span class="text-[10px] text-slate-400 capitalize block truncate"><%= item.product.category ? item.product.category.name : 'Sin Categoría' %></span>
+                        </div>
+                      </td>
+                      <td class="px-4 py-3 text-slate-500">
+                        <span class="truncate max-w-[120px] block"><%= item.product.partner ? item.product.partner.name : 'Admin' %></span>
+                      </td>
+                      <td class="px-4 py-3 text-center font-bold text-slate-800">
+                        <%= item.totalQty %> <span class="text-[10px] text-slate-400 font-normal"><%= item.product.unit || 'uds' %></span>
+                      </td>
+                      <td class="px-6 py-3 text-right font-bold text-emerald-600">
+                        <%= formatPrice(item.totalRevenue) %>
+                      </td>
+                    </tr>
+                  <% }); %>
+                <% } else { %>
+                  <tr>
+                    <td colspan="4" class="px-6 py-12 text-center text-slate-400">
+                      No hay suficientes datos de ventas para mostrar estadísticas.
+                    </td>
+                  </tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Right Column: Top Partners by Revenue -->
+        <div class="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm flex flex-col">
+          <div class="px-6 py-5 border-b border-slate-100 bg-slate-50/50">
+            <h3 class="text-sm font-black text-slate-800 flex items-center gap-2">
+              <i class="fa-solid fa-handshake text-indigo-500"></i>
+              <span>Socios Comerciales con Más Ventas</span>
+            </h3>
+            <p class="text-[10px] text-slate-400 mt-1">Ranking de partners ordenados por volumen de ingresos facturados.</p>
+          </div>
+
+          <div class="flex-1 overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr class="bg-slate-50 border-b border-slate-100 text-slate-500 font-bold uppercase tracking-wider text-[9px]">
+                  <th class="px-6 py-3">Socio Comercial</th>
+                  <th class="px-4 py-3 text-center">Productos Vendidos</th>
+                  <th class="px-6 py-3 text-right">Total Facturado</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
+                <% if (bestPartners && bestPartners.length > 0) { %>
+                  <% bestPartners.forEach((item, index) => { %>
+                    <tr class="hover:bg-slate-50/50 transition-colors">
+                      <td class="px-6 py-3 flex items-center gap-3">
+                        <span class="text-[10px] font-black text-slate-350 w-4 shrink-0">#<%= index + 1 %></span>
+                        <div class="w-10 h-10 rounded-xl overflow-hidden bg-white border border-slate-150 flex items-center justify-center shrink-0">
+                          <img src="<%= item.partner.logo || '/images/default-logo.png' %>" alt="" class="w-full h-full object-contain p-1">
+                        </div>
+                        <div>
+                          <span class="font-bold text-slate-800 block truncate max-w-[180px]"><%= item.partner.name %></span>
+                          <span class="text-[10px] text-slate-400 capitalize block truncate"><%= item.partner.type %></span>
+                        </div>
+                      </td>
+                      <td class="px-4 py-3 text-center font-bold text-slate-800">
+                        <%= item.totalQty %> <span class="text-[10px] text-slate-400 font-normal">uds</span>
+                      </td>
+                      <td class="px-6 py-3 text-right font-bold text-emerald-600">
+                        <%= formatPrice(item.totalRevenue) %>
+                      </td>
+                    </tr>
+                  <% }); %>
+                <% } else { %>
+                  <tr>
+                    <td colspan="3" class="px-6 py-12 text-center text-slate-400">
+                      No hay suficientes datos de ventas para mostrar estadísticas.
+                    </td>
+                  </tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
   </div>
 
 </div>
@@ -1283,11 +1454,13 @@
     // Reset button styles
     const buttons = document.querySelectorAll('.tab-btn');
     buttons.forEach(btn => {
-      btn.className = "tab-btn pb-4 border-b-2 border-transparent text-slate-400 hover:text-slate-600";
+      btn.classList.remove('border-brand-650', 'text-brand-650', 'font-bold');
+      btn.classList.add('border-transparent', 'text-slate-400');
     });
 
     // Highlight clicked button
-    buttonElement.className = "tab-btn pb-4 border-b-2 border-brand-650 text-brand-650 font-bold";
+    buttonElement.classList.remove('border-transparent', 'text-slate-400');
+    buttonElement.classList.add('border-brand-650', 'text-brand-650', 'font-bold');
   }
 
   function changeDiscount(productId, currentDiscount) {
