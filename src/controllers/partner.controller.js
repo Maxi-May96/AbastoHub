@@ -1377,7 +1377,7 @@ const getRegister = async (req, res, next) => {
     }
 
     res.render('pages/partner-register', { 
-      title: 'Portal de Socios - Auto-Registro',
+      title: 'Registro de Socio Comercial - Auto-Registro',
       token,
       error: null,
       success: null
@@ -1400,7 +1400,7 @@ const postRegister = async (req, res, next) => {
 
     if (!name || !password || !req.file) {
       return res.render('pages/partner-register', {
-        title: 'Portal de Socios - Auto-Registro',
+        title: 'Registro de Socio Comercial - Auto-Registro',
         token,
         error: 'El nombre, contraseña y logo son obligatorios.',
         success: null
@@ -1418,7 +1418,7 @@ const postRegister = async (req, res, next) => {
     const existing = await Partner.findOne({ email: generatedEmail });
     if (existing) {
       return res.render('pages/partner-register', {
-        title: 'Portal de Socios - Auto-Registro',
+        title: 'Registro de Socio Comercial - Auto-Registro',
         token,
         error: `El nombre '${name}' genera un correo ya registrado: ${generatedEmail}`,
         success: null
@@ -1429,7 +1429,7 @@ const postRegister = async (req, res, next) => {
     const logoUrl = await uploadImage(req.file, 'partners');
     if (!logoUrl) {
       return res.render('pages/partner-register', {
-        title: 'Portal de Socios - Auto-Registro',
+        title: 'Registro de Socio Comercial - Auto-Registro',
         token,
         error: 'Error al subir la imagen del logo.',
         success: null
@@ -1458,7 +1458,7 @@ const postRegister = async (req, res, next) => {
   } catch (error) {
     console.error('Partner self-register error:', error);
     return res.render('pages/partner-register', {
-      title: 'Portal de Socios - Auto-Registro',
+      title: 'Registro de Socio Comercial - Auto-Registro',
       token,
       error: 'Error al registrar la cuenta: ' + error.message,
       success: null
