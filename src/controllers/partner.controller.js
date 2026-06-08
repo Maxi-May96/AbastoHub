@@ -1466,6 +1466,45 @@ const postRegister = async (req, res, next) => {
   }
 };
 
+const updateProfile = async (req, res, next) => {
+  try {
+    const partnerId = req.partner.id;
+    const { name, description, phone, website, address, password } = req.body;
+
+    const partner = await Partner.findById(partnerId);
+    if (!partner) {
+      return res.redirect('/partner/panel?error=' + encodeURIComponent('Socio no encontrado.'));
+    }
+
+    // Update basic details
+    if (name) partner.name = name;
+    partner.description = description || '';
+    partner.phone = phone || '';
+    partner.website = website || '';
+    partner.address = address || '';
+
+    // If new logo is uploaded, upload it to Firebase
+    if (req.file) {
+      const logoUrl = await uploadImage(req.file, 'partners');
+      if (logoUrl) {
+        partner.logo = logoUrl;
+      }
+    }
+
+    // If new password is provided, set it
+    if (password && password.trim().length >= 6) {
+      partner.password = password; // pre('save') hook will hash it
+    }
+
+    await partner.save();
+
+    res.redirect('/partner/panel?success=' + encodeURIComponent('Perfil actualizado exitosamente.'));
+  } catch (error) {
+    console.error('Update partner profile error:', error.message);
+    res.redirect('/partner/panel?error=' + encodeURIComponent('Error al actualizar perfil: ' + error.message));
+  }
+};
+
 module.exports = {
   getLogin,
   postLogin,
@@ -1489,5 +1528,6 @@ module.exports = {
   generatePartnerPDFTicket,
   downloadMonthlySummary,
   getRegister,
-  postRegister
+  postRegister,
+  updateProfile
 };

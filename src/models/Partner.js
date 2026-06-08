@@ -7,6 +7,11 @@ const PartnerSchema = new mongoose.Schema({
     required: [true, 'El nombre del socio/afiliado es obligatorio'],
     trim: true
   },
+  description: {
+    type: String,
+    trim: true,
+    default: ''
+  },
   logo: {
     type: String,
     required: [true, 'El logo del socio/afiliado es obligatorio']

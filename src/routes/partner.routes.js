@@ -15,6 +15,7 @@ router.post('/partner/register', upload.single('logo'), partnerController.postRe
 
 // Protected Partner Portal routes
 router.get('/partner/panel', isPartnerAuthenticated, partnerController.getPanel);
+router.post('/partner/profile', isPartnerAuthenticated, upload.single('logo'), partnerController.updateProfile);
 router.post('/partner/products', isPartnerAuthenticated, upload.array('images', 3), partnerController.createProduct);
 router.post('/partner/products/:id/stock', isPartnerAuthenticated, partnerController.updateStock);
 router.post('/partner/products/:id/price', isPartnerAuthenticated, partnerController.updatePrice);
