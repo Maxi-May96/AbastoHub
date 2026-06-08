@@ -1,0 +1,151 @@
+<%- include('../partials/header') %>
+
+<div class="min-h-[90vh] flex flex-col justify-center py-12 sm:px-6 lg:px-8 bg-emerald-50/20">
+  <div class="sm:mx-auto sm:w-full sm:max-w-xl text-center px-4">
+    <div class="w-12 h-12 rounded-2xl bg-brand-650 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-brand-500/10 text-white">
+      <i class="fa-solid fa-handshake-angle text-lg"></i>
+    </div>
+    <h2 class="display-font text-3xl font-extrabold text-slate-900 tracking-tight">
+      Registro de Nuevos Socios
+    </h2>
+    <p class="mt-2 text-sm text-slate-500">
+      Únete a la red de productores y comercios asociados de AbastoHub.
+    </p>
+  </div>
+
+  <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-xl px-4">
+    <div class="bg-white py-8 px-6 sm:px-10 rounded-3xl border border-slate-200/85 shadow-xl shadow-brand-100/20">
+      
+      <!-- Alerts -->
+      <% if (locals.error) { %>
+        <div class="mb-5 bg-rose-50 border border-rose-100 text-rose-700 p-4 rounded-2xl text-sm flex gap-2 items-center">
+          <i class="fa-solid fa-circle-exclamation text-base"></i>
+          <span><%= error %></span>
+        </div>
+      <% } %>
+
+      <form class="space-y-5" action="/partner/register?token=<%= token %>" method="POST" enctype="multipart/form-data">
+        
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Name -->
+          <div>
+            <label for="partner-name" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+              Nombre del Socio *
+            </label>
+            <input type="text" id="partner-name" name="name" required placeholder="Ej. Granja El Sol" oninput="updateEmailPreview()"
+              class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/50 focus:bg-white text-slate-800 placeholder-slate-400 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-sm">
+          </div>
+
+          <!-- Type -->
+          <div>
+            <label for="partner-type" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+              Tipo *
+            </label>
+            <select id="partner-type" name="type" required
+              class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/50 focus:bg-white text-slate-800 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-sm">
+              <option value="socio">Socio Comercial / Sponsor</option>
+              <option value="afiliado">Afiliado / Proveedor Oficial</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Generated Email Preview -->
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+            Correo Electrónico Asignado (Para Iniciar Sesión)
+          </label>
+          <div class="relative">
+            <input type="text" id="partner-email-preview" disabled placeholder="tu_nombre@abastohub.com"
+              class="w-full bg-slate-100 border border-slate-200 text-slate-500 px-4 py-2.5 rounded-xl outline-none text-sm font-semibold select-all">
+            <div class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 text-xs gap-1">
+              <i class="fa-solid fa-lock text-[10px]"></i> Correo Interno
+            </div>
+          </div>
+          <p class="text-[10px] text-slate-400 mt-1">Este correo se genera automáticamente a partir de tu nombre y será el que utilices para acceder a tu panel.</p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Password -->
+          <div>
+            <label for="partner-password" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+              Contraseña *
+            </label>
+            <input type="password" id="partner-password" name="password" required placeholder="Mínimo 6 caracteres" minlength="6"
+              class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/50 focus:bg-white text-slate-800 placeholder-slate-400 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-sm">
+          </div>
+
+          <!-- Website -->
+          <div>
+            <label for="partner-website" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+              Sitio Web (Opcional)
+            </label>
+            <input type="url" id="partner-website" name="website" placeholder="https://misitio.com"
+              class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/50 focus:bg-white text-slate-800 placeholder-slate-400 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-sm">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Phone -->
+          <div>
+            <label for="partner-phone" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+              Teléfono de Contacto
+            </label>
+            <input type="text" id="partner-phone" name="phone" placeholder="Ej: +54 11 1234-5678"
+              class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/50 focus:bg-white text-slate-800 placeholder-slate-400 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-sm">
+          </div>
+
+          <!-- Address -->
+          <div>
+            <label for="partner-address" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+              Dirección de Retiro
+            </label>
+            <input type="text" id="partner-address" name="address" placeholder="Ej: Av. Principal 123, CABA"
+              class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/50 focus:bg-white text-slate-800 placeholder-slate-400 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-sm">
+          </div>
+        </div>
+
+        <!-- Logo Upload -->
+        <div>
+          <label for="partner-logo" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+            Logotipo / Imagen Comercial *
+          </label>
+          <input type="file" id="partner-logo" name="logo" required accept="image/*"
+            class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/50 focus:bg-white text-slate-800 px-4 py-2 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-sm file:mr-4 file:py-1.5 file:px-3.5 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 file:cursor-pointer cursor-pointer">
+          <p class="text-[10px] text-slate-400 mt-1">Sube una imagen de logo clara (relación de aspecto recomendada 1:1, formatos JPG, PNG, WEBP).</p>
+        </div>
+
+        <div class="pt-3">
+          <button type="submit" class="w-full py-3 px-4 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold shadow-md shadow-brand-500/10 hover:shadow-lg transition-all text-sm flex items-center justify-center gap-2">
+            Registrar mi Cuenta
+            <i class="fa-solid fa-check text-xs"></i>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  function updateEmailPreview() {
+    const nameInput = document.getElementById('partner-name');
+    const emailPreview = document.getElementById('partner-email-preview');
+    if (!nameInput || !emailPreview) return;
+
+    const name = nameInput.value.trim();
+    if (!name) {
+      emailPreview.value = '';
+      return;
+    }
+
+    // Sanitize in the same way as the backend: normalize accents, lower case, only alphanumeric
+    const sanitized = name
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]/g, '');
+
+    emailPreview.value = sanitized ? (sanitized + '@abastohub.com') : '';
+  }
+</script>
+
+<%- include('../partials/footer') %>

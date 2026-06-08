@@ -710,12 +710,30 @@
         <h2 class="text-lg font-bold text-slate-800 mb-2">Nuevo Socio o Afiliado</h2>
         <p class="text-xs text-slate-400 mb-6">Agrega un nuevo socio comercial o afiliado estratégico para mostrar en el catálogo y página principal.</p>
 
+        <!-- Page registration link alert -->
+        <div class="mb-5 bg-indigo-50 border border-indigo-150 p-4.5 rounded-2xl">
+          <h4 class="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+            <i class="fa-solid fa-share-nodes text-indigo-600"></i> Enlace de Registro Auto-Gestionado
+          </h4>
+          <p class="text-[11px] text-indigo-700 leading-relaxed">
+            Puedes compartir este enlace secreto con tus socios o productores colaboradores para que ellos mismos carguen sus datos y logo. Solo tú puedes distribuirlo.
+          </p>
+          <div class="mt-3 flex gap-2">
+            <input type="text" id="shareable-register-link" readonly 
+              class="flex-1 bg-white border border-indigo-200 text-slate-700 text-xs px-3 py-2.5 rounded-xl outline-none font-medium select-all">
+            <button type="button" onclick="copyRegisterLink()" 
+              class="px-4 py-2 bg-indigo-650 hover:bg-indigo-750 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center gap-1">
+              <i class="fa-solid fa-copy"></i> Copiar
+            </button>
+          </div>
+        </div>
+
         <form action="/admin/partners" method="POST" enctype="multipart/form-data" class="space-y-5">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <!-- Name -->
             <div>
               <label for="partner-name" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Nombre del Socio/Afiliado *</label>
-              <input type="text" id="partner-name" name="name" required placeholder="E.g. Banco Provincia, Cooperativa Frutihortícola"
+              <input type="text" id="partner-name" name="name" required placeholder="E.g. Banco Provincia, Cooperativa Frutihortícola" oninput="updateAdminPartnerEmail()"
                 class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-sm">
             </div>
 
@@ -734,8 +752,8 @@
             <!-- Email -->
             <div>
               <label for="partner-email" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Correo Electrónico (Para Login) *</label>
-              <input type="email" id="partner-email" name="email" required placeholder="socio@ejemplo.com"
-                class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-sm">
+              <input type="email" id="partner-email" name="email" required placeholder="socio@abastohub.com" readonly
+                class="w-full bg-slate-100 border border-slate-200 text-slate-500 px-4 py-2.5 rounded-xl outline-none text-sm font-semibold">
             </div>
 
             <!-- Password -->
@@ -1424,6 +1442,41 @@
     setTimeout(() => {
       modal.classList.add('hidden');
     }, 150);
+  }
+
+  // Initialize registration invite link
+  const inviteLinkInput = document.getElementById('shareable-register-link');
+  if (inviteLinkInput) {
+    inviteLinkInput.value = window.location.origin + '/partner/register?token=<%= partnerInviteToken %>';
+  }
+
+  function copyRegisterLink() {
+    const copyText = document.getElementById('shareable-register-link');
+    if (!copyText) return;
+    copyText.select();
+    copyText.setSelectionRange(0, 99999);
+    navigator.clipboard.writeText(copyText.value);
+    alert('¡Enlace de registro copiado al portapapeles!');
+  }
+
+  function updateAdminPartnerEmail() {
+    const nameInput = document.getElementById('partner-name');
+    const emailInput = document.getElementById('partner-email');
+    if (!nameInput || !emailInput) return;
+
+    const name = nameInput.value.trim();
+    if (!name) {
+      emailInput.value = '';
+      return;
+    }
+
+    const sanitized = name
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]/g, '');
+
+    emailInput.value = sanitized ? (sanitized + '@abastohub.com') : '';
   }
 </script>
 

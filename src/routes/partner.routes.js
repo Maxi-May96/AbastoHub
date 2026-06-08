@@ -9,6 +9,10 @@ router.get('/partner/login', partnerController.getLogin);
 router.post('/partner/login', partnerController.postLogin);
 router.get('/partner/logout', partnerController.getLogout);
 
+// Partner Self-Registration Page (Public but Token-restricted)
+router.get('/partner/register', partnerController.getRegister);
+router.post('/partner/register', upload.single('logo'), partnerController.postRegister);
+
 // Protected Partner Portal routes
 router.get('/partner/panel', isPartnerAuthenticated, partnerController.getPanel);
 router.post('/partner/products', isPartnerAuthenticated, upload.array('images', 3), partnerController.createProduct);

@@ -1367,6 +1367,105 @@ const downloadMonthlySummary = async (req, res, next) => {
   }
 };
 
+const getRegister = async (req, res, next) => {
+  try {
+    const { token } = req.query;
+    const config = require('../config/env');
+    
+    if (!token || token !== config.partnerInviteToken) {
+      return res.status(403).send('Enlace de registro no válido o caducado. Por favor, solicita un nuevo enlace al administrador.');
+    }
+
+    res.render('pages/partner-register', { 
+      title: 'Portal de Socios - Auto-Registro',
+      token,
+      error: null,
+      success: null
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const postRegister = async (req, res, next) => {
+  const { token } = req.query;
+  const config = require('../config/env');
+  
+  if (!token || token !== config.partnerInviteToken) {
+    return res.status(403).send('Enlace de registro no válido o caducado.');
+  }
+
+  try {
+    const { name, type, website, password, phone, address } = req.body;
+
+    if (!name || !password || !req.file) {
+      return res.render('pages/partner-register', {
+        title: 'Portal de Socios - Auto-Registro',
+        token,
+        error: 'El nombre, contraseña y logo son obligatorios.',
+        success: null
+      });
+    }
+
+    // Generate internal email: (nombredelsocio)@abastohub.com
+    const generatedEmail = name
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]/g, '') + '@abastohub.com';
+
+    // Check if email already exists
+    const existing = await Partner.findOne({ email: generatedEmail });
+    if (existing) {
+      return res.render('pages/partner-register', {
+        title: 'Portal de Socios - Auto-Registro',
+        token,
+        error: `El nombre '${name}' genera un correo ya registrado: ${generatedEmail}`,
+        success: null
+      });
+    }
+
+    // Upload logo image to Firebase
+    const logoUrl = await uploadImage(req.file, 'partners');
+    if (!logoUrl) {
+      return res.render('pages/partner-register', {
+        title: 'Portal de Socios - Auto-Registro',
+        token,
+        error: 'Error al subir la imagen del logo.',
+        success: null
+      });
+    }
+
+    const newPartner = new Partner({
+      name,
+      type: type || 'socio',
+      website: website || '',
+      logo: logoUrl,
+      email: generatedEmail,
+      password, // Pre-save hook hashes this
+      phone: phone || '',
+      address: address || '',
+      active: true
+    });
+
+    await newPartner.save();
+
+    return res.render('pages/partner-login', {
+      title: 'Portal de Socios - Iniciar Sesión',
+      success: `¡Registro exitoso! Tu cuenta ha sido creada. Tu correo de acceso es: ${generatedEmail}`,
+      error: null
+    });
+  } catch (error) {
+    console.error('Partner self-register error:', error);
+    return res.render('pages/partner-register', {
+      title: 'Portal de Socios - Auto-Registro',
+      token,
+      error: 'Error al registrar la cuenta: ' + error.message,
+      success: null
+    });
+  }
+};
+
 module.exports = {
   getLogin,
   postLogin,
@@ -1388,5 +1487,7 @@ module.exports = {
   dispatchPartnerRoute,
   shipOrder,
   generatePartnerPDFTicket,
-  downloadMonthlySummary
+  downloadMonthlySummary,
+  getRegister,
+  postRegister
 };

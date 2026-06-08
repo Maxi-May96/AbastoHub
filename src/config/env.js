@@ -10,6 +10,7 @@ const config = {
   nodeEnv: process.env.NODE_ENV || 'development',
   jwtSecret: process.env.JWT_SECRET || 'abastohub_super_secret_jwt_key_2026',
   cookieSecret: process.env.COOKIE_SECRET || 'abastohub_super_secret_cookie_key_2026',
+  partnerInviteToken: process.env.PARTNER_INVITE_TOKEN || 'abastohub-partner-invite-key-2026',
   
   // MercadoPago
   mpAccessToken: process.env.MP_ACCESS_TOKEN || null,

@@ -9,6 +9,7 @@ const { uploadImage } = require('../services/firebase.service');
 const formatPrice = require('../utils/formatPrice');
 const PDFDocument = require('pdfkit');
 const path = require('path');
+const config = require('../config/env');
 
 function calculateDistance(lat1, lon1, lat2, lon2) {
   const R = 6371; // Radius of the earth in km
@@ -240,6 +241,7 @@ const getAdminPanel = async (req, res, next) => {
       drivers,
       raffleCount,
       formatPrice,
+      partnerInviteToken: config.partnerInviteToken,
       success: req.query.success || null,
       error: req.query.error || null
     });
@@ -794,16 +796,23 @@ const generatePDFTicket = async (req, res, next) => {
 // POST Create Partner/Affiliate Action (Admin Only)
 const createPartner = async (req, res, next) => {
   try {
-    const { name, type, website, email, password, phone, address } = req.body;
+    const { name, type, website, password, phone, address } = req.body;
     
-    if (!name || !email || !password || !req.file) {
-      return res.redirect('/admin?error=' + encodeURIComponent('El nombre, correo, contraseña y logo son campos obligatorios.'));
+    if (!name || !password || !req.file) {
+      return res.redirect('/admin?error=' + encodeURIComponent('El nombre, contraseña y logo son campos obligatorios.'));
     }
 
+    // Generate internal email automatically: (nombredelsocio)@abastohub.com
+    const generatedEmail = name
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]/g, '') + '@abastohub.com';
+
     // Check if email already exists
-    const existing = await Partner.findOne({ email: email.toLowerCase().trim() });
+    const existing = await Partner.findOne({ email: generatedEmail });
     if (existing) {
-      return res.redirect('/admin?error=' + encodeURIComponent('Ya existe un socio registrado con ese correo electrónico.'));
+      return res.redirect('/admin?error=' + encodeURIComponent(`Ya existe un socio con el correo generado: ${generatedEmail}`));
     }
 
     // Upload logo image to Firebase
@@ -817,7 +826,7 @@ const createPartner = async (req, res, next) => {
       type,
       website: website || '',
       logo: logoUrl,
-      email: email.toLowerCase().trim(),
+      email: generatedEmail,
       password, // Will be hashed via PartnerSchema pre('save') hook
       phone: phone || '',
       address: address || '',
