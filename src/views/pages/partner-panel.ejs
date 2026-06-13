@@ -574,42 +574,57 @@
     <div id="accounting-tab" class="tab-panel hidden space-y-6">
       
       <!-- Balance Metrics Cards -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
-        <div class="bg-gradient-to-br from-emerald-50 to-white border border-emerald-200 rounded-3xl p-6 shadow-sm flex items-center gap-4 relative overflow-hidden">
-          <div class="absolute -right-4 -bottom-4 text-emerald-150 text-6xl opacity-40 font-bold"><i class="fa-solid fa-wallet"></i></div>
-          <div class="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center text-lg">
+      <div class="grid grid-cols-1 sm:grid-cols-4 gap-5">
+        
+        <!-- Saldo Disponible Online -->
+        <div class="bg-gradient-to-br from-emerald-50 to-white border border-emerald-200 rounded-3xl p-5 shadow-sm flex items-center gap-4 relative overflow-hidden">
+          <div class="absolute -right-4 -bottom-4 text-emerald-150 text-6xl opacity-30 font-bold"><i class="fa-solid fa-wallet"></i></div>
+          <div class="w-11 h-11 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center text-base">
             <i class="fa-solid fa-wallet"></i>
           </div>
           <div>
-            <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Saldo Disponible</p>
-            <p class="text-2xl font-extrabold text-emerald-850"><%= formatPrice(availableBalance) %></p>
-            <p class="text-[10px] text-slate-400 mt-0.5">Listo para ser transferido</p>
+            <p class="text-[9px] font-bold uppercase tracking-wider text-slate-400">Saldo Disponible (Online)</p>
+            <p class="text-xl font-extrabold text-emerald-850"><%= formatPrice(availableBalance) %></p>
+            <p class="text-[9px] text-slate-400 mt-0.5">Listo para solicitar retiro</p>
           </div>
         </div>
 
-        <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex items-center gap-4 relative overflow-hidden">
-          <div class="absolute -right-4 -bottom-4 text-slate-50 text-6xl opacity-40 font-bold"><i class="fa-solid fa-coins"></i></div>
-          <div class="w-12 h-12 rounded-xl bg-slate-50 text-slate-650 flex items-center justify-center text-lg">
+        <!-- Ventas en Mostrador (POS) -->
+        <div class="bg-gradient-to-br from-indigo-50 to-white border border-indigo-200 rounded-3xl p-5 shadow-sm flex items-center gap-4 relative overflow-hidden">
+          <div class="absolute -right-4 -bottom-4 text-indigo-150 text-6xl opacity-30 font-bold"><i class="fa-solid fa-cash-register"></i></div>
+          <div class="w-11 h-11 rounded-xl bg-indigo-100 text-indigo-800 flex items-center justify-center text-base">
+            <i class="fa-solid fa-cash-register"></i>
+          </div>
+          <div>
+            <p class="text-[9px] font-bold uppercase tracking-wider text-slate-400">Ventas Mostrador (POS)</p>
+            <p class="text-xl font-extrabold text-indigo-900"><%= formatPrice(posEarnings) %></p>
+            <p class="text-[9px] text-slate-400 mt-0.5">Cobrado directamente en tienda</p>
+          </div>
+        </div>
+
+        <!-- Total Facturado -->
+        <div class="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm flex items-center gap-4 relative overflow-hidden">
+          <div class="absolute -right-4 -bottom-4 text-slate-50 text-6xl opacity-30 font-bold"><i class="fa-solid fa-coins"></i></div>
+          <div class="w-11 h-11 rounded-xl bg-slate-50 text-slate-650 flex items-center justify-center text-base">
             <i class="fa-solid fa-coins"></i>
           </div>
           <div>
-            <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Facturado</p>
-            <p class="text-2xl font-extrabold text-slate-800"><%= formatPrice(totalEarnings) %></p>
-            <p class="text-[10px] text-slate-400 mt-0.5">Ingresos por órdenes pagadas</p>
+            <p class="text-[9px] font-bold uppercase tracking-wider text-slate-400">Total Facturado</p>
+            <p class="text-xl font-extrabold text-slate-800"><%= formatPrice(totalEarnings) %></p>
+            <p class="text-[9px] text-slate-400 mt-0.5">Online: <%= formatPrice(onlineEarnings) %></p>
           </div>
         </div>
 
-        <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex items-center gap-4 relative overflow-hidden">
-          <div class="absolute -right-4 -bottom-4 text-slate-50 text-6xl opacity-40 font-bold"><i class="fa-solid fa-hand-holding-dollar"></i></div>
-          <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center text-lg">
+        <!-- Retiros Solicitados -->
+        <div class="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm flex items-center gap-4 relative overflow-hidden">
+          <div class="absolute -right-4 -bottom-4 text-slate-50 text-6xl opacity-30 font-bold"><i class="fa-solid fa-hand-holding-dollar"></i></div>
+          <div class="w-11 h-11 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center text-base">
             <i class="fa-solid fa-hand-holding-dollar"></i>
           </div>
           <div>
-            <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Retiros Solicitados</p>
-            <p class="text-2xl font-extrabold text-slate-800"><%= formatPrice(totalApprovedWithdrawals + totalPendingWithdrawals) %></p>
-            <p class="text-[10px] text-slate-400 mt-0.5">
-              <%= formatPrice(totalPendingWithdrawals) %> pendientes de pago
-            </p>
+            <p class="text-[9px] font-bold uppercase tracking-wider text-slate-400">Retiros Solicitados</p>
+            <p class="text-xl font-extrabold text-slate-800"><%= formatPrice(totalApprovedWithdrawals + totalPendingWithdrawals) %></p>
+            <p class="text-[9px] text-slate-400 mt-0.5"><%= formatPrice(totalPendingWithdrawals) %> pendientes</p>
           </div>
         </div>
       </div>

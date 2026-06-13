@@ -128,13 +128,15 @@ const getPanel = async (req, res, next) => {
 
     // Calculate earnings from paid orders
     const totalEarnings = orders.reduce((sum, o) => sum + (o.paymentStatus === 'paid' ? o.partnerSubtotal : 0), 0);
+    const onlineEarnings = orders.reduce((sum, o) => sum + (o.paymentStatus === 'paid' && !o.isPOS ? o.partnerSubtotal : 0), 0);
+    const posEarnings = orders.reduce((sum, o) => sum + (o.paymentStatus === 'paid' && o.isPOS ? o.partnerSubtotal : 0), 0);
 
     // Calculate approved and pending withdrawals
     const totalApprovedWithdrawals = withdrawals.filter(w => w.status === 'approved').reduce((sum, w) => sum + w.amount, 0);
     const totalPendingWithdrawals = withdrawals.filter(w => w.status === 'pending').reduce((sum, w) => sum + w.amount, 0);
 
-    // Available balance
-    const availableBalance = totalEarnings - totalApprovedWithdrawals - totalPendingWithdrawals;
+    // Available balance (only online earnings can be withdrawn from the platform)
+    const availableBalance = onlineEarnings - totalApprovedWithdrawals - totalPendingWithdrawals;
 
     // Calculate best selling statistics for this partner
     const bestSellingStats = await Order.aggregate([
@@ -208,6 +210,8 @@ const getPanel = async (req, res, next) => {
       activeProducts,
       outOfStockProducts,
       totalEarnings,
+      onlineEarnings,
+      posEarnings,
       totalApprovedWithdrawals,
       totalPendingWithdrawals,
       availableBalance,
@@ -568,7 +572,8 @@ const requestWithdrawal = async (req, res, next) => {
     
     const rawOrders = await Order.find({ 
       'products.product': { $in: partnerProductIds },
-      paymentStatus: 'paid' 
+      paymentStatus: 'paid',
+      isPOS: { $ne: true }
     });
 
     const totalEarnings = rawOrders.reduce((sum, order) => {
@@ -1879,6 +1884,7 @@ const postPOSSale = async (req, res, next) => {
       paymentMethod: paymentMethod || 'cash',
       deliveryType: 'pickup',
       stockSubtracted: true,
+      isPOS: true,
       shippingDetails: {
         name: customerName || 'Cliente General',
         phone: customerPhone || 'N/A',

@@ -103,6 +103,10 @@ const OrderSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
+  isPOS: {
+    type: Boolean,
+    default: false
+  },
   createdAt: {
     type: Date,
     default: Date.now
