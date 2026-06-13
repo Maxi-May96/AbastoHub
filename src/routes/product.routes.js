@@ -39,5 +39,6 @@ router.post('/admin/partners/:id/reset-password', isAuthenticated, isAdmin, prod
 router.post('/admin/partners/:id/toggle-featured-72h', isAuthenticated, isAdmin, productController.togglePartnerFeatured72h);
 router.post('/admin/partners/:id/assign-driver', isAuthenticated, isAdmin, productController.assignDriverToPartner);
 router.post('/admin/withdrawals/:id/status', isAuthenticated, isAdmin, productController.updateWithdrawalStatus);
+router.post('/admin/commissions/:id/status', isAuthenticated, isAdmin, productController.updateCommissionPaymentStatus);
 
 module.exports = router;

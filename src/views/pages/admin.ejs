@@ -71,6 +71,14 @@
           <span class="ml-1 bg-amber-150 text-amber-800 text-[10px] px-2 py-0.5 rounded-full font-bold"><%= pendingWithdrawalsCount %></span>
         <% } %>
       </button>
+      <button onclick="switchTab('commissions-tab', this)" class="tab-btn pb-4 border-b-2 border-transparent text-slate-400 hover:text-slate-600 flex items-center gap-1">
+        <i class="fa-solid fa-cash-register text-xs text-indigo-500"></i>
+        Comisiones POS
+        <% const pendingCommissionsCount = commissionPayments.filter(cp => cp.status === 'pending').length; %>
+        <% if (pendingCommissionsCount > 0) { %>
+          <span class="ml-1 bg-indigo-100 text-indigo-800 text-[10px] px-2 py-0.5 rounded-full font-bold animate-pulse"><%= pendingCommissionsCount %></span>
+        <% } %>
+      </button>
       <button onclick="switchTab('raffle-tab', this)" class="tab-btn pb-4 border-b-2 border-transparent text-slate-400 hover:text-slate-600">
         <i class="fa-solid fa-gift mr-1.5 text-xs"></i>
         Sorteos
@@ -996,6 +1004,173 @@
 
       </div>
     </div>
+
+    <!-- Tab 7.5: Comisiones POS Panel -->
+    <div id="commissions-tab" class="tab-panel hidden space-y-6">
+      <div class="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
+        
+        <div class="px-6 py-5 border-b border-slate-100 bg-slate-50/50">
+          <h2 class="text-base font-bold text-slate-800">Pagos de Comisión de Ventas POS (5%)</h2>
+          <p class="text-xs text-slate-400">Verifica los comprobantes de transferencia y aprueba los pagos de comisiones pendientes por ventas POS.</p>
+        </div>
+
+        <div class="overflow-x-auto custom-scrollbar">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold">
+                <th class="px-6 py-3.5">Socio Comercial</th>
+                <th class="px-6 py-3.5">Fecha</th>
+                <th class="px-6 py-3.5">Método de Pago</th>
+                <th class="px-6 py-3.5">Monto de Comisión</th>
+                <th class="px-6 py-3.5">Estado</th>
+                <th class="px-6 py-3.5">Comprobante / Acciones</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <% if (commissionPayments && commissionPayments.length > 0) { %>
+                <% commissionPayments.forEach(cp => { %>
+                  <tr class="hover:bg-slate-50/20 transition-colors">
+                    <td class="px-6 py-4">
+                      <% if (cp.partner) { %>
+                        <div class="font-extrabold text-slate-800 text-[13px]"><%= cp.partner.storeName %></div>
+                        <div class="text-[10px] text-slate-400">Titular: <%= cp.partner.ownerName %></div>
+                        <div class="text-[10px] text-slate-400">Email: <%= cp.partner.email %></div>
+                      <% } else { %>
+                        <span class="text-slate-400 italic">Socio desconocido/eliminado</span>
+                      <% } %>
+                    </td>
+                    <td class="px-6 py-4">
+                      <div class="font-semibold text-slate-700"><%= new Date(cp.createdAt).toLocaleDateString('es-AR') %></div>
+                      <div class="text-[9px] text-slate-400"><%= new Date(cp.createdAt).toLocaleTimeString('es-AR', {hour: '2-digit', minute:'2-digit'}) %></div>
+                    </td>
+                    <td class="px-6 py-4">
+                      <span class="inline-flex items-center gap-1 font-semibold text-slate-700">
+                        <% if (cp.paymentMethod === 'balance') { %>
+                          <i class="fa-solid fa-wallet text-indigo-505 text-[10px]"></i> Débito de Saldo
+                        <% } else { %>
+                          <i class="fa-solid fa-building-columns text-emerald-505 text-[10px]"></i> Transferencia Bancaria
+                        <% } %>
+                      </span>
+                    </td>
+                    <td class="px-6 py-4 font-extrabold text-slate-800 text-sm">
+                      <%= formatPrice(cp.amount) %>
+                    </td>
+                    <td class="px-6 py-4">
+                      <% if (cp.status === 'approved') { %>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-100 uppercase">
+                          Aprobado
+                        </span>
+                        <% if (cp.processedAt) { %>
+                          <div class="text-[8px] text-slate-400 mt-1"><%= new Date(cp.processedAt).toLocaleDateString('es-AR') %></div>
+                        <% } %>
+                      <% } else if (cp.status === 'rejected') { %>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-rose-50 text-rose-700 border border-rose-100 uppercase">
+                          Rechazado
+                        </span>
+                      <% } else { %>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-amber-50 text-amber-700 border border-amber-100 uppercase">
+                          Pendiente de Revisión
+                        </span>
+                      <% } %>
+                    </td>
+                    <td class="px-6 py-4">
+                      <div class="flex flex-col gap-2">
+                        <% if (cp.paymentReceipt) { %>
+                          <a href="<%= cp.paymentReceipt %>" target="_blank" class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold transition-all text-[10px] w-fit">
+                            <i class="fa-solid fa-file-invoice"></i> Ver Comprobante
+                          </a>
+                        <% } %>
+
+                        <% if (cp.status === 'pending') { %>
+                          <div class="flex gap-2">
+                            <!-- Approve Form -->
+                            <form action="/admin/commissions/<%= cp._id %>/status" method="POST" class="inline-block" onsubmit="return confirm('¿Aprobar el pago de comisión de <%= formatPrice(cp.amount) %>?');">
+                              <input type="hidden" name="status" value="approved">
+                              <button type="submit" class="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-[9px] shadow-sm transition-all uppercase">
+                                Aprobar
+                              </button>
+                            </form>
+
+                            <!-- Reject Form Trigger/Dialog -->
+                            <button onclick="openCommissionRejectModal('<%= cp._id %>', '<%= formatPrice(cp.amount) %>')" class="px-2.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-lg text-[9px] shadow-sm transition-all uppercase">
+                              Rechazar
+                            </button>
+                          </div>
+                        <% } else if (cp.notes) { %>
+                          <div class="text-[9px] font-medium text-slate-500 bg-slate-50 p-2 rounded-lg border border-slate-100 max-w-[200px]">
+                            <span class="font-bold block uppercase text-[8px] text-slate-400 mb-0.5">Observaciones:</span>
+                            <%= cp.notes %>
+                          </div>
+                        <% } %>
+                      </div>
+                    </td>
+                  </tr>
+                <% }); %>
+              <% } else { %>
+                <tr>
+                  <td colspan="6" class="px-6 py-12 text-center text-slate-400">
+                    No hay registros de comisiones POS por el momento.
+                  </td>
+                </tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Commission Reject Modal -->
+    <div id="commission-reject-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+      <div class="bg-white border border-slate-200 rounded-3xl p-6 w-full max-w-md shadow-xl mx-4">
+        <h3 class="font-bold text-slate-800 text-sm mb-1.5 flex items-center gap-2">
+          <i class="fa-solid fa-circle-xmark text-rose-500"></i>
+          Rechazar Pago de Comisión POS
+        </h3>
+        <p class="text-slate-450 text-[11px] mb-4">
+          Por favor, indica la razón del rechazo para que el socio sea notificado y pueda corregir la solicitud (ej. Comprobante inválido o borroso).
+        </p>
+        
+        <form id="commission-reject-form" method="POST" class="space-y-4">
+          <input type="hidden" name="status" value="rejected">
+          <div>
+            <label for="commission-reject-notes" class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Observación / Motivo *</label>
+            <textarea id="commission-reject-notes" name="notes" required placeholder="Escribe aquí el motivo del rechazo..."
+              class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-rose-500 focus:border-rose-500 h-24 resize-none"></textarea>
+          </div>
+
+          <div class="flex justify-end gap-2 pt-2">
+            <button type="button" onclick="closeCommissionRejectModal()" class="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-500 text-xs font-semibold rounded-xl transition-all">
+              Cancelar
+            </button>
+            <button type="submit" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all">
+              Confirmar Rechazo
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      function openCommissionRejectModal(id, amountStr) {
+        const modal = document.getElementById('commission-reject-modal');
+        const form = document.getElementById('commission-reject-form');
+        form.action = `/admin/commissions/${id}/status`;
+        modal.classList.remove('hidden');
+      }
+
+      document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+          closeCommissionRejectModal();
+        }
+      });
+
+      function closeCommissionRejectModal() {
+        const modal = document.getElementById('commission-reject-modal');
+        modal.classList.add('hidden');
+        document.getElementById('commission-reject-notes').value = '';
+      }
+    </script>
 
     <!-- Tab 8: Estadísticas (Más Vendidos) -->
     <div id="stats-tab" class="tab-panel hidden space-y-6">

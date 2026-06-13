@@ -108,8 +108,9 @@ const OrderSchema = new mongoose.Schema({
     default: false
   },
   posFeePaid: {
-    type: Boolean,
-    default: false
+    type: String,
+    enum: ['unpaid', 'pending', 'paid'],
+    default: 'unpaid'
   },
   createdAt: {
     type: Date,

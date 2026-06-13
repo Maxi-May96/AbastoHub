@@ -5,6 +5,7 @@ const Category = require('../models/Category');
 const Order = require('../models/Order');
 const Withdrawal = require('../models/Withdrawal');
 const Driver = require('../models/Driver');
+const CommissionPayment = require('../models/CommissionPayment');
 const { uploadImage } = require('../services/firebase.service');
 const { generatePartnerToken } = require('../services/auth.service');
 const formatPrice = require('../utils/formatPrice');
@@ -131,19 +132,28 @@ const getPanel = async (req, res, next) => {
     const onlineEarnings = orders.reduce((sum, o) => sum + (o.paymentStatus === 'paid' && !o.isPOS ? o.partnerSubtotal : 0), 0);
     const posEarnings = orders.reduce((sum, o) => sum + (o.paymentStatus === 'paid' && o.isPOS ? o.partnerSubtotal : 0), 0);
 
+    // Load all commission payments for this partner
+    const commissionPayments = await CommissionPayment.find({ partner: partnerId }).sort({ createdAt: -1 });
+    const balanceCommissionsPaid = commissionPayments
+      .filter(p => p.status === 'approved' && p.paymentMethod === 'balance')
+      .reduce((sum, p) => sum + p.amount, 0);
+
     const posCommissionsOwed = orders.reduce((sum, o) => 
-      sum + (o.paymentStatus === 'paid' && o.isPOS && !o.posFeePaid ? (o.partnerSubtotal * 0.05) : 0), 0
+      sum + (o.paymentStatus === 'paid' && o.isPOS && o.posFeePaid === 'unpaid' ? (o.partnerSubtotal * 0.05) : 0), 0
+    );
+    const posCommissionsPending = orders.reduce((sum, o) => 
+      sum + (o.paymentStatus === 'paid' && o.isPOS && o.posFeePaid === 'pending' ? (o.partnerSubtotal * 0.05) : 0), 0
     );
     const posCommissionsPaid = orders.reduce((sum, o) => 
-      sum + (o.paymentStatus === 'paid' && o.isPOS && o.posFeePaid ? (o.partnerSubtotal * 0.05) : 0), 0
+      sum + (o.paymentStatus === 'paid' && o.isPOS && o.posFeePaid === 'paid' ? (o.partnerSubtotal * 0.05) : 0), 0
     );
 
     // Calculate approved and pending withdrawals
     const totalApprovedWithdrawals = withdrawals.filter(w => w.status === 'approved').reduce((sum, w) => sum + w.amount, 0);
     const totalPendingWithdrawals = withdrawals.filter(w => w.status === 'pending').reduce((sum, w) => sum + w.amount, 0);
 
-    // Available balance (online earnings minus withdrawals minus paid POS commissions)
-    const availableBalance = onlineEarnings - totalApprovedWithdrawals - totalPendingWithdrawals - posCommissionsPaid;
+    // Available balance (online earnings minus withdrawals minus paid POS commissions via balance)
+    const availableBalance = onlineEarnings - totalApprovedWithdrawals - totalPendingWithdrawals - balanceCommissionsPaid;
 
     // Calculate best selling statistics for this partner
     const bestSellingStats = await Order.aggregate([
@@ -220,7 +230,9 @@ const getPanel = async (req, res, next) => {
       onlineEarnings,
       posEarnings,
       posCommissionsOwed,
+      posCommissionsPending,
       posCommissionsPaid,
+      commissionPayments,
       totalApprovedWithdrawals,
       totalPendingWithdrawals,
       availableBalance,
@@ -596,7 +608,12 @@ const requestWithdrawal = async (req, res, next) => {
     const totalApproved = withdrawals.filter(w => w.status === 'approved').reduce((sum, w) => sum + w.amount, 0);
     const totalPending = withdrawals.filter(w => w.status === 'pending').reduce((sum, w) => sum + w.amount, 0);
 
-    const availableBalance = totalEarnings - totalApproved - totalPending;
+    const commissionPayments = await CommissionPayment.find({ partner: partnerId });
+    const balanceCommissionsPaid = commissionPayments
+      .filter(p => p.status === 'approved' && p.paymentMethod === 'balance')
+      .reduce((sum, p) => sum + p.amount, 0);
+
+    const availableBalance = totalEarnings - totalApproved - totalPending - balanceCommissionsPaid;
 
     if (requestedAmount > availableBalance) {
       return res.redirect('/partner/panel?error=' + encodeURIComponent(`Fondos insuficientes. Tu saldo disponible para retirar es de ${formatPrice(availableBalance)}`));
@@ -1945,6 +1962,11 @@ const getPOSView = async (req, res, next) => {
 const payPOSCommissions = async (req, res, next) => {
   try {
     const partnerId = req.partner.id;
+    const { paymentMethod } = req.body;
+
+    if (!['balance', 'transfer'].includes(paymentMethod)) {
+      return res.redirect('/partner/panel?error=' + encodeURIComponent('Método de pago inválido.'));
+    }
 
     // Load partner products
     const products = await Product.find({ partner: partnerId });
@@ -1965,14 +1987,11 @@ const payPOSCommissions = async (req, res, next) => {
       return sum + partnerItems.reduce((s, item) => s + (item.price * item.quantity), 0);
     }, 0);
 
-    // 2. Calculate paid POS commissions
-    const posCommissionsPaid = allPaidOrders.reduce((sum, order) => {
-      if (!order.isPOS || !order.posFeePaid) return sum;
-      const partnerItems = order.products.filter(item =>
-        partnerProductIds.some(pId => pId.toString() === item.product.toString())
-      );
-      return sum + partnerItems.reduce((s, item) => s + (item.price * item.quantity), 0) * 0.05;
-    }, 0);
+    // 2. Calculate paid POS commissions via balance (from CommissionPayment model)
+    const commissionPayments = await CommissionPayment.find({ partner: partnerId });
+    const balanceCommissionsPaid = commissionPayments
+      .filter(p => p.status === 'approved' && p.paymentMethod === 'balance')
+      .reduce((sum, p) => sum + p.amount, 0);
 
     // 3. Calculate withdrawals
     const withdrawals = await Withdrawal.find({ partner: partnerId });
@@ -1980,10 +1999,10 @@ const payPOSCommissions = async (req, res, next) => {
     const totalPending = withdrawals.filter(w => w.status === 'pending').reduce((sum, w) => sum + w.amount, 0);
 
     // Available balance
-    const availableBalance = onlineEarnings - totalApproved - totalPending - posCommissionsPaid;
+    const availableBalance = onlineEarnings - totalApproved - totalPending - balanceCommissionsPaid;
 
     // 4. Find unpaid POS orders and calculate total commissions owed
-    const unpaidPOSOrders = allPaidOrders.filter(order => order.isPOS && !order.posFeePaid);
+    const unpaidPOSOrders = allPaidOrders.filter(order => order.isPOS && order.posFeePaid === 'unpaid');
 
     let totalOwed = 0;
     unpaidPOSOrders.forEach(order => {
@@ -1998,17 +2017,44 @@ const payPOSCommissions = async (req, res, next) => {
       return res.redirect('/partner/panel?error=' + encodeURIComponent('No tienes comisiones POS pendientes de pago.'));
     }
 
-    if (availableBalance < totalOwed) {
-      return res.redirect('/partner/panel?error=' + encodeURIComponent('Saldo disponible insuficiente para pagar las comisiones del POS.'));
+    let paymentReceipt = null;
+    if (paymentMethod === 'balance') {
+      if (availableBalance < totalOwed) {
+        return res.redirect('/partner/panel?error=' + encodeURIComponent('Saldo disponible insuficiente para pagar las comisiones del POS.'));
+      }
+    } else {
+      // paymentMethod === 'transfer'
+      if (!req.file) {
+        return res.redirect('/partner/panel?error=' + encodeURIComponent('Debes adjuntar el comprobante de la transferencia bancaria.'));
+      }
+      // Upload proof of payment
+      paymentReceipt = await uploadImage(req.file);
     }
 
-    // 5. Mark unpaid POS orders as paid
+    // 5. Create CommissionPayment record
+    const payment = new CommissionPayment({
+      partner: partnerId,
+      amount: totalOwed,
+      paymentMethod,
+      paymentReceipt,
+      status: paymentMethod === 'balance' ? 'approved' : 'pending',
+      orders: unpaidPOSOrders.map(o => o._id),
+      processedAt: paymentMethod === 'balance' ? new Date() : null
+    });
+    await payment.save();
+
+    // 6. Update posFeePaid status on orders
+    const targetStatus = paymentMethod === 'balance' ? 'paid' : 'pending';
     for (const order of unpaidPOSOrders) {
-      order.posFeePaid = true;
+      order.posFeePaid = targetStatus;
       await order.save();
     }
 
-    return res.redirect('/partner/panel?success=' + encodeURIComponent('Comisiones del POS pagadas con éxito usando tu saldo disponible.'));
+    const msg = paymentMethod === 'balance'
+      ? 'Comisiones del POS pagadas con éxito usando tu saldo disponible.'
+      : 'Comprobante de transferencia subido correctamente. Tu pago está pendiente de verificación por la administración.';
+
+    return res.redirect('/partner/panel?success=' + encodeURIComponent(msg));
   } catch (error) {
     next(error);
   }

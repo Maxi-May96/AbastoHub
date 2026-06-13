@@ -5,6 +5,7 @@ const Partner = require('../models/Partner');
 const RaffleParticipant = require('../models/RaffleParticipant');
 const Driver = require('../models/Driver');
 const Withdrawal = require('../models/Withdrawal');
+const CommissionPayment = require('../models/CommissionPayment');
 const { uploadImage } = require('../services/firebase.service');
 const formatPrice = require('../utils/formatPrice');
 const PDFDocument = require('pdfkit');
@@ -228,6 +229,9 @@ const getAdminPanel = async (req, res, next) => {
     // Load all partner withdrawals
     const withdrawals = await Withdrawal.find({}).populate('partner').sort({ createdAt: -1 });
 
+    // Load all POS commission payments
+    const commissionPayments = await CommissionPayment.find({}).populate('partner').sort({ createdAt: -1 });
+
     // Load global drivers to assign to partners
     const drivers = await Driver.find({ partner: null }).sort({ name: 1 });
 
@@ -288,6 +292,7 @@ const getAdminPanel = async (req, res, next) => {
       orders,
       partners,
       withdrawals,
+      commissionPayments,
       drivers,
       raffleCount,
       bestSellers,
@@ -1997,6 +2002,47 @@ const generateStatisticsPDF = async (req, res, next) => {
   }
 };
 
+const updateCommissionPaymentStatus = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { status, notes } = req.body;
+
+    if (!['approved', 'rejected'].includes(status)) {
+      return res.redirect('/admin?error=' + encodeURIComponent('Estado inválido.'));
+    }
+
+    const payment = await CommissionPayment.findById(id).populate('orders');
+    if (!payment) {
+      return res.redirect('/admin?error=' + encodeURIComponent('Pago de comisión no encontrado.'));
+    }
+
+    // If it's already processed, avoid reprocessing
+    if (payment.status !== 'pending') {
+      return res.redirect('/admin?error=' + encodeURIComponent('Este pago ya fue procesado.'));
+    }
+
+    payment.status = status;
+    payment.notes = notes || '';
+    payment.processedAt = new Date();
+    await payment.save();
+
+    // Update the associated orders
+    const targetOrderFeePaidStatus = status === 'approved' ? 'paid' : 'unpaid';
+    for (const order of payment.orders) {
+      order.posFeePaid = targetOrderFeePaidStatus;
+      await order.save();
+    }
+
+    const msg = status === 'approved'
+      ? 'Pago de comisión aprobado con éxito.'
+      : 'Pago de comisión rechazado. Las ventas POS correspondientes han vuelto a quedar pendientes de pago.';
+
+    return res.redirect('/admin?success=' + encodeURIComponent(msg));
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getProducts,
   getProductBySlug,
@@ -2027,5 +2073,6 @@ module.exports = {
   deleteAllOrders,
   generatePriceListPDF,
   updateWithdrawalStatus,
-  generateStatisticsPDF
+  generateStatisticsPDF,
+  updateCommissionPaymentStatus
 };
