@@ -355,12 +355,21 @@ const updateStock = async (req, res, next) => {
     const { stock } = req.body;
     
     if (stock === undefined || stock === '') {
+      if (req.accepts('html', 'json') === 'json') {
+        return res.status(400).json({ success: false, error: 'Valor de stock no válido.' });
+      }
       return res.redirect('/admin?error=' + encodeURIComponent('Valor de stock no válido.'));
     }
 
     await Product.findByIdAndUpdate(id, { stock: Number(stock) });
+    if (req.accepts('html', 'json') === 'json') {
+      return res.json({ success: true, message: 'Stock actualizado exitosamente.' });
+    }
     res.redirect('/admin?success=' + encodeURIComponent('Stock actualizado exitosamente.'));
   } catch (error) {
+    if (req.accepts('html', 'json') === 'json') {
+      return res.status(500).json({ success: false, error: 'Error al actualizar stock.' });
+    }
     res.redirect('/admin?error=' + encodeURIComponent('Error al actualizar stock.'));
   }
 };
@@ -372,6 +381,9 @@ const updatePrice = async (req, res, next) => {
     const { price, wholesalePrice } = req.body;
     
     if (price === undefined || price === '' || wholesalePrice === undefined || wholesalePrice === '') {
+      if (req.accepts('html', 'json') === 'json') {
+        return res.status(400).json({ success: false, error: 'Precios no válidos.' });
+      }
       return res.redirect('/admin?error=' + encodeURIComponent('Precios no válidos.'));
     }
 
@@ -379,8 +391,14 @@ const updatePrice = async (req, res, next) => {
       price: Number(price), 
       wholesalePrice: Number(wholesalePrice) 
     });
+    if (req.accepts('html', 'json') === 'json') {
+      return res.json({ success: true, message: 'Precios actualizados exitosamente.' });
+    }
     res.redirect('/admin?success=' + encodeURIComponent('Precios actualizados exitosamente.'));
   } catch (error) {
+    if (req.accepts('html', 'json') === 'json') {
+      return res.status(500).json({ success: false, error: 'Error al actualizar precios.' });
+    }
     res.redirect('/admin?error=' + encodeURIComponent('Error al actualizar precios.'));
   }
 };
@@ -418,14 +436,23 @@ const toggleActive = async (req, res, next) => {
     const { id } = req.params;
     const product = await Product.findById(id);
     if (!product) {
+      if (req.accepts('html', 'json') === 'json') {
+        return res.status(404).json({ success: false, error: 'Producto no encontrado.' });
+      }
       return res.redirect('/admin?error=' + encodeURIComponent('Producto no encontrado.'));
     }
     
     product.active = !product.active;
     await product.save();
     
+    if (req.accepts('html', 'json') === 'json') {
+      return res.json({ success: true, message: `Producto ${product.active ? 'activado' : 'desactivado'} exitosamente.`, active: product.active });
+    }
     res.redirect('/admin?success=' + encodeURIComponent(`Producto ${product.active ? 'activado' : 'desactivado'} exitosamente.`));
   } catch (error) {
+    if (req.accepts('html', 'json') === 'json') {
+      return res.status(500).json({ success: false, error: 'Error al cambiar el estado del producto.' });
+    }
     res.redirect('/admin?error=' + encodeURIComponent('Error al cambiar el estado del producto.'));
   }
 };
@@ -436,14 +463,23 @@ const toggleFeatured = async (req, res, next) => {
     const { id } = req.params;
     const product = await Product.findById(id);
     if (!product) {
+      if (req.accepts('html', 'json') === 'json') {
+        return res.status(404).json({ success: false, error: 'Producto no encontrado.' });
+      }
       return res.redirect('/admin?error=' + encodeURIComponent('Producto no encontrado.'));
     }
     
     product.featured = !product.featured;
     await product.save();
     
+    if (req.accepts('html', 'json') === 'json') {
+      return res.json({ success: true, message: `Producto ${product.featured ? 'destacado' : 'quitado de destacados'} exitosamente.`, featured: product.featured });
+    }
     res.redirect('/admin?success=' + encodeURIComponent(`Producto ${product.featured ? 'destacado' : 'quitado de destacados'} exitosamente.`));
   } catch (error) {
+    if (req.accepts('html', 'json') === 'json') {
+      return res.status(500).json({ success: false, error: 'Error al cambiar el estado destacado del producto.' });
+    }
     res.redirect('/admin?error=' + encodeURIComponent('Error al cambiar el estado destacado del producto.'));
   }
 };
@@ -455,17 +491,29 @@ const updateDiscount = async (req, res, next) => {
     const { discount } = req.body;
     
     if (discount === undefined || discount === '') {
+      if (req.accepts('html', 'json') === 'json') {
+        return res.status(400).json({ success: false, error: 'Valor de descuento no válido.' });
+      }
       return res.redirect('/admin?error=' + encodeURIComponent('Valor de descuento no válido.'));
     }
 
     const discountNum = Number(discount);
     if (isNaN(discountNum) || discountNum < 0 || discountNum >= 100) {
+      if (req.accepts('html', 'json') === 'json') {
+        return res.status(400).json({ success: false, error: 'El descuento debe ser un número entre 0 y 99.' });
+      }
       return res.redirect('/admin?error=' + encodeURIComponent('El descuento debe ser un número entre 0 y 99.'));
     }
 
     await Product.findByIdAndUpdate(id, { discount: discountNum });
+    if (req.accepts('html', 'json') === 'json') {
+      return res.json({ success: true, message: 'Descuento actualizado exitosamente.', discount: discountNum });
+    }
     res.redirect('/admin?success=' + encodeURIComponent('Descuento actualizado exitosamente.'));
   } catch (error) {
+    if (req.accepts('html', 'json') === 'json') {
+      return res.status(500).json({ success: false, error: 'Error al actualizar el descuento.' });
+    }
     res.redirect('/admin?error=' + encodeURIComponent('Error al actualizar el descuento.'));
   }
 };
@@ -476,10 +524,19 @@ const deleteProduct = async (req, res, next) => {
     const { id } = req.params;
     const product = await Product.findByIdAndDelete(id);
     if (!product) {
+      if (req.accepts('html', 'json') === 'json') {
+        return res.status(404).json({ success: false, error: 'Producto no encontrado.' });
+      }
       return res.redirect('/admin?error=' + encodeURIComponent('Producto no encontrado.'));
+    }
+    if (req.accepts('html', 'json') === 'json') {
+      return res.json({ success: true, message: 'Producto eliminado exitosamente del catálogo.' });
     }
     res.redirect('/admin?success=' + encodeURIComponent('Producto eliminado exitosamente del catálogo.'));
   } catch (error) {
+    if (req.accepts('html', 'json') === 'json') {
+      return res.status(500).json({ success: false, error: 'Error al eliminar el producto: ' + error.message });
+    }
     res.redirect('/admin?error=' + encodeURIComponent('Error al eliminar el producto: ' + error.message));
   }
 };
@@ -1240,10 +1297,16 @@ const markOrderAsPaid = async (req, res, next) => {
     const order = await Order.findById(id);
     
     if (!order) {
+      if (req.accepts('html', 'json') === 'json') {
+        return res.status(404).json({ success: false, error: 'Pedido no encontrado.' });
+      }
       return res.redirect('/admin?error=' + encodeURIComponent('Pedido no encontrado.'));
     }
 
     if (order.paymentStatus === 'paid') {
+      if (req.accepts('html', 'json') === 'json') {
+        return res.status(400).json({ success: false, error: 'El pedido ya está marcado como pagado.' });
+      }
       return res.redirect('/admin?error=' + encodeURIComponent('El pedido ya está marcado como pagado.'));
     }
 
@@ -1267,9 +1330,15 @@ const markOrderAsPaid = async (req, res, next) => {
     }
 
     await order.save();
+    if (req.accepts('html', 'json') === 'json') {
+      return res.json({ success: true, message: `El pedido #${order._id.toString().substring(12).toUpperCase()} ha sido acreditado exitosamente.` });
+    }
     res.redirect('/admin?success=' + encodeURIComponent(`El pedido #${order._id.toString().substring(12).toUpperCase()} ha sido acreditado exitosamente.`));
   } catch (error) {
     console.error('Mark order as paid error:', error.message);
+    if (req.accepts('html', 'json') === 'json') {
+      return res.status(500).json({ success: false, error: 'Error al acreditar el pago: ' + error.message });
+    }
     res.redirect('/admin?error=' + encodeURIComponent('Error al acreditar el pago: ' + error.message));
   }
 };
@@ -1282,6 +1351,9 @@ const updateOrderStatus = async (req, res, next) => {
     
     const order = await Order.findById(id);
     if (!order) {
+      if (req.accepts('html', 'json') === 'json') {
+        return res.status(404).json({ success: false, error: 'Pedido no encontrado.' });
+      }
       return res.redirect('/admin?error=' + encodeURIComponent('Pedido no encontrado.'));
     }
 
@@ -1306,9 +1378,15 @@ const updateOrderStatus = async (req, res, next) => {
     }
 
     await order.save();
+    if (req.accepts('html', 'json') === 'json') {
+      return res.json({ success: true, message: `Estado del pedido #${order._id.toString().substring(12).toUpperCase()} actualizado exitosamente.` });
+    }
     res.redirect('/admin?success=' + encodeURIComponent(`Estado del pedido #${order._id.toString().substring(12).toUpperCase()} actualizado exitosamente.`));
   } catch (error) {
     console.error('Update order status error:', error.message);
+    if (req.accepts('html', 'json') === 'json') {
+      return res.status(500).json({ success: false, error: 'Error al actualizar el estado del pedido: ' + error.message });
+    }
     res.redirect('/admin?error=' + encodeURIComponent('Error al actualizar el estado del pedido: ' + error.message));
   }
 };
@@ -1426,11 +1504,20 @@ const deleteOrder = async (req, res, next) => {
     const { id } = req.params;
     const order = await Order.findByIdAndDelete(id);
     if (!order) {
+      if (req.accepts('html', 'json') === 'json') {
+        return res.status(404).json({ success: false, error: 'Pedido no encontrado.' });
+      }
       return res.redirect('/admin?error=' + encodeURIComponent('Pedido no encontrado.'));
+    }
+    if (req.accepts('html', 'json') === 'json') {
+      return res.json({ success: true, message: `Pedido #${id.toString().substring(12).toUpperCase()} eliminado correctamente.` });
     }
     res.redirect('/admin?success=' + encodeURIComponent(`Pedido #${id.toString().substring(12).toUpperCase()} eliminado correctamente.`));
   } catch (error) {
     console.error('Delete order error:', error.message);
+    if (req.accepts('html', 'json') === 'json') {
+      return res.status(500).json({ success: false, error: 'Error al eliminar el pedido: ' + error.message });
+    }
     res.redirect('/admin?error=' + encodeURIComponent('Error al eliminar el pedido: ' + error.message));
   }
 };

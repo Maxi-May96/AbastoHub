@@ -216,12 +216,12 @@
                     </td>
 
                     <!-- Status Active -->
-                    <td class="px-6 py-4">
-                      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border <%= prod.active ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-slate-100 text-slate-500 border-slate-200' %>">
+                    <td class="px-6 py-4 product-status-cell">
+                      <span class="product-active-badge inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border <%= prod.active ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-slate-100 text-slate-500 border-slate-200' %>">
                         <%= prod.active ? 'Activo' : 'Pausado' %>
                       </span>
                       <% if (prod.featured) { %>
-                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-100 ml-1">
+                        <span class="product-featured-badge inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-100 ml-1">
                           ★ Destacado
                         </span>
                       <% } %>
@@ -519,7 +519,7 @@
 
                     <!-- Payment state badge -->
                     <td class="px-6 py-4">
-                      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border 
+                      <span class="payment-badge-status inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border 
                         <% if (order.paymentStatus === 'paid') { %> bg-emerald-50 text-emerald-700 border-emerald-100 
                         <% } else if (order.paymentStatus === 'pending') { %> bg-amber-50 text-amber-700 border-amber-100 
                         <% } else { %> bg-rose-50 text-rose-700 border-rose-100 <% } %>">
@@ -1663,6 +1663,202 @@
 
     emailInput.value = sanitized ? (sanitized + '@abastohub.com') : '';
   }
+
+  // Dynamic non-animated toast notifications matching design system
+  function showToast(message, type = 'success') {
+    let container = document.getElementById('toast-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'toast-container';
+      container.style.position = 'fixed';
+      container.style.top = '24px';
+      container.style.right = '24px';
+      container.style.zIndex = '9999';
+      container.style.display = 'flex';
+      container.style.flexDirection = 'column';
+      container.style.gap = '12px';
+      document.body.appendChild(container);
+    }
+    
+    const toast = document.createElement('div');
+    toast.className = type === 'success' 
+      ? 'bg-emerald-50 border border-emerald-100 text-emerald-700 px-5 py-4 rounded-2xl text-xs font-bold flex gap-2.5 items-center shadow-lg border-l-4 border-l-emerald-500'
+      : 'bg-rose-50 border border-rose-100 text-rose-700 px-5 py-4 rounded-2xl text-xs font-bold flex gap-2.5 items-center shadow-lg border-l-4 border-l-rose-500';
+      
+    const icon = document.createElement('i');
+    icon.className = type === 'success' ? 'fa-solid fa-circle-check text-sm' : 'fa-solid fa-circle-exclamation text-sm';
+    
+    const textSpan = document.createElement('span');
+    textSpan.textContent = message;
+    
+    toast.appendChild(icon);
+    toast.appendChild(textSpan);
+    container.appendChild(toast);
+    
+    // Remove after 4 seconds (no animations)
+    setTimeout(() => {
+      toast.remove();
+    }, 4000);
+  }
+
+  // Intercept Admin Form Submissions for Async AJAX
+  document.addEventListener('submit', async (e) => {
+    const form = e.target;
+    const action = form.getAttribute('action') || '';
+    
+    const isPrice = action.match(/^\/admin\/products\/[a-f0-9]{24}\/price$/);
+    const isStock = action.match(/^\/admin\/products\/[a-f0-9]{24}\/stock$/);
+    const isToggle = action.match(/^\/admin\/products\/[a-f0-9]{24}\/toggle$/);
+    const isToggleFeatured = action.match(/^\/admin\/products\/[a-f0-9]{24}\/toggle-featured$/);
+    const isDiscount = action.match(/^\/admin\/products\/[a-f0-9]{24}\/discount$/);
+    const isDeleteProduct = action.match(/^\/admin\/products\/[a-f0-9]{24}\/delete$/);
+    
+    const isOrderStatus = action.match(/^\/admin\/orders\/[a-f0-9]{24}\/status$/);
+    const isOrderMarkPaid = action.match(/^\/admin\/orders\/[a-f0-9]{24}\/mark-paid$/);
+    const isDeleteOrder = action.match(/^\/admin\/orders\/[a-f0-9]{24}\/delete$/);
+
+    if (isPrice || isStock || isToggle || isToggleFeatured || isDiscount || isDeleteProduct || isOrderStatus || isOrderMarkPaid || isDeleteOrder) {
+      e.preventDefault();
+      
+      const formData = new FormData(form);
+      const urlEncoded = new URLSearchParams(formData);
+      
+      try {
+        const response = await fetch(action, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Accept': 'application/json'
+          },
+          body: urlEncoded.toString()
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+          if (isPrice) {
+            showToast(result.message || 'Precios actualizados exitosamente.', 'success');
+          } else if (isStock) {
+            const row = form.closest('tr');
+            if (row) {
+              const stockVal = form.querySelector('input[name="stock"]').value;
+              row.setAttribute('data-stock', stockVal);
+            }
+            showToast(result.message || 'Stock actualizado exitosamente.', 'success');
+          } else if (isToggle) {
+            const row = form.closest('tr');
+            if (row) {
+              const statusCell = row.querySelector('.product-status-cell');
+              const submitBtn = form.querySelector('button[type="submit"]');
+              
+              if (result.active) {
+                if (statusCell) {
+                  const activeBadge = statusCell.querySelector('.product-active-badge');
+                  if (activeBadge) {
+                    activeBadge.textContent = 'Activo';
+                    activeBadge.className = 'product-active-badge inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border bg-emerald-50 text-emerald-700 border-emerald-100';
+                  }
+                }
+                if (submitBtn) {
+                  submitBtn.textContent = 'Desactivar';
+                  submitBtn.className = 'px-3 py-1.5 rounded-xl border text-xs font-bold transition-all border-rose-100 hover:bg-rose-50 text-rose-600';
+                }
+              } else {
+                if (statusCell) {
+                  const activeBadge = statusCell.querySelector('.product-active-badge');
+                  if (activeBadge) {
+                    activeBadge.textContent = 'Pausado';
+                    activeBadge.className = 'product-active-badge inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border bg-slate-100 text-slate-500 border-slate-200';
+                  }
+                }
+                if (submitBtn) {
+                  submitBtn.textContent = 'Activar';
+                  submitBtn.className = 'px-3 py-1.5 rounded-xl border text-xs font-bold transition-all border-emerald-100 hover:bg-emerald-50 text-emerald-600';
+                }
+              }
+            }
+            showToast(result.message, 'success');
+          } else if (isToggleFeatured) {
+            const row = form.closest('tr');
+            if (row) {
+              const statusCell = row.querySelector('.product-status-cell');
+              const submitBtn = form.querySelector('button[type="submit"]');
+              
+              if (statusCell) {
+                let featuredBadge = statusCell.querySelector('.product-featured-badge');
+                if (result.featured) {
+                  if (!featuredBadge) {
+                    featuredBadge = document.createElement('span');
+                    featuredBadge.className = 'product-featured-badge inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-100 ml-1';
+                    featuredBadge.innerHTML = '★ Destacado';
+                    statusCell.appendChild(featuredBadge);
+                  }
+                } else {
+                  if (featuredBadge) {
+                    featuredBadge.remove();
+                  }
+                }
+              }
+              
+              if (submitBtn) {
+                if (result.featured) {
+                  submitBtn.className = 'px-3 py-1.5 rounded-xl border text-xs font-bold transition-all border-amber-250 bg-amber-50 hover:bg-amber-100 text-amber-700';
+                  submitBtn.innerHTML = '<i class="fa-star fa-solid text-amber-500 mr-1"></i>Destacado';
+                } else {
+                  submitBtn.className = 'px-3 py-1.5 rounded-xl border text-xs font-bold transition-all border-slate-200 hover:bg-slate-50 text-slate-650';
+                  submitBtn.innerHTML = '<i class="fa-star fa-regular mr-1"></i>Destacar';
+                }
+              }
+            }
+            showToast(result.message, 'success');
+          } else if (isDiscount) {
+            const productId = action.split('/')[3];
+            const discountBtn = document.querySelector(`button[onclick*="changeDiscount('${productId}'"]`);
+            if (discountBtn) {
+              discountBtn.setAttribute('onclick', `changeDiscount('${productId}', '${result.discount}')`);
+              if (result.discount > 0) {
+                discountBtn.className = 'px-3 py-1.5 rounded-xl border text-xs font-bold transition-all border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700';
+                discountBtn.innerHTML = `<i class="fa-solid fa-percent mr-1 text-[10px]"></i>${result.discount}% Off`;
+              } else {
+                discountBtn.className = 'px-3 py-1.5 rounded-xl border text-xs font-bold transition-all border-slate-200 hover:bg-slate-50 text-slate-650';
+                discountBtn.innerHTML = `<i class="fa-solid fa-percent mr-1 text-[10px]"></i>Descuento`;
+              }
+            }
+            showToast(result.message, 'success');
+          } else if (isDeleteProduct) {
+            const row = form.closest('tr');
+            if (row) {
+              row.remove();
+            }
+            showToast(result.message, 'success');
+          } else if (isOrderStatus) {
+            showToast(result.message, 'success');
+          } else if (isOrderMarkPaid) {
+            const row = form.closest('tr');
+            if (row) {
+              const paymentBadge = row.querySelector('.payment-badge-status');
+              if (paymentBadge) {
+                paymentBadge.textContent = 'PAID';
+                paymentBadge.className = 'payment-badge-status inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border bg-emerald-50 text-emerald-700 border-emerald-100';
+              }
+              form.remove();
+            }
+            showToast(result.message, 'success');
+          } else if (isDeleteOrder) {
+            const row = form.closest('tr');
+            if (row) {
+              row.remove();
+            }
+            showToast(result.message, 'success');
+          }
+        } else {
+          showToast(result.error || 'Ocurrió un error inesperado.', 'error');
+        }
+      } catch (err) {
+        console.error(err);
+        showToast('Error de red o conexión al servidor.', 'error');
+      }
+    }
+  });
 </script>
 
 <%- include('../partials/footer') %>
