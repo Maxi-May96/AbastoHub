@@ -900,6 +900,40 @@
             </form>
           </div>
 
+          <!-- Pay POS Platform Fee Form -->
+          <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
+            <h3 class="font-bold text-slate-800 text-sm mb-1.5 flex items-center gap-2">
+              <i class="fa-solid fa-cash-register text-indigo-650"></i>
+              Pagar Comisión de POS (5%)
+            </h3>
+            <p class="text-slate-400 text-[11px] mb-4">
+              Debes transferir el 5% correspondiente al uso de plataforma por ventas POS en efectivo o mostrador.
+            </p>
+            
+            <div class="bg-slate-50 border border-slate-100 rounded-2xl p-4 space-y-2 mb-4">
+              <div class="flex justify-between items-center text-xs">
+                <span class="text-slate-550">Comisiones Pendientes POS</span>
+                <span class="font-extrabold text-slate-800"><%= formatPrice(posCommissionsOwed) %></span>
+              </div>
+              <div class="flex justify-between items-center text-xs">
+                <span class="text-slate-550">Comisiones Pagadas POS</span>
+                <span class="font-bold text-emerald-650"><%= formatPrice(posCommissionsPaid) %></span>
+              </div>
+            </div>
+
+            <form action="/partner/pos/pay-commissions" method="POST" onsubmit="return confirm('¿Seguro deseas pagar las comisiones POS pendientes de <%= formatPrice(posCommissionsOwed) %> usando tu saldo disponible?');">
+              <button type="submit" <%= (posCommissionsOwed <= 0 || availableBalance < posCommissionsOwed) ? 'disabled' : '' %>
+                class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-sm transition-all text-center disabled:opacity-50 disabled:cursor-not-allowed">
+                Pagar Comisiones desde Saldo
+              </button>
+            </form>
+            <% if (posCommissionsOwed > 0 && availableBalance < posCommissionsOwed) { %>
+              <p class="text-[10px] text-rose-500 font-semibold mt-2 text-center">
+                <i class="fa-solid fa-circle-exclamation mr-1"></i> Saldo disponible insuficiente para pagar la comisión.
+              </p>
+            <% } %>
+          </div>
+
         </div>
 
         <!-- Right Column: Withdrawals Logs -->

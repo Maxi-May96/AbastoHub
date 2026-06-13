@@ -131,12 +131,19 @@ const getPanel = async (req, res, next) => {
     const onlineEarnings = orders.reduce((sum, o) => sum + (o.paymentStatus === 'paid' && !o.isPOS ? o.partnerSubtotal : 0), 0);
     const posEarnings = orders.reduce((sum, o) => sum + (o.paymentStatus === 'paid' && o.isPOS ? o.partnerSubtotal : 0), 0);
 
+    const posCommissionsOwed = orders.reduce((sum, o) => 
+      sum + (o.paymentStatus === 'paid' && o.isPOS && !o.posFeePaid ? (o.partnerSubtotal * 0.05) : 0), 0
+    );
+    const posCommissionsPaid = orders.reduce((sum, o) => 
+      sum + (o.paymentStatus === 'paid' && o.isPOS && o.posFeePaid ? (o.partnerSubtotal * 0.05) : 0), 0
+    );
+
     // Calculate approved and pending withdrawals
     const totalApprovedWithdrawals = withdrawals.filter(w => w.status === 'approved').reduce((sum, w) => sum + w.amount, 0);
     const totalPendingWithdrawals = withdrawals.filter(w => w.status === 'pending').reduce((sum, w) => sum + w.amount, 0);
 
-    // Available balance (only online earnings can be withdrawn from the platform)
-    const availableBalance = onlineEarnings - totalApprovedWithdrawals - totalPendingWithdrawals;
+    // Available balance (online earnings minus withdrawals minus paid POS commissions)
+    const availableBalance = onlineEarnings - totalApprovedWithdrawals - totalPendingWithdrawals - posCommissionsPaid;
 
     // Calculate best selling statistics for this partner
     const bestSellingStats = await Order.aggregate([
@@ -212,6 +219,8 @@ const getPanel = async (req, res, next) => {
       totalEarnings,
       onlineEarnings,
       posEarnings,
+      posCommissionsOwed,
+      posCommissionsPaid,
       totalApprovedWithdrawals,
       totalPendingWithdrawals,
       availableBalance,
@@ -1933,6 +1942,78 @@ const getPOSView = async (req, res, next) => {
   }
 };
 
+const payPOSCommissions = async (req, res, next) => {
+  try {
+    const partnerId = req.partner.id;
+
+    // Load partner products
+    const products = await Product.find({ partner: partnerId });
+    const partnerProductIds = products.map(p => p._id);
+
+    // Get all paid orders with partner products
+    const allPaidOrders = await Order.find({
+      'products.product': { $in: partnerProductIds },
+      paymentStatus: 'paid'
+    });
+
+    // 1. Calculate online earnings (non-POS)
+    const onlineEarnings = allPaidOrders.reduce((sum, order) => {
+      if (order.isPOS) return sum;
+      const partnerItems = order.products.filter(item =>
+        partnerProductIds.some(pId => pId.toString() === item.product.toString())
+      );
+      return sum + partnerItems.reduce((s, item) => s + (item.price * item.quantity), 0);
+    }, 0);
+
+    // 2. Calculate paid POS commissions
+    const posCommissionsPaid = allPaidOrders.reduce((sum, order) => {
+      if (!order.isPOS || !order.posFeePaid) return sum;
+      const partnerItems = order.products.filter(item =>
+        partnerProductIds.some(pId => pId.toString() === item.product.toString())
+      );
+      return sum + partnerItems.reduce((s, item) => s + (item.price * item.quantity), 0) * 0.05;
+    }, 0);
+
+    // 3. Calculate withdrawals
+    const withdrawals = await Withdrawal.find({ partner: partnerId });
+    const totalApproved = withdrawals.filter(w => w.status === 'approved').reduce((sum, w) => sum + w.amount, 0);
+    const totalPending = withdrawals.filter(w => w.status === 'pending').reduce((sum, w) => sum + w.amount, 0);
+
+    // Available balance
+    const availableBalance = onlineEarnings - totalApproved - totalPending - posCommissionsPaid;
+
+    // 4. Find unpaid POS orders and calculate total commissions owed
+    const unpaidPOSOrders = allPaidOrders.filter(order => order.isPOS && !order.posFeePaid);
+
+    let totalOwed = 0;
+    unpaidPOSOrders.forEach(order => {
+      const partnerItems = order.products.filter(item =>
+        partnerProductIds.some(pId => pId.toString() === item.product.toString())
+      );
+      const partnerSubtotal = partnerItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      totalOwed += partnerSubtotal * 0.05;
+    });
+
+    if (totalOwed <= 0) {
+      return res.redirect('/partner/panel?error=' + encodeURIComponent('No tienes comisiones POS pendientes de pago.'));
+    }
+
+    if (availableBalance < totalOwed) {
+      return res.redirect('/partner/panel?error=' + encodeURIComponent('Saldo disponible insuficiente para pagar las comisiones del POS.'));
+    }
+
+    // 5. Mark unpaid POS orders as paid
+    for (const order of unpaidPOSOrders) {
+      order.posFeePaid = true;
+      await order.save();
+    }
+
+    return res.redirect('/partner/panel?success=' + encodeURIComponent('Comisiones del POS pagadas con éxito usando tu saldo disponible.'));
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getLogin,
   postLogin,
@@ -1960,5 +2041,6 @@ module.exports = {
   updateProfile,
   generatePartnerStatisticsPDF,
   postPOSSale,
-  getPOSView
+  getPOSView,
+  payPOSCommissions
 };

@@ -40,5 +40,6 @@ router.get('/partner/download-summary', isPartnerAuthenticated, partnerControlle
 router.get('/partner/statistics/pdf', isPartnerAuthenticated, partnerController.generatePartnerStatisticsPDF);
 router.get('/partner/pos', isPartnerAuthenticated, partnerController.getPOSView);
 router.post('/partner/pos/sale', isPartnerAuthenticated, partnerController.postPOSSale);
+router.post('/partner/pos/pay-commissions', isPartnerAuthenticated, partnerController.payPOSCommissions);
 
 module.exports = router;
