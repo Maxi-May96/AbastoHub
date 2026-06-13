@@ -272,20 +272,32 @@ const updateStock = async (req, res, next) => {
     const { stock } = req.body;
     
     if (stock === undefined || stock === '') {
+      if (req.accepts('html', 'json') === 'json') {
+        return res.status(400).json({ success: false, error: 'Valor de stock no válido.' });
+      }
       return res.redirect('/partner/panel?error=' + encodeURIComponent('Valor de stock no válido.'));
     }
 
     const product = await Product.findOne({ _id: id, partner: req.partner.id });
     if (!product) {
+      if (req.accepts('html', 'json') === 'json') {
+        return res.status(404).json({ success: false, error: 'Producto no encontrado o no tienes permisos.' });
+      }
       return res.redirect('/partner/panel?error=' + encodeURIComponent('Producto no encontrado o no tienes permisos.'));
     }
 
     product.stock = Number(stock);
     await product.save();
 
+    if (req.accepts('html', 'json') === 'json') {
+      return res.json({ success: true, message: 'Stock actualizado exitosamente.' });
+    }
     res.redirect('/partner/panel?success=' + encodeURIComponent('Stock actualizado exitosamente.'));
   } catch (error) {
     console.error('Partner update stock error:', error.message);
+    if (req.accepts('html', 'json') === 'json') {
+      return res.status(500).json({ success: false, error: 'Error al actualizar el stock.' });
+    }
     res.redirect('/partner/panel?error=' + encodeURIComponent('Error al actualizar el stock.'));
   }
 };
@@ -297,11 +309,17 @@ const updatePrice = async (req, res, next) => {
     const { price, wholesalePrice } = req.body;
     
     if (price === undefined || price === '' || wholesalePrice === undefined || wholesalePrice === '') {
+      if (req.accepts('html', 'json') === 'json') {
+        return res.status(400).json({ success: false, error: 'Precios no válidos.' });
+      }
       return res.redirect('/partner/panel?error=' + encodeURIComponent('Precios no válidos.'));
     }
 
     const product = await Product.findOne({ _id: id, partner: req.partner.id });
     if (!product) {
+      if (req.accepts('html', 'json') === 'json') {
+        return res.status(404).json({ success: false, error: 'Producto no encontrado o no tienes permisos.' });
+      }
       return res.redirect('/partner/panel?error=' + encodeURIComponent('Producto no encontrado o no tienes permisos.'));
     }
 
@@ -309,9 +327,15 @@ const updatePrice = async (req, res, next) => {
     product.wholesalePrice = Number(wholesalePrice);
     await product.save();
 
+    if (req.accepts('html', 'json') === 'json') {
+      return res.json({ success: true, message: 'Precios actualizados exitosamente.' });
+    }
     res.redirect('/partner/panel?success=' + encodeURIComponent('Precios actualizados exitosamente.'));
   } catch (error) {
     console.error('Partner update price error:', error.message);
+    if (req.accepts('html', 'json') === 'json') {
+      return res.status(500).json({ success: false, error: 'Error al actualizar precios.' });
+    }
     res.redirect('/partner/panel?error=' + encodeURIComponent('Error al actualizar precios.'));
   }
 };
@@ -352,12 +376,21 @@ const deleteProduct = async (req, res, next) => {
     
     const product = await Product.findOneAndDelete({ _id: id, partner: req.partner.id });
     if (!product) {
+      if (req.accepts('html', 'json') === 'json') {
+        return res.status(404).json({ success: false, error: 'Producto no encontrado o no tienes permisos.' });
+      }
       return res.redirect('/partner/panel?error=' + encodeURIComponent('Producto no encontrado o no tienes permisos.'));
     }
 
+    if (req.accepts('html', 'json') === 'json') {
+      return res.json({ success: true, message: 'Producto eliminado permanentemente de tu catálogo.' });
+    }
     res.redirect('/partner/panel?success=' + encodeURIComponent('Producto eliminado permanentemente de tu catálogo.'));
   } catch (error) {
     console.error('Partner delete product error:', error.message);
+    if (req.accepts('html', 'json') === 'json') {
+      return res.status(500).json({ success: false, error: 'Error al eliminar el producto.' });
+    }
     res.redirect('/partner/panel?error=' + encodeURIComponent('Error al eliminar el producto.'));
   }
 };
@@ -590,6 +623,9 @@ const assignDriverToOrder = async (req, res, next) => {
 
     const order = await Order.findById(id);
     if (!order) {
+      if (req.accepts('html', 'json') === 'json') {
+        return res.status(404).json({ success: false, error: 'Pedido no encontrado.' });
+      }
       return res.redirect('/partner/panel?error=' + encodeURIComponent('Pedido no encontrado.'));
     }
 
@@ -608,11 +644,17 @@ const assignDriverToOrder = async (req, res, next) => {
         ]
       });
       if (!driver) {
+        if (req.accepts('html', 'json') === 'json') {
+          return res.status(404).json({ success: false, error: 'Conductor no autorizado o no encontrado.' });
+        }
         return res.redirect('/partner/panel?error=' + encodeURIComponent('Conductor no autorizado o no encontrado.'));
       }
       driverName = driver.name;
       driverVehicle = driver.vehicle;
     } else {
+      if (req.accepts('html', 'json') === 'json') {
+        return res.status(400).json({ success: false, error: 'Debe seleccionar un conductor válido.' });
+      }
       return res.redirect('/partner/panel?error=' + encodeURIComponent('Debe seleccionar un conductor válido.'));
     }
 
@@ -623,9 +665,15 @@ const assignDriverToOrder = async (req, res, next) => {
     order.dispatchedAt = new Date();
     await order.save();
 
+    if (req.accepts('html', 'json') === 'json') {
+      return res.json({ success: true, message: `Pedido despachado correctamente con el conductor ${driverName}.` });
+    }
     res.redirect('/partner/panel?success=' + encodeURIComponent(`Pedido despachado correctamente con el conductor ${driverName}.`));
   } catch (error) {
     console.error('Assign driver to order error:', error.message);
+    if (req.accepts('html', 'json') === 'json') {
+      return res.status(500).json({ success: false, error: 'Error al despachar el pedido: ' + error.message });
+    }
     res.redirect('/partner/panel?error=' + encodeURIComponent('Error al despachar el pedido: ' + error.message));
   }
 };
@@ -689,6 +737,9 @@ const shipOrder = async (req, res, next) => {
     const { id } = req.params;
     const order = await Order.findById(id);
     if (!order) {
+      if (req.accepts('html', 'json') === 'json') {
+        return res.status(404).json({ success: false, error: 'Pedido no encontrado.' });
+      }
       return res.redirect('/partner/panel?error=' + encodeURIComponent('Pedido no encontrado.'));
     }
     
@@ -698,9 +749,15 @@ const shipOrder = async (req, res, next) => {
     order.dispatchedAt = new Date();
     await order.save();
     
+    if (req.accepts('html', 'json') === 'json') {
+      return res.json({ success: true, message: 'El pedido ha sido marcado en camino.' });
+    }
     res.redirect('/partner/panel?success=' + encodeURIComponent('El pedido ha sido marcado en camino.'));
   } catch (error) {
     console.error('Ship order error:', error.message);
+    if (req.accepts('html', 'json') === 'json') {
+      return res.status(500).json({ success: false, error: 'Error al marcar el pedido en camino: ' + error.message });
+    }
     res.redirect('/partner/panel?error=' + encodeURIComponent('Error al marcar el pedido en camino: ' + error.message));
   }
 };

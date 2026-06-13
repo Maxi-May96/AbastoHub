@@ -432,11 +432,8 @@
                             <i class="fa-solid fa-location-crosshairs text-[9px] text-indigo-500"></i> Ver GPS Maps
                           </a>
                         </div>
-                      <% } %>
-                    </td>
-
-                    <!-- Status Badges -->
-                    <td class="px-6 py-4 space-y-2">
+                                         <!-- Status Badges -->
+                    <td class="px-6 py-4 space-y-2 order-status-badges-cell">
                       <!-- Payment Status -->
                       <div>
                         <% if (order.paymentStatus === 'paid') { %>
@@ -464,7 +461,7 @@
                       <% } %>
 
                       <!-- Logistics Status -->
-                      <div>
+                      <div class="logistics-status-container">
                         <% if (order.status === 'pending') { %>
                           <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold bg-blue-50 text-blue-700 border border-blue-100 uppercase">
                             Pendiente / Nuevo
@@ -1891,6 +1888,122 @@
       initBranchMap();
     }
   }
+
+  // Dynamic non-animated toast notifications matching design system
+  function showToast(message, type = 'success') {
+    let container = document.getElementById('toast-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'toast-container';
+      container.style.position = 'fixed';
+      container.style.top = '24px';
+      container.style.right = '24px';
+      container.style.zIndex = '9999';
+      container.style.display = 'flex';
+      container.style.flexDirection = 'column';
+      container.style.gap = '12px';
+      document.body.appendChild(container);
+    }
+    
+    const toast = document.createElement('div');
+    toast.className = type === 'success' 
+      ? 'bg-emerald-50 border border-emerald-100 text-emerald-700 px-5 py-4 rounded-2xl text-xs font-bold flex gap-2.5 items-center shadow-lg border-l-4 border-l-emerald-500'
+      : 'bg-rose-50 border border-rose-100 text-rose-700 px-5 py-4 rounded-2xl text-xs font-bold flex gap-2.5 items-center shadow-lg border-l-4 border-l-rose-500';
+      
+    const icon = document.createElement('i');
+    icon.className = type === 'success' ? 'fa-solid fa-circle-check text-sm' : 'fa-solid fa-circle-exclamation text-sm';
+    
+    const textSpan = document.createElement('span');
+    textSpan.textContent = message;
+    
+    toast.appendChild(icon);
+    toast.appendChild(textSpan);
+    container.appendChild(toast);
+    
+    // Remove after 4 seconds (no animations)
+    setTimeout(() => {
+      toast.remove();
+    }, 4000);
+  }
+
+  // Intercept Partner Form Submissions for Async AJAX
+  document.addEventListener('submit', async (e) => {
+    const form = e.target;
+    const action = form.getAttribute('action') || '';
+    
+    const isStock = action.match(/^\/partner\/products\/[a-f0-9]{24}\/stock$/);
+    const isPrice = action.match(/^\/partner\/products\/[a-f0-9]{24}\/price$/);
+    const isDeleteProduct = action.match(/^\/partner\/products\/[a-f0-9]{24}\/delete$/);
+    const isShipOrder = action.match(/^\/partner\/orders\/[a-f0-9]{24}\/ship$/);
+
+    if (isStock || isPrice || isDeleteProduct || isShipOrder) {
+      e.preventDefault();
+      
+      const formData = new FormData(form);
+      const urlEncoded = new URLSearchParams(formData);
+      
+      try {
+        const response = await fetch(action, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Accept': 'application/json'
+          },
+          body: urlEncoded.toString()
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+          if (isStock) {
+            showToast(result.message || 'Stock actualizado exitosamente.', 'success');
+          } else if (isPrice) {
+            showToast(result.message || 'Precios actualizados exitosamente.', 'success');
+          } else if (isDeleteProduct) {
+            const row = form.closest('tr');
+            if (row) {
+              row.remove();
+            }
+            showToast(result.message, 'success');
+          } else if (isShipOrder) {
+            const row = form.closest('tr');
+            if (row) {
+              // Update status badges cell logistics status
+              const statusCell = row.querySelector('.order-status-badges-cell');
+              if (statusCell) {
+                const logisticsContainer = statusCell.querySelector('.logistics-status-container');
+                if (logisticsContainer) {
+                  logisticsContainer.innerHTML = `
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-100 uppercase">
+                      En Camino
+                    </span>
+                  `;
+                }
+              }
+              // Update driver cell
+              const formCell = form.closest('td');
+              if (formCell) {
+                formCell.innerHTML = `
+                  <div class="flex items-center gap-2 text-indigo-700 font-bold text-xs bg-indigo-50 border border-indigo-100 px-3 py-2 rounded-xl inline-flex shadow-2xs">
+                    <i class="fa-solid fa-truck text-[10px] text-indigo-500"></i>
+                    <div>
+                      <div class="text-[11px] font-bold text-indigo-900">Logística del Socio</div>
+                      <div class="text-[9px] text-indigo-500 font-semibold mt-0.5">Particular</div>
+                    </div>
+                  </div>
+                `;
+              }
+            }
+            showToast(result.message, 'success');
+          }
+        } else {
+          showToast(result.error || 'Ocurrió un error inesperado.', 'error');
+        }
+      } catch (err) {
+        console.error(err);
+        showToast('Error de red o conexión al servidor.', 'error');
+      }
+    }
+  });
 </script>
 
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCBMrNLZp5utwO_ecNIxd2srSxU_LWE2OA&libraries=places&callback=initMaps" async defer></script>
