@@ -1,5 +1,6 @@
 const Partner = require('../models/Partner');
 const Product = require('../models/Product');
+const User = require('../models/User');
 const Category = require('../models/Category');
 const Order = require('../models/Order');
 const Withdrawal = require('../models/Withdrawal');
@@ -954,7 +955,7 @@ const generatePartnerPDFTicket = async (req, res, next) => {
       ? (order.shippingDetails.address || 'No especificada') 
       : 'Retiro en depósito central / AbastoHub';
     
-    const payMethodName = order.paymentMethod === 'transfer' ? 'Transferencia Bancaria' : 'MercadoPago';
+    const payMethodName = order.paymentMethod === 'transfer' ? 'Transferencia Bancaria' : (order.paymentMethod === 'cash' ? 'Efectivo (POS)' : 'MercadoPago');
 
     doc.fontSize(8)
        .font('Helvetica-Bold')
@@ -1810,6 +1811,96 @@ const generatePartnerStatisticsPDF = async (req, res, next) => {
   }
 };
 
+const postPOSSale = async (req, res, next) => {
+  try {
+    const partnerId = req.partner.id;
+    const { products: items, paymentMethod, customerName, customerPhone } = req.body;
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ success: false, message: 'El carrito de ventas no puede estar vacío.' });
+    }
+
+    // 1. Get or create generic user
+    let genericUser = await User.findOne({ email: 'clientegeneral@abastohub.com' });
+    if (!genericUser) {
+      genericUser = new User({
+        name: 'Cliente',
+        lastname: 'General',
+        email: 'clientegeneral@abastohub.com',
+        phone: '0000000000',
+        password: 'genericClientPassword123'
+      });
+      await genericUser.save();
+    }
+
+    // 2. Validate products and calculate total
+    const orderProducts = [];
+    let subtotal = 0;
+
+    for (const item of items) {
+      const dbProduct = await Product.findById(item.productId);
+      if (!dbProduct) {
+        return res.status(404).json({ success: false, message: 'Producto no encontrado.' });
+      }
+      if (dbProduct.partner.toString() !== partnerId) {
+        return res.status(403).json({ success: false, message: `No tienes permisos sobre el producto: ${dbProduct.title}.` });
+      }
+      if (dbProduct.stock < item.quantity) {
+        return res.status(400).json({ success: false, message: `Stock insuficiente para ${dbProduct.title}. Stock actual: ${dbProduct.stock}` });
+      }
+
+      orderProducts.push({
+        product: dbProduct._id,
+        title: dbProduct.title,
+        quantity: Number(item.quantity),
+        price: dbProduct.price,
+        unit: dbProduct.unit || 'uds'
+      });
+
+      subtotal += dbProduct.price * item.quantity;
+    }
+
+    // 3. Deduct stock
+    for (const item of items) {
+      await Product.findByIdAndUpdate(item.productId, {
+        $inc: { stock: -Number(item.quantity) }
+      });
+    }
+
+    // 4. Create Order (Since it's a direct POS sale, we set status to delivered and paid)
+    const newOrder = new Order({
+      user: genericUser._id,
+      products: orderProducts,
+      total: subtotal,
+      paymentStatus: 'paid',
+      status: 'delivered',
+      paymentMethod: paymentMethod || 'cash',
+      deliveryType: 'pickup',
+      stockSubtracted: true,
+      shippingDetails: {
+        name: customerName || 'Cliente General',
+        phone: customerPhone || 'N/A',
+        address: 'Venta directa por POS en sucursal del productor',
+        city: '',
+        province: '',
+        zipCode: '',
+        notes: 'Registrado directamente a través de Punto de Venta (POS)'
+      }
+    });
+
+    await newOrder.save();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Venta registrada con éxito.',
+      orderId: newOrder._id
+    });
+  } catch (error) {
+    console.error('POS Sale Error:', error);
+    return res.status(500).json({ success: false, message: 'Error al registrar la venta: ' + error.message });
+  }
+};
+
 module.exports = {
   getLogin,
   postLogin,
@@ -1835,5 +1926,6 @@ module.exports = {
   getRegister,
   postRegister,
   updateProfile,
-  generatePartnerStatisticsPDF
+  generatePartnerStatisticsPDF,
+  postPOSSale
 };

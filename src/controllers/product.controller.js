@@ -689,7 +689,7 @@ const generatePDFTicket = async (req, res, next) => {
       ? (order.shippingDetails.address || 'No especificada') 
       : 'Retiro en depósito central / AbastoHub';
     
-    const payMethodName = order.paymentMethod === 'transfer' ? 'Transferencia Bancaria' : 'MercadoPago';
+    const payMethodName = order.paymentMethod === 'transfer' ? 'Transferencia Bancaria' : (order.paymentMethod === 'cash' ? 'Efectivo (POS)' : 'MercadoPago');
 
     doc.fontSize(8)
        .font('Helvetica-Bold')
