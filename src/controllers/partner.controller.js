@@ -1901,6 +1901,30 @@ const postPOSSale = async (req, res, next) => {
   }
 };
 
+const getPOSView = async (req, res, next) => {
+  try {
+    const partnerId = req.partner.id;
+    
+    // Fetch partner details
+    const partner = await Partner.findById(partnerId);
+    if (!partner) {
+      return res.redirect('/partner/login');
+    }
+
+    // Fetch products
+    const products = await Product.find({ partner: partnerId, active: true }).populate('category');
+
+    res.render('pages/partner-pos', {
+      title: 'Punto de Venta - ' + partner.storeName,
+      partner,
+      products,
+      formatPrice
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getLogin,
   postLogin,
@@ -1927,5 +1951,6 @@ module.exports = {
   postRegister,
   updateProfile,
   generatePartnerStatisticsPDF,
-  postPOSSale
+  postPOSSale,
+  getPOSView
 };

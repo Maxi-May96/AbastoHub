@@ -38,6 +38,7 @@ router.post('/partner/orders/:id/ship', isPartnerAuthenticated, partnerControlle
 router.get('/partner/orders/:id/ticket', isPartnerAuthenticated, partnerController.generatePartnerPDFTicket);
 router.get('/partner/download-summary', isPartnerAuthenticated, partnerController.downloadMonthlySummary);
 router.get('/partner/statistics/pdf', isPartnerAuthenticated, partnerController.generatePartnerStatisticsPDF);
+router.get('/partner/pos', isPartnerAuthenticated, partnerController.getPOSView);
 router.post('/partner/pos/sale', isPartnerAuthenticated, partnerController.postPOSSale);
 
 module.exports = router;

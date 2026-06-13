@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full bg-slate-100 text-slate-900">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Punto de Venta (POS) — <%= partner.storeName %> | AbastoHub</title>
+  
+  <link rel="shortcut icon" href="/img/logo.ico" type="image/x-icon">
+  <link rel="icon" href="/img/logo.png" type="image/png">
+  
+  <!-- Fonts: Outfit & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['Outfit', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              200: '#bbf7d0',
+              300: '#86efac',
+              400: '#4ade80',
+              500: '#22c55e',
+              600: '#16a34a',
+              700: '#15803d',
+              800: '#166534',
+              900: '#14532d',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    .display-font {
+      font-family: 'Outfit', sans-serif;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+<body class="flex flex-col h-screen overflow-hidden font-sans antialiased bg-slate-50">
+
+  <!-- Header Bar -->
+  <header class="bg-white border-b border-slate-200/80 px-6 py-4 flex items-center justify-between shadow-xs shrink-0">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-2xl bg-brand-500/10 text-brand-600 flex items-center justify-center text-xl shrink-0">
+        <i class="fa-solid fa-cash-register"></i>
+      </div>
+      <div>
+        <h1 class="display-font text-base font-black text-slate-800 leading-none">Punto de Venta (POS)</h1>
+        <p class="text-[11px] text-slate-400 font-semibold mt-1"><%= partner.storeName %></p>
+      </div>
+    </div>
+    
+    <div class="flex items-center gap-4">
+      <span class="text-xs text-slate-400 font-bold hidden sm:inline-flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        Terminal Activa
+      </span>
+      <button onclick="window.close()" class="px-4 py-2 rounded-xl border border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-50 text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs">
+        <i class="fa-solid fa-circle-xmark"></i> Cerrar Terminal
+      </button>
+    </div>
+  </header>
+
+  <!-- POS Main Screen Split Layout -->
+  <main class="flex-1 flex overflow-hidden min-h-0">
+    
+    <!-- Left Section: Catalog Search & Grid -->
+    <section class="flex-1 flex flex-col min-w-0 bg-slate-50 p-6 overflow-hidden">
+      <!-- Search and Filter Header -->
+      <div class="bg-white border border-slate-200 rounded-3xl p-4 mb-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm shrink-0">
+        <div class="relative w-full sm:max-w-md">
+          <input type="text" id="pos-catalog-search" oninput="filterPOSProducts()" placeholder="Buscar producto por nombre o código..." 
+            class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-450 px-4 py-2.5 pl-10 rounded-2xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-xs font-medium">
+          <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+        </div>
+        
+        <div class="text-xs text-slate-400 font-bold shrink-0">
+          Mostrando <strong class="text-slate-700" id="pos-prod-count"><%= products.length %></strong> productos activos
+        </div>
+      </div>
+
+      <!-- Scrollable Grid Container -->
+      <div class="flex-1 overflow-y-auto custom-scrollbar pr-1">
+        <div id="pos-products-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+          <% if (products && products.length > 0) { %>
+            <% products.forEach(prod => { %>
+              <div class="pos-product-card bg-white border border-slate-200/80 rounded-3xl p-4 flex flex-col justify-between hover:shadow-md hover:border-slate-300 transition-all" data-title="<%= prod.title.toLowerCase() %>">
+                <div>
+                  <div class="w-full h-28 rounded-2xl bg-slate-50 border border-slate-100 overflow-hidden flex items-center justify-center mb-3">
+                    <img src="<%= prod.images && prod.images.length > 0 ? prod.images[0] : '/images/default-product.png' %>" alt="" class="w-full h-full object-cover">
+                  </div>
+                  <span class="inline-block px-2 py-0.5 rounded bg-slate-100 text-slate-500 text-[9px] font-bold uppercase tracking-wider mb-1">
+                    <%= prod.category ? prod.category.name : 'Sin Categoría' %>
+                  </span>
+                  <h4 class="font-bold text-slate-800 text-xs line-clamp-2 min-h-[32px] mb-1"><%= prod.title %></h4>
+                  <div class="flex justify-between items-center text-xs mb-3">
+                    <span class="font-extrabold text-slate-900"><%= formatPrice(prod.price) %></span>
+                    <span class="text-[10px] text-slate-500">
+                      Stock: <strong class="pos-stock-val <%= prod.stock <= 0 ? 'text-rose-500' : 'text-slate-700' %>" id="pos-stock-<%= prod._id %>"><%= prod.stock %></strong> <%= prod.unit || 'uds' %>
+                    </span>
+                  </div>
+                </div>
+                
+                <button onclick="addToPOSCart('<%= prod._id %>', '<%= prod.title %>', <%= prod.price %>, <%= prod.stock %>, '<%= prod.unit || 'uds' %>')"
+                  class="w-full py-2 rounded-xl text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 transition-all flex items-center justify-center gap-1.5 <%= prod.stock <= 0 ? 'opacity-50 cursor-not-allowed' : '' %>"
+                  <%= prod.stock <= 0 ? 'disabled' : '' %>
+                  id="btn-add-pos-<%= prod._id %>">
+                  <i class="fa-solid fa-plus text-[10px]"></i> Agregar
+                </button>
+              </div>
+            <% }); %>
+          <% } else { %>
+            <div class="col-span-full py-16 text-center text-slate-400 text-xs font-medium">
+              <i class="fa-solid fa-box-open text-3xl text-slate-300 block mb-3"></i>
+              No posees productos en tu catálogo disponibles para la venta.
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right Section: Receipt Compilation & Sidebar -->
+    <aside class="w-96 bg-white border-l border-slate-200/80 p-6 flex flex-col justify-between shrink-0 overflow-y-auto custom-scrollbar">
+      
+      <!-- Cart Header & Items -->
+      <div class="space-y-4">
+        <div class="border-b border-slate-100 pb-3 flex justify-between items-center">
+          <h3 class="display-font text-sm font-black text-slate-800 flex items-center gap-1.5">
+            <i class="fa-solid fa-receipt text-brand-600"></i>
+            Detalle de Venta
+          </h3>
+          <button onclick="clearPOSCart()" class="text-[10px] text-rose-500 hover:text-rose-700 font-bold transition-all flex items-center gap-1">
+            <i class="fa-solid fa-trash-can"></i> Vaciar Carrito
+          </button>
+        </div>
+
+        <!-- Scrollable list of items -->
+        <div id="pos-cart-items" class="divide-y divide-slate-100 max-h-[220px] overflow-y-auto space-y-2 pr-1 text-xs">
+          <!-- Empty Cart Placeholder -->
+          <div id="pos-empty-cart" class="py-12 text-center text-slate-400 font-medium">
+            <i class="fa-solid fa-basket-shopping text-3xl text-slate-300 block mb-2"></i>
+            El carrito está vacío
+          </div>
+        </div>
+
+        <!-- Total Box -->
+        <div class="bg-slate-50 border border-slate-100 p-4 rounded-2xl flex justify-between items-center">
+          <span class="text-xs text-slate-550 font-bold uppercase">Total</span>
+          <span class="text-xl font-black text-brand-700 display-font" id="pos-cart-total">$0,00</span>
+        </div>
+
+        <!-- Customer Form -->
+        <div class="space-y-3 pt-2">
+          <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Datos del Cliente (Opcional)</span>
+          <div>
+            <input type="text" id="pos-customer-name" placeholder="Nombre del Cliente (Ej: Juan Perez)" 
+              class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-405 px-3.5 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-xs font-medium">
+          </div>
+          <div>
+            <input type="text" id="pos-customer-phone" placeholder="Teléfono del Cliente" 
+              class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-405 px-3.5 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-xs font-medium">
+          </div>
+        </div>
+
+        <!-- Payment Method Select -->
+        <div class="space-y-2 pt-1">
+          <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Medio de Pago</span>
+          <div class="grid grid-cols-3 gap-2">
+            <label class="cursor-pointer">
+              <input type="radio" name="posPaymentMethod" value="cash" checked class="peer hidden">
+              <div class="text-center py-2.5 px-1 border border-slate-200 rounded-xl text-[11px] font-bold text-slate-600 peer-checked:border-brand-600 peer-checked:bg-brand-5 peer-checked:text-brand-700 transition-all hover:bg-slate-50">
+                <i class="fa-solid fa-money-bill-wave text-xs block mb-1"></i> Efectivo
+              </div>
+            </label>
+            <label class="cursor-pointer">
+              <input type="radio" name="posPaymentMethod" value="transfer" class="peer hidden">
+              <div class="text-center py-2.5 px-1 border border-slate-200 rounded-xl text-[11px] font-bold text-slate-600 peer-checked:border-brand-600 peer-checked:bg-brand-5 peer-checked:text-brand-700 transition-all hover:bg-slate-50">
+                <i class="fa-solid fa-mobile-screen text-xs block mb-1"></i> Transfer.
+              </div>
+            </label>
+            <label class="cursor-pointer">
+              <input type="radio" name="posPaymentMethod" value="mercadopago" class="peer hidden">
+              <div class="text-center py-2.5 px-1 border border-slate-200 rounded-xl text-[11px] font-bold text-slate-600 peer-checked:border-brand-600 peer-checked:bg-brand-5 peer-checked:text-brand-700 transition-all hover:bg-slate-50">
+                <i class="fa-solid fa-credit-card text-xs block mb-1"></i> Tarjeta/MP
+              </div>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="pt-6">
+        <button onclick="submitPOSSale()" id="btn-submit-pos"
+          class="w-full py-4 rounded-2xl text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 transition-all flex items-center justify-center gap-2 shadow-md shadow-brand-500/10 hover:shadow-lg hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed">
+          <i class="fa-solid fa-circle-check text-sm"></i>
+          Registrar Venta Directa
+        </button>
+      </div>
+      
+    </aside>
+
+  </main>
+
+  <!-- Notification Container (Toast) -->
+  <div class="toast-container fixed bottom-5 right-5 z-50 flex flex-col gap-2"></div>
+
+  <!-- Custom Alert notice styling for auto-open PDF -->
+  <div id="notice-overlay" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-6 text-center space-y-4 shadow-xl">
+      <div class="w-16 h-16 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-3xl mx-auto">
+        <i class="fa-solid fa-file-pdf"></i>
+      </div>
+      <div>
+        <h4 class="display-font text-base font-black text-slate-850">¡Venta Registrada Exitosamente!</h4>
+        <p class="text-xs text-slate-450 mt-1">El remito de venta/ticket ha sido generado correctamente.</p>
+      </div>
+      <div class="flex flex-col gap-2">
+        <a id="overlay-ticket-link" href="#" target="_blank" onclick="closeNoticeOverlay()"
+          class="w-full py-3 rounded-2xl bg-indigo-650 hover:bg-indigo-700 text-white font-bold text-xs transition-all shadow-md shadow-indigo-500/10 flex items-center justify-center gap-1.5">
+          <i class="fa-solid fa-download"></i> Descargar Ticket
+        </a>
+        <button onclick="closeNoticeOverlay()" class="w-full py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-550 font-bold text-xs transition-all">
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Toast system
+    function showToast(message, type = 'success') {
+      const container = document.querySelector('.toast-container');
+      const toast = document.createElement('div');
+      
+      const bgColor = type === 'success' ? 'bg-emerald-600 border-emerald-700' : 'bg-rose-600 border-rose-700';
+      const icon = type === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation';
+      
+      toast.className = `flex items-center gap-2.5 px-4 py-3 rounded-2xl border text-white font-bold text-xs shadow-lg animate-fade-in transition-all duration-300 ${bgColor}`;
+      toast.innerHTML = `
+        <i class="fa-solid ${icon}"></i>
+        <span>${message}</span>
+      `;
+      
+      container.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    // POS Cart State
+    let posCart = [];
+
+    function filterPOSProducts() {
+      const searchVal = document.getElementById('pos-catalog-search').value.toLowerCase().trim();
+      const cards = document.querySelectorAll('.pos-product-card');
+      let visibleCount = 0;
+      
+      cards.forEach(card => {
+        const title = card.getAttribute('data-title') || '';
+        if (searchVal === '' || title.includes(searchVal)) {
+          card.classList.remove('hidden');
+          visibleCount++;
+        } else {
+          card.classList.add('hidden');
+        }
+      });
+      
+      document.getElementById('pos-prod-count').innerText = visibleCount;
+    }
+
+    function addToPOSCart(productId, title, price, stock, unit) {
+      const existing = posCart.find(item => item.productId === productId);
+      if (existing) {
+        if (existing.quantity >= stock) {
+          showToast('No puedes agregar más de este producto (límite de stock alcanzado).', 'error');
+          return;
+        }
+        existing.quantity++;
+      } else {
+        if (stock <= 0) {
+          showToast('Este producto no tiene stock disponible.', 'error');
+          return;
+        }
+        posCart.push({
+          productId,
+          title,
+          price,
+          stock,
+          unit,
+          quantity: 1
+        });
+      }
+      renderPOSCart();
+    }
+
+    function updatePOSQty(productId, delta) {
+      const existing = posCart.find(item => item.productId === productId);
+      if (!existing) return;
+
+      const newQty = existing.quantity + delta;
+      if (newQty <= 0) {
+        posCart = posCart.filter(item => item.productId !== productId);
+      } else if (newQty > existing.stock) {
+        showToast('No puedes superar el stock disponible de ' + existing.stock + ' ' + existing.unit + '.', 'error');
+        return;
+      } else {
+        existing.quantity = newQty;
+      }
+      renderPOSCart();
+    }
+
+    function clearPOSCart() {
+      posCart = [];
+      renderPOSCart();
+    }
+
+    function formatPriceJS(val) {
+      return '$' + parseFloat(val).toLocaleString('es-AR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+    }
+
+    function renderPOSCart() {
+      const container = document.getElementById('pos-cart-items');
+      if (!container) return;
+
+      if (posCart.length === 0) {
+        container.innerHTML = `
+          <div id="pos-empty-cart" class="py-12 text-center text-slate-400 font-medium">
+            <i class="fa-solid fa-basket-shopping text-3xl text-slate-300 block mb-2"></i>
+            El carrito está vacío
+          </div>
+        `;
+        document.getElementById('pos-cart-total').innerText = '$0,00';
+        return;
+      }
+
+      let html = '';
+      let total = 0;
+
+      posCart.forEach(item => {
+        const sub = item.price * item.quantity;
+        total += sub;
+
+        html += `
+          <div class="py-3 flex justify-between items-center gap-2">
+            <div class="flex-1 min-w-0">
+              <h5 class="font-bold text-slate-800 truncate" title="${item.title}">${item.title}</h5>
+              <p class="text-[10px] text-slate-450">${formatPriceJS(item.price)} x ${item.unit}</p>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              <div class="flex items-center border border-slate-200 rounded-lg overflow-hidden bg-slate-50">
+                <button onclick="updatePOSQty('${item.productId}', -1)" class="px-2 py-1 hover:bg-slate-200 text-slate-600 transition-all font-bold">-</button>
+                <span class="px-2.5 font-extrabold text-slate-800 text-[11px]">${item.quantity}</span>
+                <button onclick="updatePOSQty('${item.productId}', 1)" class="px-2 py-1 hover:bg-slate-200 text-slate-600 transition-all font-bold">+</button>
+              </div>
+              <span class="font-bold text-slate-700 w-16 text-right">${formatPriceJS(sub)}</span>
+            </div>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+      document.getElementById('pos-cart-total').innerText = formatPriceJS(total);
+    }
+
+    function closeNoticeOverlay() {
+      document.getElementById('notice-overlay').classList.add('hidden');
+    }
+
+    async function submitPOSSale() {
+      if (posCart.length === 0) {
+        showToast('Por favor, agrega al menos un producto al carrito.', 'error');
+        return;
+      }
+
+      const customerName = document.getElementById('pos-customer-name').value.trim();
+      const customerPhone = document.getElementById('pos-customer-phone').value.trim();
+      
+      let paymentMethod = 'cash';
+      const selectedPayOpt = document.querySelector('input[name="posPaymentMethod"]:checked');
+      if (selectedPayOpt) {
+        paymentMethod = selectedPayOpt.value;
+      }
+
+      const submitBtn = document.getElementById('btn-submit-pos');
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Registrando...';
+
+      try {
+        const response = await fetch('/partner/pos/sale', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({
+            products: posCart.map(item => ({
+              productId: item.productId,
+              quantity: item.quantity
+            })),
+            paymentMethod,
+            customerName,
+            customerPhone
+          })
+        });
+
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+          throw new Error(result.message || 'Error al registrar la venta.');
+        }
+
+        showToast('¡Venta registrada con éxito!', 'success');
+
+        // Update local product stocks in UI dynamically without reload
+        posCart.forEach(item => {
+          const stockEl = document.getElementById(`pos-stock-${item.productId}`);
+          if (stockEl) {
+            const oldStock = parseInt(stockEl.innerText);
+            const newStock = Math.max(0, oldStock - item.quantity);
+            stockEl.innerText = newStock;
+            
+            if (newStock <= 0) {
+              stockEl.className = 'pos-stock-val text-rose-500';
+              const addBtn = document.getElementById(`btn-add-pos-${item.productId}`);
+              if (addBtn) {
+                addBtn.disabled = true;
+                addBtn.classList.add('opacity-50', 'cursor-not-allowed');
+              }
+            }
+          }
+        });
+
+        // Clear fields and cart
+        document.getElementById('pos-customer-name').value = '';
+        document.getElementById('pos-customer-phone').value = '';
+        clearPOSCart();
+
+        // Open ticket in new tab
+        const ticketUrl = `/partner/orders/${result.orderId}/ticket`;
+        window.open(ticketUrl, '_blank');
+
+        // Show prominent overlay in case window.open was blocked by browser popup settings
+        document.getElementById('overlay-ticket-link').href = ticketUrl;
+        document.getElementById('notice-overlay').classList.remove('hidden');
+
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fa-solid fa-circle-check text-sm"></i> Registrar Venta Directa';
+      }
+    }
+  </script>
+</body>
+</html>
