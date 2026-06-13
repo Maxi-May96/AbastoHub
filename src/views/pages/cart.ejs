@@ -156,8 +156,6 @@
       document.addEventListener('DOMContentLoaded', () => {
         // Intercept form submissions for qty update and removal
         const handleCartAction = async (form, actionUrl, bodyData, row) => {
-          if (row) row.classList.add('opacity-50');
-
           try {
             const response = await fetch(actionUrl, {
               method: 'POST',
@@ -189,29 +187,22 @@
               }
 
               // Check if product was completely removed or updated
-              const isRemoved = actionUrl.includes('remove') || !data.cart.products.some(p => p.product === bodyData.productId);
+              const isRemoved = actionUrl.includes('remove') || !data.cart.products.some(p => p.product && p.product._id === bodyData.productId);
 
               if (isRemoved) {
                 if (row) {
-                  row.style.transition = 'all 0.3s ease';
-                  row.style.transform = 'scale(0.95)';
-                  row.style.opacity = '0';
-                  setTimeout(() => {
-                    row.remove();
-                    // If cart has no items, reload to show empty state
-                    if (data.cartCount === 0) {
-                      window.location.reload();
-                    } else {
-                      updateSummary(data);
-                    }
-                  }, 300);
+                  row.remove();
+                  // If cart has no items, reload to show empty state
+                  if (data.cartCount === 0) {
+                    window.location.reload();
+                  } else {
+                    updateSummary(data);
+                  }
                 }
               } else {
                 // Product updated: update the row details
-                const updatedItem = data.cart.products.find(p => p.product === bodyData.productId);
+                const updatedItem = data.cart.products.find(p => p.product && p.product._id === bodyData.productId);
                 if (updatedItem && row) {
-                  row.classList.remove('opacity-50');
-
                   // Update quantities in forms
                   const numInput = row.querySelector('.qty-num-input');
                   if (numInput) numInput.value = updatedItem.quantity;
@@ -261,7 +252,6 @@
             }
           } catch (error) {
             console.error(error);
-            if (row) row.classList.remove('opacity-50');
           }
         };
 
