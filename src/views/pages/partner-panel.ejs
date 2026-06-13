@@ -452,6 +452,17 @@
                           </a>
                         </div>
                       <% } %>
+                      <div class="pt-1.5 flex flex-wrap gap-1">
+                        <% if (order.deliveryType === 'pickup') { %>
+                          <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg text-[9px] font-bold">
+                            <i class="fa-solid fa-shop text-[9px]"></i> Retiro por el Local
+                          </span>
+                        <% } else { %>
+                          <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-sky-50 text-sky-700 border border-sky-200 rounded-lg text-[9px] font-bold">
+                            <i class="fa-solid fa-truck text-[9px]"></i> Envío a Domicilio
+                          </span>
+                        <% } %>
+                      </div>
                     </td>
 
                     <!-- Status Badges -->
@@ -541,11 +552,19 @@
                           </div>
                         </div>
                       <% } else { %>
-                        <form action="/partner/orders/<%= order._id %>/ship" method="POST" class="inline" onsubmit="return confirm('¿Seguro desea marcar este pedido como en camino?');">
-                          <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[10px] px-2.5 py-1.5 rounded-xl transition-all shadow-sm flex items-center gap-1">
-                            <i class="fa-solid fa-truck-fast text-[9px]"></i> Poner en Camino
-                          </button>
-                        </form>
+                        <% if (order.deliveryType === 'pickup') { %>
+                          <form action="/partner/orders/<%= order._id %>/ship" method="POST" class="inline" onsubmit="return confirm('¿Seguro desea marcar este pedido como entregado?');">
+                            <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] px-2.5 py-1.5 rounded-xl transition-all shadow-sm flex items-center gap-1">
+                              <i class="fa-solid fa-circle-check text-[9px]"></i> Pedido Entregado
+                            </button>
+                          </form>
+                        <% } else { %>
+                          <form action="/partner/orders/<%= order._id %>/ship" method="POST" class="inline" onsubmit="return confirm('¿Seguro desea marcar este pedido como en camino?');">
+                            <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[10px] px-2.5 py-1.5 rounded-xl transition-all shadow-sm flex items-center gap-1">
+                              <i class="fa-solid fa-truck-fast text-[9px]"></i> Poner en Camino
+                            </button>
+                          </form>
+                        <% } %>
                       <% } %>
                     </td>
 

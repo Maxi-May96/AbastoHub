@@ -817,22 +817,35 @@ const shipOrder = async (req, res, next) => {
       return res.redirect('/partner/panel?error=' + encodeURIComponent('Pedido no encontrado.'));
     }
     
-    order.status = 'shipped';
-    order.driverName = 'Logística del Socio';
-    order.driverVehicle = 'Particular';
+    const isPickup = order.deliveryType === 'pickup';
+    
+    if (isPickup) {
+      order.status = 'delivered';
+      order.driverName = 'Retiro en Local';
+      order.driverVehicle = 'Cliente';
+    } else {
+      order.status = 'shipped';
+      order.driverName = 'Logística del Socio';
+      order.driverVehicle = 'Particular';
+    }
     order.dispatchedAt = new Date();
     await order.save();
     
+    const successMsg = isPickup 
+      ? 'El pedido ha sido marcado como entregado.' 
+      : 'El pedido ha sido marcado en camino.';
+    
     if (req.accepts('html', 'json') === 'json') {
-      return res.json({ success: true, message: 'El pedido ha sido marcado en camino.' });
+      return res.json({ success: true, message: successMsg });
     }
-    res.redirect('/partner/panel?success=' + encodeURIComponent('El pedido ha sido marcado en camino.'));
+    res.redirect('/partner/panel?success=' + encodeURIComponent(successMsg));
   } catch (error) {
     console.error('Ship order error:', error.message);
+    const errorMsg = order?.deliveryType === 'pickup' ? 'entregar el pedido' : 'marcar el pedido en camino';
     if (req.accepts('html', 'json') === 'json') {
-      return res.status(500).json({ success: false, error: 'Error al marcar el pedido en camino: ' + error.message });
+      return res.status(500).json({ success: false, error: `Error al ${errorMsg}: ` + error.message });
     }
-    res.redirect('/partner/panel?error=' + encodeURIComponent('Error al marcar el pedido en camino: ' + error.message));
+    res.redirect('/partner/panel?error=' + encodeURIComponent(`Error al ${errorMsg}: ` + error.message));
   }
 };
 
