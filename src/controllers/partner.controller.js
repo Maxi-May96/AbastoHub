@@ -1867,11 +1867,13 @@ const postPOSSale = async (req, res, next) => {
       });
     }
 
+    const orderTotal = Number((subtotal * 1.05).toFixed(2));
+
     // 4. Create Order (Since it's a direct POS sale, we set status to delivered and paid)
     const newOrder = new Order({
       user: genericUser._id,
       products: orderProducts,
-      total: subtotal,
+      total: orderTotal,
       paymentStatus: 'paid',
       status: 'delivered',
       paymentMethod: paymentMethod || 'cash',

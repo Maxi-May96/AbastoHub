@@ -172,9 +172,19 @@
         </div>
 
         <!-- Total Box -->
-        <div class="bg-slate-50 border border-slate-100 p-4 rounded-2xl flex justify-between items-center">
-          <span class="text-xs text-slate-550 font-bold uppercase">Total</span>
-          <span class="text-xl font-black text-brand-700 display-font" id="pos-cart-total">$0,00</span>
+        <div class="bg-slate-50 border border-slate-100 p-4 rounded-2xl space-y-2">
+          <div class="flex justify-between items-center text-xs text-slate-500">
+            <span>Subtotal</span>
+            <span id="pos-cart-subtotal" class="font-bold">$0,00</span>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-500">
+            <span>Uso de Plataforma (5%)</span>
+            <span id="pos-cart-fee" class="font-bold">$0,00</span>
+          </div>
+          <div class="border-t border-slate-200/60 pt-2 flex justify-between items-center">
+            <span class="text-xs text-slate-700 font-extrabold uppercase">Total</span>
+            <span class="text-xl font-black text-brand-700 display-font" id="pos-cart-total">$0,00</span>
+          </div>
         </div>
 
         <!-- Customer Form -->
@@ -361,16 +371,18 @@
             El carrito está vacío
           </div>
         `;
+        document.getElementById('pos-cart-subtotal').innerText = '$0,00';
+        document.getElementById('pos-cart-fee').innerText = '$0,00';
         document.getElementById('pos-cart-total').innerText = '$0,00';
         return;
       }
 
       let html = '';
-      let total = 0;
+      let subtotal = 0;
 
       posCart.forEach(item => {
         const sub = item.price * item.quantity;
-        total += sub;
+        subtotal += sub;
 
         html += `
           <div class="py-3 flex justify-between items-center gap-2">
@@ -391,6 +403,11 @@
       });
 
       container.innerHTML = html;
+      const fee = subtotal * 0.05;
+      const total = subtotal + fee;
+
+      document.getElementById('pos-cart-subtotal').innerText = formatPriceJS(subtotal);
+      document.getElementById('pos-cart-fee').innerText = formatPriceJS(fee);
       document.getElementById('pos-cart-total').innerText = formatPriceJS(total);
     }
 
