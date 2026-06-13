@@ -1007,11 +1007,77 @@
 
     <!-- Tab 7.5: Comisiones POS Panel -->
     <div id="commissions-tab" class="tab-panel hidden space-y-6">
+      
+      <%
+        let totalApprovedCommissions = 0;
+        let totalPendingCommissions = 0;
+        let totalRejectedCommissions = 0;
+        if (commissionPayments && commissionPayments.length > 0) {
+          commissionPayments.forEach(cp => {
+            if (cp.status === 'approved') {
+              totalApprovedCommissions += cp.amount;
+            } else if (cp.status === 'pending') {
+              totalPendingCommissions += cp.amount;
+            } else if (cp.status === 'rejected') {
+              totalRejectedCommissions += cp.amount;
+            }
+          });
+        }
+      %>
+
+      <!-- Metrics Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+        <!-- Approved Card -->
+        <div class="bg-emerald-50 border border-emerald-100 rounded-3xl p-5 shadow-2xs">
+          <div class="flex justify-between items-center mb-2">
+            <span class="text-[10px] text-emerald-800 font-bold uppercase tracking-wider">Total Cobrado (Comisiones)</span>
+            <div class="w-7 h-7 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center text-sm">
+              <i class="fa-solid fa-circle-check"></i>
+            </div>
+          </div>
+          <p class="text-2xl font-black text-emerald-950 display-font"><%= formatPrice(totalApprovedCommissions) %></p>
+          <p class="text-[9px] text-emerald-700 font-medium mt-1">Recaudación efectiva de uso de plataforma (5%)</p>
+        </div>
+
+        <!-- Pending Card -->
+        <div class="bg-amber-50 border border-amber-100 rounded-3xl p-5 shadow-2xs">
+          <div class="flex justify-between items-center mb-2">
+            <span class="text-[10px] text-amber-800 font-bold uppercase tracking-wider">Pendiente de Aprobación</span>
+            <div class="w-7 h-7 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center text-sm">
+              <i class="fa-solid fa-hourglass-half"></i>
+            </div>
+          </div>
+          <p class="text-2xl font-black text-amber-950 display-font"><%= formatPrice(totalPendingCommissions) %></p>
+          <p class="text-[9px] text-amber-700 font-medium mt-1">Comprobantes por revisar en cola</p>
+        </div>
+
+        <!-- Rejected Card -->
+        <div class="bg-rose-50 border border-rose-100 rounded-3xl p-5 shadow-2xs">
+          <div class="flex justify-between items-center mb-2">
+            <span class="text-[10px] text-rose-800 font-bold uppercase tracking-wider">Total Rechazado</span>
+            <div class="w-7 h-7 rounded-xl bg-rose-500/10 text-rose-600 flex items-center justify-center text-sm">
+              <i class="fa-solid fa-circle-xmark"></i>
+            </div>
+          </div>
+          <p class="text-2xl font-black text-rose-950 display-font"><%= formatPrice(totalRejectedCommissions) %></p>
+          <p class="text-[9px] text-rose-700 font-medium mt-1">Pagos desaprobados o cancelados</p>
+        </div>
+      </div>
+
       <div class="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
         
-        <div class="px-6 py-5 border-b border-slate-100 bg-slate-50/50">
-          <h2 class="text-base font-bold text-slate-800">Pagos de Comisión de Ventas POS (5%)</h2>
-          <p class="text-xs text-slate-400">Verifica los comprobantes de transferencia y aprueba los pagos de comisiones pendientes por ventas POS.</p>
+        <div class="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center flex-wrap gap-2">
+          <div>
+            <h2 class="text-base font-bold text-slate-800">Pagos de Comisión de Ventas POS (5%)</h2>
+            <p class="text-xs text-slate-400">Verifica los comprobantes de transferencia y aprueba los pagos de comisiones pendientes por ventas POS.</p>
+          </div>
+          <% if (commissionPayments && commissionPayments.length > 0) { %>
+            <form action="/admin/commissions/delete-all" method="POST" onsubmit="return confirm('¿Seguro desea eliminar TODOS los registros de comisiones? Esto restablecerá el estado de todas las órdenes POS a impagas.');">
+              <button type="submit" class="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-xs shadow-sm transition-all flex items-center gap-1.5 uppercase tracking-wide">
+                <i class="fa-solid fa-dumpster-fire text-xs"></i> Eliminar Todo
+              </button>
+            </form>
+          <% } %>
         </div>
 
         <div class="overflow-x-auto custom-scrollbar">
@@ -1096,12 +1162,21 @@
                               Rechazar
                             </button>
                           </div>
-                        <% } else if (cp.notes) { %>
-                          <div class="text-[9px] font-medium text-slate-500 bg-slate-50 p-2 rounded-lg border border-slate-100 max-w-[200px]">
+                        <% } %>
+
+                        <% if (cp.notes) { %>
+                          <div class="text-[9px] font-medium text-slate-500 bg-slate-50 p-2 rounded-lg border border-slate-100 max-w-[200px] mt-1.5">
                             <span class="font-bold block uppercase text-[8px] text-slate-400 mb-0.5">Observaciones:</span>
                             <%= cp.notes %>
                           </div>
                         <% } %>
+                        
+                        <!-- Individual Delete Form -->
+                        <form action="/admin/commissions/<%= cp._id %>/delete" method="POST" class="block mt-1.5" onsubmit="return confirm('¿Seguro desea eliminar este registro de comisión individual? Las ventas POS correspondientes volverán a quedar pendientes de pago.');">
+                          <button type="submit" class="inline-flex items-center justify-center gap-1 px-2.5 py-1.5 border border-rose-200 hover:bg-rose-50 text-rose-600 hover:text-rose-700 font-bold rounded-lg text-[9px] transition-all uppercase w-fit">
+                            <i class="fa-solid fa-trash-can text-[9px]"></i> Eliminar
+                          </button>
+                        </form>
                       </div>
                     </td>
                   </tr>

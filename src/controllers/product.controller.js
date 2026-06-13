@@ -2043,6 +2043,46 @@ const updateCommissionPaymentStatus = async (req, res, next) => {
   }
 };
 
+const deleteCommissionPayment = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const payment = await CommissionPayment.findById(id);
+    if (!payment) {
+      return res.redirect('/admin?error=' + encodeURIComponent('Pago de comisión no encontrado.'));
+    }
+
+    // Restore associated orders to unpaid status
+    const Order = require('../models/Order');
+    if (payment.orders && payment.orders.length > 0) {
+      await Order.updateMany(
+        { _id: { $in: payment.orders } },
+        { $set: { posFeePaid: 'unpaid' } }
+      );
+    }
+
+    await CommissionPayment.findByIdAndDelete(id);
+    res.redirect('/admin?success=' + encodeURIComponent('Registro de comisión eliminado y órdenes correspondientes restablecidas a impagas.'));
+  } catch (error) {
+    next(error);
+  }
+};
+
+const deleteAllCommissionPayments = async (req, res, next) => {
+  try {
+    const Order = require('../models/Order');
+    // Reset all POS orders back to unpaid status
+    await Order.updateMany(
+      { isPOS: true },
+      { $set: { posFeePaid: 'unpaid' } }
+    );
+
+    await CommissionPayment.deleteMany({});
+    res.redirect('/admin?success=' + encodeURIComponent('Todos los registros de comisiones han sido eliminados y las órdenes restablecidas a impagas.'));
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getProducts,
   getProductBySlug,
@@ -2074,5 +2114,7 @@ module.exports = {
   generatePriceListPDF,
   updateWithdrawalStatus,
   generateStatisticsPDF,
-  updateCommissionPaymentStatus
+  updateCommissionPaymentStatus,
+  deleteCommissionPayment,
+  deleteAllCommissionPayments
 };

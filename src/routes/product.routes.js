@@ -40,5 +40,7 @@ router.post('/admin/partners/:id/toggle-featured-72h', isAuthenticated, isAdmin,
 router.post('/admin/partners/:id/assign-driver', isAuthenticated, isAdmin, productController.assignDriverToPartner);
 router.post('/admin/withdrawals/:id/status', isAuthenticated, isAdmin, productController.updateWithdrawalStatus);
 router.post('/admin/commissions/:id/status', isAuthenticated, isAdmin, productController.updateCommissionPaymentStatus);
+router.post('/admin/commissions/:id/delete', isAuthenticated, isAdmin, productController.deleteCommissionPayment);
+router.post('/admin/commissions/delete-all', isAuthenticated, isAdmin, productController.deleteAllCommissionPayments);
 
 module.exports = router;
