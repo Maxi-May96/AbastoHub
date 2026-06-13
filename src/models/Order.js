@@ -107,6 +107,10 @@ const OrderSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  issueInvoice: {
+    type: Boolean,
+    default: false
+  },
   posFeePaid: {
     type: String,
     enum: ['unpaid', 'pending', 'paid'],

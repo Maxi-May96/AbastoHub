@@ -909,6 +909,7 @@ const generatePartnerPDFTicket = async (req, res, next) => {
       headerTextX = 40;
     }
     
+    const isInvoice = !!order.issueInvoice;
     doc.fillColor(darkSlate)
        .fontSize(18)
        .font('Helvetica-Bold')
@@ -916,18 +917,36 @@ const generatePartnerPDFTicket = async (req, res, next) => {
        .fontSize(8.5)
        .font('Helvetica-Bold')
        .fillColor(textGray)
-       .text('REMITO DE PREPARACIÓN DE SOCIO / ASOCIADO', headerTextX, 76);
+       .text(isInvoice ? 'FACTURA (DUP. CONSUMIDOR FINAL)' : 'REMITO DE PREPARACIÓN DE SOCIO / ASOCIADO', headerTextX, 76);
+
+    if (isInvoice) {
+      // Draw Factura "B" box stamp
+      doc.rect(282, 46, 30, 30).fill('#ffffff');
+      doc.rect(282, 46, 30, 30).lineWidth(1).strokeColor(primaryColor).stroke();
+      doc.fillColor(darkSlate)
+         .fontSize(16)
+         .font('Helvetica-Bold')
+         .text('B', 282, 50, { align: 'center', width: 30 })
+         .fontSize(5.5)
+         .font('Helvetica')
+         .text('COD. 006', 282, 68, { align: 'center', width: 30 });
+      
+      doc.fillColor(textGray)
+         .fontSize(5.5)
+         .font('Helvetica-Oblique')
+         .text('DOC. NO VÁLIDO COMO FACTURA FISCAL', 215, 80, { align: 'center', width: 165 });
+    }
 
     // Order ID & Date (Right Aligned)
     const shortId = order._id.toString().substring(12).toUpperCase();
     doc.fillColor(darkSlate)
        .fontSize(11)
        .font('Helvetica-Bold')
-       .text(`ORDEN: #${shortId}`, 350, 55, { align: 'right', width: 205 })
+       .text(isInvoice ? `FACTURA: B-${shortId}` : `ORDEN: #${shortId}`, 340, 55, { align: 'right', width: 215 })
        .fontSize(8.5)
        .font('Helvetica')
        .fillColor(textGray)
-       .text(`Fecha: ${order.createdAt.toLocaleString('es-AR')}`, 350, 72, { align: 'right', width: 205 });
+       .text(`Fecha: ${order.createdAt.toLocaleString('es-AR')}`, 345, 72, { align: 'right', width: 210 });
 
     // Payment Status Badge
     const isPaid = order.paymentStatus === 'paid';
@@ -940,6 +959,13 @@ const generatePartnerPDFTicket = async (req, res, next) => {
        .fontSize(8)
        .font('Helvetica-Bold')
        .text(badgeLabel, 465, 91, { align: 'center', width: 90 });
+
+    if (order.raffleCode) {
+      doc.fillColor(darkSlate)
+         .fontSize(8.5)
+         .font('Helvetica-Bold')
+         .text(`CÓDIGO SORTEO: ${order.raffleCode}`, 280, 105, { align: 'right', width: 275 });
+    }
 
     // 2. Client & Delivery Info Cards (Two-column layout)
     const clientBoxY = 120;
@@ -1858,10 +1884,21 @@ const generatePartnerStatisticsPDF = async (req, res, next) => {
 const postPOSSale = async (req, res, next) => {
   try {
     const partnerId = req.partner.id;
-    const { products: items, paymentMethod, customerName, customerPhone } = req.body;
+    const { products: items, paymentMethod, customerName, customerPhone, issueInvoice } = req.body;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ success: false, message: 'El carrito de ventas no puede estar vacío.' });
+    }
+
+    // Generate unique raffle code: AH-XXXXXX
+    let raffleCode;
+    let codeExists = true;
+    while (codeExists) {
+      raffleCode = 'AH-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+      const existing = await Order.findOne({ raffleCode });
+      if (!existing) {
+        codeExists = false;
+      }
     }
 
     // 1. Get or create generic user
@@ -1924,6 +1961,8 @@ const postPOSSale = async (req, res, next) => {
       deliveryType: 'pickup',
       stockSubtracted: true,
       isPOS: true,
+      issueInvoice: !!issueInvoice,
+      raffleCode,
       shippingDetails: {
         name: customerName || 'Cliente General',
         phone: customerPhone || 'N/A',
