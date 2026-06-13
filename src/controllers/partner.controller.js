@@ -135,6 +135,46 @@ const getPanel = async (req, res, next) => {
     // Available balance
     const availableBalance = totalEarnings - totalApprovedWithdrawals - totalPendingWithdrawals;
 
+    // Calculate best selling statistics for this partner
+    const bestSellingStats = await Order.aggregate([
+      { $match: { paymentStatus: 'paid' } },
+      { $unwind: '$products' },
+      { $lookup: {
+          from: 'products',
+          localField: 'products.product',
+          foreignField: '_id',
+          as: 'productInfo'
+      }},
+      { $unwind: '$productInfo' },
+      { $match: { 'productInfo.partner': new mongoose.Types.ObjectId(partnerId) } },
+      { $group: {
+          _id: '$products.product',
+          totalQty: { $sum: '$products.quantity' },
+          totalRevenue: { $sum: { $multiply: ['$products.price', '$products.quantity'] } }
+      }},
+      { $sort: { totalQty: -1 } },
+      { $limit: 20 }
+    ]);
+
+    const populatedStats = await Promise.all(bestSellingStats.map(async (stat) => {
+      const product = await Product.findById(stat._id).populate('category');
+      return {
+        ...stat,
+        product
+      };
+    }));
+
+    const bestSellers = populatedStats.filter(item => item.product !== null);
+
+    const partnerStats = {
+      totalRevenue: totalEarnings,
+      totalOrdersCount: orders.filter(o => o.paymentStatus === 'paid').length,
+      averageTicket: orders.filter(o => o.paymentStatus === 'paid').length > 0
+        ? (totalEarnings / orders.filter(o => o.paymentStatus === 'paid').length)
+        : 0,
+      totalQtySold: bestSellers.reduce((sum, item) => sum + item.totalQty, 0)
+    };
+
     // Fetch active chats (grouped by roomId/user) in the last 72 hours
     let activeChats = [];
     try {
@@ -171,6 +211,8 @@ const getPanel = async (req, res, next) => {
       totalPendingWithdrawals,
       availableBalance,
       activeChats,
+      bestSellers,
+      partnerStats,
       formatPrice,
       success: req.query.success,
       error: req.query.error
@@ -1562,6 +1604,212 @@ const updateProfile = async (req, res, next) => {
   }
 };
 
+const generatePartnerStatisticsPDF = async (req, res, next) => {
+  try {
+    const partnerId = req.partner.id;
+    const partnerDoc = await Partner.findById(partnerId);
+    if (!partnerDoc) {
+      return res.status(404).send('Socio no encontrado.');
+    }
+
+    // Load partner products
+    const products = await Product.find({ partner: partnerId }).populate('category');
+    const partnerProductIds = products.map(p => p._id);
+
+    // Calculate best selling statistics for this partner
+    const bestSellingStats = await Order.aggregate([
+      { $match: { paymentStatus: 'paid' } },
+      { $unwind: '$products' },
+      { $lookup: {
+          from: 'products',
+          localField: 'products.product',
+          foreignField: '_id',
+          as: 'productInfo'
+      }},
+      { $unwind: '$productInfo' },
+      { $match: { 'productInfo.partner': new mongoose.Types.ObjectId(partnerId) } },
+      { $group: {
+          _id: '$products.product',
+          totalQty: { $sum: '$products.quantity' },
+          totalRevenue: { $sum: { $multiply: ['$products.price', '$products.quantity'] } }
+      }},
+      { $sort: { totalQty: -1 } },
+      { $limit: 20 }
+    ]);
+
+    const populatedStats = await Promise.all(bestSellingStats.map(async (stat) => {
+      const product = await Product.findById(stat._id).populate('category');
+      return {
+        ...stat,
+        product
+      };
+    }));
+
+    const bestSellers = populatedStats.filter(item => item.product !== null);
+
+    // Load orders containing partner products (to get total metrics)
+    const rawOrders = await Order.find({ 'products.product': { $in: partnerProductIds } });
+    
+    // Format orders: keep only partner products, calculate partner subtotal
+    const orders = rawOrders.map(order => {
+      const partnerItems = order.products.filter(item =>
+        partnerProductIds.some(pId => pId.toString() === item.product.toString())
+      );
+      const partnerSubtotal = partnerItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      
+      const orderObj = order.toObject();
+      orderObj.partnerProducts = partnerItems;
+      orderObj.partnerSubtotal = partnerSubtotal;
+      return orderObj;
+    });
+
+    const paidOrders = orders.filter(o => o.paymentStatus === 'paid');
+    const totalEarnings = paidOrders.reduce((sum, o) => sum + o.partnerSubtotal, 0);
+    const paidOrdersCount = paidOrders.length;
+    const averageTicket = paidOrdersCount > 0 ? (totalEarnings / paidOrdersCount) : 0;
+    const totalQtySold = bestSellers.reduce((sum, item) => sum + item.totalQty, 0);
+
+    const doc = new PDFDocument({ size: 'A4', margin: 40 });
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=reporte-estadisticas-${partnerDoc.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}.pdf`);
+    doc.pipe(res);
+    
+    // Color Palette
+    const primaryColor = '#10b981'; // Emerald Green
+    const darkSlate = '#0f172a'; // Deep slate
+    const textGray = '#475569';  // Slate gray
+    const bgGray = '#f8fafc';    // Soft slate background
+    const borderGray = '#e2e8f0';  // Very light gray border
+    
+    // 1. Decorative Brand Bar
+    doc.rect(40, 40, 515, 5).fill(primaryColor);
+    
+    // Logo & Header Brand
+    const logoPath = path.join(__dirname, '../../public/img/logo.png');
+    let headerTextX = 40;
+    try {
+      doc.image(logoPath, 40, 55, { height: 35 });
+      headerTextX = 90;
+    } catch (err) {
+      headerTextX = 40;
+    }
+    
+    doc.fillColor(darkSlate)
+       .fontSize(18)
+       .font('Helvetica-Bold')
+       .text('AbastoHub', headerTextX, 55)
+       .fontSize(8.5)
+       .font('Helvetica-Bold')
+       .fillColor(textGray)
+       .text(`REPORTE DE ESTADÍSTICAS - SOCIO: ${partnerDoc.name.toUpperCase()}`, headerTextX, 76);
+       
+    doc.fillColor(darkSlate)
+       .fontSize(10)
+       .font('Helvetica-Bold')
+       .text('Métricas de Rendimiento', 330, 55, { align: 'right', width: 225 })
+       .font('Helvetica')
+       .fontSize(8.5)
+       .fillColor(textGray)
+       .text(`Generado: ${new Date().toLocaleString('es-AR')}`, 330, 68, { align: 'right', width: 225 })
+       .text('Datos de órdenes finalizadas', 330, 80, { align: 'right', width: 225 });
+
+    let currentY = 110;
+
+    // Draw 4 Metrics Cards side by side
+    const cardW = 120;
+    const cardH = 50;
+    const cardGap = 11;
+    const startX = 40;
+
+    const metrics = [
+      { label: 'INGRESOS TOTALES', val: formatPrice(totalEarnings), color: '#ecfdf5', text: '#065f46', border: '#a7f3d0' },
+      { label: 'TICKET PROMEDIO', val: formatPrice(averageTicket), color: '#eff6ff', text: '#1e40af', border: '#bfdbfe' },
+      { label: 'PEDIDOS PAGADOS', val: String(paidOrdersCount), color: '#f5f3ff', text: '#5b21b6', border: '#ddd6fe' },
+      { label: 'UNIDADES VENDIDAS', val: `${totalQtySold} u.`, color: '#fffbeb', text: '#92400e', border: '#fde68a' }
+    ];
+
+    metrics.forEach((m, idx) => {
+      const x = startX + idx * (cardW + cardGap);
+      doc.rect(x, currentY, cardW, cardH).fill(m.color);
+      doc.rect(x, currentY, cardW, cardH).lineWidth(1).strokeColor(m.border).stroke();
+      
+      doc.fillColor(textGray)
+         .font('Helvetica-Bold')
+         .fontSize(6.5)
+         .text(m.label, x + 8, currentY + 10, { width: cardW - 16 });
+         
+      doc.fillColor(m.text)
+         .font('Helvetica-Bold')
+         .fontSize(12)
+         .text(m.val, x + 8, currentY + 22, { width: cardW - 16 });
+    });
+
+    currentY += 70;
+
+    // Section Title: Best Sellers
+    doc.fillColor(darkSlate)
+       .font('Helvetica-Bold')
+       .fontSize(12)
+       .text('TOP 20 PRODUCTOS MÁS VENDIDOS', 40, currentY);
+       
+    currentY += 18;
+
+    // Table Header for Best Sellers
+    doc.rect(40, currentY, 515, 18).fill('#e2e8f0');
+    doc.fillColor(darkSlate)
+       .font('Helvetica-Bold')
+       .fontSize(8)
+       .text('POS', 45, currentY + 5)
+       .text('PRODUCTO', 75, currentY + 5)
+       .text('CATEGORÍA', 280, currentY + 5)
+       .text('CANT. VENDIDA', 395, currentY + 5, { width: 70, align: 'right' })
+       .text('TOTAL RECAUDADO', 475, currentY + 5, { width: 75, align: 'right' });
+
+    currentY += 18;
+
+    bestSellers.forEach((item, index) => {
+      if (index % 2 === 1) {
+        doc.rect(40, currentY, 515, 18).fill('#f8fafc');
+      }
+      
+      doc.rect(40, currentY, 515, 18).lineWidth(0.5).strokeColor('#f1f5f9').stroke();
+
+      const pos = String(index + 1);
+      const title = item.product.title;
+      const categoryName = item.product.category ? item.product.category.name : 'Sin Categoría';
+      const qty = `${item.totalQty} ${item.product.unit || 'uds'}`;
+      const rev = formatPrice(item.totalRevenue);
+
+      doc.fillColor(textGray)
+         .font('Helvetica')
+         .fontSize(7.5)
+         .text(pos, 45, currentY + 5)
+         .font('Helvetica-Bold')
+         .fillColor(darkSlate)
+         .text(title, 75, currentY + 5, { width: 195, ellipsis: true })
+         .font('Helvetica')
+         .fillColor(textGray)
+         .text(categoryName, 280, currentY + 5, { width: 110, ellipsis: true })
+         .text(qty, 395, currentY + 5, { width: 70, align: 'right' })
+         .font('Helvetica-Bold')
+         .text(rev, 475, currentY + 5, { width: 75, align: 'right' });
+
+      currentY += 18;
+
+      if (currentY > 730) {
+        doc.addPage();
+        doc.rect(40, 40, 515, 5).fill(primaryColor);
+        currentY = 60;
+      }
+    });
+
+    doc.end();
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getLogin,
   postLogin,
@@ -1586,5 +1834,6 @@ module.exports = {
   downloadMonthlySummary,
   getRegister,
   postRegister,
-  updateProfile
+  updateProfile,
+  generatePartnerStatisticsPDF
 };
