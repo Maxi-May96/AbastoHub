@@ -1645,6 +1645,271 @@ const updateWithdrawalStatus = async (req, res, next) => {
   }
 };
 
+const generateStatisticsPDF = async (req, res, next) => {
+  try {
+    // Calculate best selling statistics (Top Products & Top Partners)
+    const bestSellingStats = await Order.aggregate([
+      { $match: { paymentStatus: 'paid' } },
+      { $unwind: '$products' },
+      { $group: {
+        _id: '$products.product',
+        totalQty: { $sum: '$products.quantity' },
+        totalRevenue: { $sum: { $multiply: ['$products.price', '$products.quantity'] } }
+      }},
+      { $sort: { totalQty: -1 } },
+      { $limit: 20 }
+    ]);
+
+    const populatedStats = await Promise.all(bestSellingStats.map(async (stat) => {
+      const product = await Product.findById(stat._id).populate('partner').populate('category');
+      return {
+        ...stat,
+        product
+      };
+    }));
+
+    const bestSellers = populatedStats.filter(item => item.product !== null);
+
+    // Group sales by Partner in memory
+    const partnerSalesMap = {};
+    for (const stat of bestSellers) {
+      if (stat.product && stat.product.partner) {
+        const pId = stat.product.partner._id.toString();
+        if (!partnerSalesMap[pId]) {
+          partnerSalesMap[pId] = {
+            partner: stat.product.partner,
+            totalQty: 0,
+            totalRevenue: 0
+          };
+        }
+        partnerSalesMap[pId].totalQty += stat.totalQty;
+        partnerSalesMap[pId].totalRevenue += stat.totalRevenue;
+      }
+    }
+    const bestPartners = Object.values(partnerSalesMap).sort((a, b) => b.totalRevenue - a.totalRevenue);
+
+    // Global Sales performance metrics
+    const totalPaidOrders = await Order.find({ paymentStatus: 'paid' });
+    const globalStats = {
+      totalRevenue: totalPaidOrders.reduce((sum, o) => sum + o.total, 0),
+      totalOrdersCount: totalPaidOrders.length,
+      averageTicket: totalPaidOrders.length > 0 ? (totalPaidOrders.reduce((sum, o) => sum + o.total, 0) / totalPaidOrders.length) : 0,
+      totalQtySold: bestSellers.reduce((sum, item) => sum + item.totalQty, 0)
+    };
+
+    const doc = new PDFDocument({ size: 'A4', margin: 40 });
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename=reporte-estadisticas.pdf');
+    doc.pipe(res);
+    
+    // Color Palette
+    const primaryColor = '#10b981'; // Emerald Green
+    const darkSlate = '#0f172a'; // Deep slate
+    const textGray = '#475569';  // Slate gray
+    const bgGray = '#f8fafc';    // Soft slate background
+    const borderGray = '#e2e8f0';  // Very light gray border
+    
+    // 1. Decorative Brand Bar
+    doc.rect(40, 40, 515, 5).fill(primaryColor);
+    
+    // Logo & Header Brand
+    const logoPath = path.join(__dirname, '../../public/img/logo.png');
+    let headerTextX = 40;
+    try {
+      doc.image(logoPath, 40, 55, { height: 35 });
+      headerTextX = 90;
+    } catch (err) {
+      headerTextX = 40;
+    }
+    
+    doc.fillColor(darkSlate)
+       .fontSize(18)
+       .font('Helvetica-Bold')
+       .text('AbastoHub', headerTextX, 55)
+       .fontSize(8.5)
+       .font('Helvetica-Bold')
+       .fillColor(textGray)
+       .text('REPORTE EJECUTIVO DE ESTADÍSTICAS Y RENDIMIENTO', headerTextX, 76);
+       
+    doc.fillColor(darkSlate)
+       .fontSize(10)
+       .font('Helvetica-Bold')
+       .text('Métricas de Negocio', 330, 55, { align: 'right', width: 225 })
+       .font('Helvetica')
+       .fontSize(8.5)
+       .fillColor(textGray)
+       .text(`Generado: ${new Date().toLocaleString('es-AR')}`, 330, 68, { align: 'right', width: 225 })
+       .text('Datos de órdenes finalizadas', 330, 80, { align: 'right', width: 225 });
+
+    let currentY = 110;
+
+    // Draw 4 Metrics Cards side by side
+    const cardW = 120;
+    const cardH = 50;
+    const cardGap = 11;
+    const startX = 40;
+
+    const metrics = [
+      { label: 'TOTAL FACTURADO', val: formatPrice(globalStats.totalRevenue), color: '#ecfdf5', text: '#065f46', border: '#a7f3d0' },
+      { label: 'TICKET PROMEDIO', val: formatPrice(globalStats.averageTicket), color: '#eff6ff', text: '#1e40af', border: '#bfdbfe' },
+      { label: 'PEDIDOS PAGADOS', val: String(globalStats.totalOrdersCount), color: '#f5f3ff', text: '#5b21b6', border: '#ddd6fe' },
+      { label: 'UNIDADES VENDIDAS', val: `${globalStats.totalQtySold} u.`, color: '#fffbeb', text: '#92400e', border: '#fde68a' }
+    ];
+
+    metrics.forEach((m, idx) => {
+      const x = startX + idx * (cardW + cardGap);
+      doc.rect(x, currentY, cardW, cardH).fill(m.color);
+      doc.rect(x, currentY, cardW, cardH).lineWidth(1).strokeColor(m.border).stroke();
+      
+      doc.fillColor(textGray)
+         .font('Helvetica-Bold')
+         .fontSize(6.5)
+         .text(m.label, x + 8, currentY + 10, { width: cardW - 16 });
+         
+      doc.fillColor(m.text)
+         .font('Helvetica-Bold')
+         .fontSize(12)
+         .text(m.val, x + 8, currentY + 22, { width: cardW - 16 });
+    });
+
+    currentY += 70;
+
+    // Section Title: Best Sellers
+    doc.fillColor(darkSlate)
+       .font('Helvetica-Bold')
+       .fontSize(12)
+       .text('TOP 20 PRODUCTOS MÁS VENDIDOS', 40, currentY);
+       
+    currentY += 18;
+
+    // Table Header for Best Sellers
+    doc.rect(40, currentY, 515, 18).fill('#e2e8f0');
+    doc.fillColor(darkSlate)
+       .font('Helvetica-Bold')
+       .fontSize(8)
+       .text('POS', 45, currentY + 5)
+       .text('PRODUCTO', 75, currentY + 5)
+       .text('SOCIO COMERCIAL', 260, currentY + 5)
+       .text('CANT. VENDIDA', 390, currentY + 5, { width: 70, align: 'right' })
+       .text('RECAUDACIÓN', 470, currentY + 5, { width: 80, align: 'right' });
+
+    currentY += 18;
+
+    bestSellers.forEach((item, index) => {
+      if (index % 2 === 1) {
+        doc.rect(40, currentY, 515, 18).fill('#f8fafc');
+      }
+      
+      doc.rect(40, currentY, 515, 18).lineWidth(0.5).strokeColor('#f1f5f9').stroke();
+
+      const pos = String(index + 1);
+      const title = item.product.title;
+      const partnerName = item.product.partner ? item.product.partner.name : 'Directo (AbastoHub)';
+      const qty = `${item.totalQty} ${item.product.unit}`;
+      const rev = formatPrice(item.totalRevenue);
+
+      doc.fillColor(textGray)
+         .font('Helvetica')
+         .fontSize(7.5)
+         .text(pos, 45, currentY + 5)
+         .font('Helvetica-Bold')
+         .fillColor(darkSlate)
+         .text(title, 75, currentY + 5, { width: 175, ellipsis: true })
+         .font('Helvetica')
+         .fillColor(textGray)
+         .text(partnerName, 260, currentY + 5, { width: 120, ellipsis: true })
+         .text(qty, 390, currentY + 5, { width: 70, align: 'right' })
+         .font('Helvetica-Bold')
+         .text(rev, 470, currentY + 5, { width: 80, align: 'right' });
+
+      currentY += 18;
+
+      if (currentY > 730) {
+        doc.addPage();
+        doc.rect(40, 40, 515, 5).fill(primaryColor);
+        currentY = 60;
+      }
+    });
+
+    currentY += 25;
+
+    if (currentY > 600) {
+      doc.addPage();
+      doc.rect(40, 40, 515, 5).fill(primaryColor);
+      currentY = 60;
+    }
+
+    // Section Title: Best Partners
+    doc.fillColor(darkSlate)
+       .font('Helvetica-Bold')
+       .fontSize(12)
+       .text('DESEMPEÑO DE SOCIOS COMERCIALES', 40, currentY);
+       
+    currentY += 18;
+
+    // Table Header for Best Partners
+    doc.rect(40, currentY, 515, 18).fill('#e2e8f0');
+    doc.fillColor(darkSlate)
+       .font('Helvetica-Bold')
+       .fontSize(8)
+       .text('POS', 45, currentY + 5)
+       .text('SOCIO COMERCIAL', 75, currentY + 5)
+       .text('CORREO ELECTRÓNICO', 250, currentY + 5)
+       .text('UNIDADES VENDIDAS', 380, currentY + 5, { width: 90, align: 'right' })
+       .text('INGRESOS TOTALES', 480, currentY + 5, { width: 70, align: 'right' });
+
+    currentY += 18;
+
+    if (bestPartners.length === 0) {
+      doc.fontSize(8)
+         .font('Helvetica')
+         .fillColor(textGray)
+         .text('No hay registros de ventas para socios comerciales en este período.', 45, currentY + 5);
+    } else {
+      bestPartners.forEach((item, index) => {
+        if (index % 2 === 1) {
+          doc.rect(40, currentY, 515, 18).fill('#f8fafc');
+        }
+        
+        doc.rect(40, currentY, 515, 18).lineWidth(0.5).strokeColor('#f1f5f9').stroke();
+
+        const pos = String(index + 1);
+        const name = item.partner.name;
+        const email = item.partner.email;
+        const qty = `${item.totalQty} u.`;
+        const rev = formatPrice(item.totalRevenue);
+
+        doc.fillColor(textGray)
+           .font('Helvetica')
+           .fontSize(7.5)
+           .text(pos, 45, currentY + 5)
+           .font('Helvetica-Bold')
+           .fillColor(darkSlate)
+           .text(name, 75, currentY + 5, { width: 165, ellipsis: true })
+           .font('Helvetica')
+           .fillColor(textGray)
+           .text(email, 250, currentY + 5, { width: 125, ellipsis: true })
+           .text(qty, 380, currentY + 5, { width: 90, align: 'right' })
+           .font('Helvetica-Bold')
+           .text(rev, 480, currentY + 5, { width: 70, align: 'right' });
+
+        currentY += 18;
+
+        if (currentY > 730) {
+          doc.addPage();
+          doc.rect(40, 40, 515, 5).fill(primaryColor);
+          currentY = 60;
+        }
+      });
+    }
+
+    doc.end();
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getProducts,
   getProductBySlug,
@@ -1674,5 +1939,6 @@ module.exports = {
   deleteOrder,
   deleteAllOrders,
   generatePriceListPDF,
-  updateWithdrawalStatus
+  updateWithdrawalStatus,
+  generateStatisticsPDF
 };

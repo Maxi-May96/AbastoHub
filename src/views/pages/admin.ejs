@@ -1000,6 +1000,18 @@
     <!-- Tab 8: Estadísticas (Más Vendidos) -->
     <div id="stats-tab" class="tab-panel hidden space-y-6">
       
+      <!-- Header Actions Bar -->
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white border border-slate-200/80 p-5 rounded-3xl shadow-sm">
+        <div>
+          <h2 class="display-font text-base font-black text-slate-800">Estadísticas de Rendimiento</h2>
+          <p class="text-xs text-slate-400 mt-0.5">Reporte consolidado de volumen de ventas, productos estrella y rankings de socios comerciales.</p>
+        </div>
+        <a href="/admin/statistics/pdf" class="inline-flex items-center gap-2 px-5 py-3 rounded-2xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-500/10 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all text-xs">
+          <i class="fa-solid fa-file-pdf text-sm"></i>
+          Generar PDF con Estadísticas
+        </a>
+      </div>
+      
       <!-- Metrics Dashboard Grid -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         <!-- Revenue Card -->
