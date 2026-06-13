@@ -14,7 +14,7 @@
       <div class="lg:col-span-2 space-y-4">
         <% cart.products.forEach(item => { %>
           <% if (item.product) { %>
-            <div class="bg-white border border-slate-200/80 rounded-3xl p-5 shadow-sm flex flex-col sm:flex-row items-center gap-5 group">
+            <div class="bg-white border border-slate-200/80 rounded-3xl p-5 shadow-sm flex flex-col sm:flex-row items-center gap-5 group cart-item-row" data-product-id="<%= item.product._id %>" data-stock="<%= item.product.stock %>" data-price="<%= item.product.price * (1 - (item.product.discount || 0)/100) %>" data-wholesale-price="<%= item.product.wholesalePrice * (1 - (item.product.discount || 0)/100) %>" data-unit="<%= item.product.unit %>">
               
               <!-- Thumbnail Frame -->
               <div class="w-24 h-20 bg-slate-50 border border-slate-100 rounded-2xl flex-shrink-0 flex items-center justify-center p-2 overflow-hidden">
@@ -30,40 +30,37 @@
                 <div class="flex flex-wrap items-center justify-center sm:justify-start gap-2">
                   <h3 class="display-font text-base font-bold text-slate-900 truncate max-w-[250px]"><%= item.product.title %></h3>
                   
-                  <% if (item.wholesaleActive) { %>
-                    <span class="bg-brand-50 text-brand-700 border border-brand-100 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-                      <i class="fa-solid fa-tags text-[9px]"></i>
-                      Precio Mayorista Aplicado
-                    </span>
-                  <% } %>
+                  <span class="wholesale-badge bg-brand-50 text-brand-700 border border-brand-100 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 <%= item.wholesaleActive ? '' : 'hidden' %>">
+                    <i class="fa-solid fa-tags text-[9px]"></i>
+                    Precio Mayorista Aplicado
+                  </span>
                 </div>
-                <p class="text-xs text-slate-400">Precio unitario: <%= formatPrice(item.activePrice) %> / <%= item.product.unit %></p>
+                <p class="text-xs text-slate-400">Precio unitario: <span class="unit-price-display"><%= formatPrice(item.activePrice) %></span> / <%= item.product.unit %></p>
               </div>
 
               <!-- Quantity Adjuster Form -->
               <div class="flex items-center gap-2 flex-shrink-0">
                 
                 <!-- Decrease Qty Form -->
-                <form action="/cart/update" method="POST" class="inline">
+                <form action="/cart/update" method="POST" class="inline qty-form" data-type="decrease">
                   <input type="hidden" name="productId" value="<%= item.product._id %>">
-                  <input type="hidden" name="quantity" value="<%= item.quantity - 1 %>">
+                  <input type="hidden" name="quantity" class="qty-target-val" value="<%= item.quantity - 1 %>">
                   <button type="submit" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold transition-colors flex items-center justify-center">-</button>
                 </form>
 
                 <!-- Current quantity input readout -->
-                <form action="/cart/update" method="POST" class="inline">
+                <form action="/cart/update" method="POST" class="inline qty-form" data-type="change">
                   <input type="hidden" name="productId" value="<%= item.product._id %>">
                   <input type="number" name="quantity" min="1" max="<%= item.product.stock %>" value="<%= item.quantity %>" 
-                    onchange="this.form.submit()"
-                    class="w-12 text-center bg-slate-50 border border-slate-200 rounded-lg text-slate-800 font-bold py-1 text-sm outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none">
+                    class="w-12 text-center bg-slate-50 border border-slate-200 rounded-lg text-slate-800 font-bold py-1 text-sm outline-none qty-num-input [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none">
                 </form>
 
                 <!-- Increase Qty Form -->
-                <form action="/cart/update" method="POST" class="inline">
+                <form action="/cart/update" method="POST" class="inline qty-form" data-type="increase">
                   <input type="hidden" name="productId" value="<%= item.product._id %>">
-                  <input type="hidden" name="quantity" value="<%= item.quantity + 1 %>">
+                  <input type="hidden" name="quantity" class="qty-target-val" value="<%= item.quantity + 1 %>">
                   <button type="submit" <%= item.quantity >= item.product.stock ? 'disabled' : '' %> 
-                    class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-650 font-bold disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center">+</button>
+                    class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-650 font-bold disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center btn-increase">+</button>
                 </form>
               </div>
 
@@ -71,10 +68,10 @@
               <div class="flex items-center gap-4 justify-between sm:justify-end w-full sm:w-auto border-t sm:border-t-0 pt-3 sm:pt-0">
                 <div class="text-right">
                   <p class="text-xs text-slate-400 uppercase font-semibold">Subtotal</p>
-                  <p class="text-base font-extrabold text-slate-800"><%= formatPrice(item.activePrice * item.quantity) %></p>
+                  <p class="text-base font-extrabold text-slate-800 item-subtotal-display"><%= formatPrice(item.activePrice * item.quantity) %></p>
                 </div>
                 
-                <form action="/cart/remove" method="POST" class="inline">
+                <form action="/cart/remove" method="POST" class="inline cart-remove-form">
                   <input type="hidden" name="productId" value="<%= item.product._id %>">
                   <button type="submit" class="p-2.5 rounded-lg text-slate-350 hover:bg-rose-50 hover:text-rose-600 transition-all" title="Eliminar del carrito">
                     <i class="fa-solid fa-trash-can text-base"></i>
@@ -94,41 +91,41 @@
         <div class="space-y-3.5 text-sm">
           <div class="flex justify-between">
             <span class="text-slate-500">Subtotal de productos</span>
-            <span class="font-semibold text-slate-850"><%= formatPrice(cart.total) %></span>
+            <span class="font-semibold text-slate-850 summary-subtotal"><%= formatPrice(cart.total) %></span>
           </div>
           <div class="flex justify-between">
             <span class="text-slate-500">Envío / Flete</span>
             <span class="font-semibold text-emerald-600">A coordinar / Retiro</span>
           </div>
           
-          <!-- Dynamic savings visual helper if wholesale prices are present in cart -->
-          <% 
-            let potentialSavings = 0;
-            cart.products.forEach(item => {
-              if (item.product && item.quantity > 0) {
-                // If not wholesale, show what they COULD save
-                if (!item.wholesaleActive) {
-                  potentialSavings += (item.product.price - item.product.wholesalePrice) * item.quantity;
+          <div id="savings-banner-container">
+            <% 
+              let potentialSavings = 0;
+              cart.products.forEach(item => {
+                if (item.product && item.quantity > 0) {
+                  if (!item.wholesaleActive) {
+                    potentialSavings += (item.product.price - item.product.wholesalePrice) * item.quantity;
+                  }
                 }
-              }
-            });
-          %>
+              });
+            %>
 
-          <% if (potentialSavings > 0) { %>
-            <div class="bg-amber-50 border border-amber-100 rounded-xl p-3 text-[11px] text-amber-700 leading-normal flex gap-1.5 items-start">
-              <i class="fa-solid fa-circle-info mt-0.5 text-amber-600"></i>
-              <span>
-                ¡Tip de Ahorro! Agregando más unidades hasta llegar a 6 en tus productos, podrías ahorrar un extra de <strong><%= formatPrice(potentialSavings) %></strong> en esta compra.
-              </span>
-            </div>
-          <% } %>
+            <% if (potentialSavings > 0) { %>
+              <div class="bg-amber-50 border border-amber-100 rounded-xl p-3 text-[11px] text-amber-700 leading-normal flex gap-1.5 items-start">
+                <i class="fa-solid fa-circle-info mt-0.5 text-amber-600"></i>
+                <span>
+                  ¡Tip de Ahorro! Agregando más unidades hasta llegar a 6 en tus productos, podrías ahorrar un extra de <strong class="savings-amount"><%= formatPrice(potentialSavings) %></strong> en esta compra.
+                </span>
+              </div>
+            <% } %>
+          </div>
         </div>
 
         <hr class="border-slate-100">
 
         <div class="flex justify-between items-baseline">
           <span class="display-font text-base font-extrabold text-slate-900">Total</span>
-          <span class="display-font text-2xl font-black text-brand-700"><%= formatPrice(cart.total) %></span>
+          <span class="display-font text-2xl font-black text-brand-700 summary-total"><%= formatPrice(cart.total) %></span>
         </div>
 
         <div class="space-y-2 pt-2">
@@ -144,6 +141,220 @@
       </div>
 
     </div>
+
+    <!-- Client-side Asynchronous Shopping Cart Logic -->
+    <script>
+      function formatPriceJS(val) {
+        return new Intl.NumberFormat('es-AR', {
+          style: 'currency',
+          currency: 'ARS',
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        }).format(val);
+      }
+
+      document.addEventListener('DOMContentLoaded', () => {
+        // Intercept form submissions for qty update and removal
+        const handleCartAction = async (form, actionUrl, bodyData, row) => {
+          if (row) row.classList.add('opacity-50');
+
+          try {
+            const response = await fetch(actionUrl, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+              },
+              body: JSON.stringify(bodyData)
+            });
+
+            if (!response.ok) throw new Error('Error al actualizar el carrito');
+            const data = await response.json();
+
+            if (data.success) {
+              // Update the global header cart count badge if it exists
+              const cartNavBtn = document.getElementById('cart-nav-btn');
+              if (cartNavBtn) {
+                let badge = cartNavBtn.querySelector('span');
+                if (data.cartCount > 0) {
+                  if (!badge) {
+                    badge = document.createElement('span');
+                    badge.className = 'absolute top-0.5 right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-brand-600 text-[10px] font-bold text-white ring-2 ring-white';
+                    cartNavBtn.appendChild(badge);
+                  }
+                  badge.textContent = data.cartCount;
+                } else {
+                  if (badge) badge.remove();
+                }
+              }
+
+              // Check if product was completely removed or updated
+              const isRemoved = actionUrl.includes('remove') || !data.cart.products.some(p => p.product === bodyData.productId);
+
+              if (isRemoved) {
+                if (row) {
+                  row.style.transition = 'all 0.3s ease';
+                  row.style.transform = 'scale(0.95)';
+                  row.style.opacity = '0';
+                  setTimeout(() => {
+                    row.remove();
+                    // If cart has no items, reload to show empty state
+                    if (data.cartCount === 0) {
+                      window.location.reload();
+                    } else {
+                      updateSummary(data);
+                    }
+                  }, 300);
+                }
+              } else {
+                // Product updated: update the row details
+                const updatedItem = data.cart.products.find(p => p.product === bodyData.productId);
+                if (updatedItem && row) {
+                  row.classList.remove('opacity-50');
+
+                  // Update quantities in forms
+                  const numInput = row.querySelector('.qty-num-input');
+                  if (numInput) numInput.value = updatedItem.quantity;
+
+                  const decInput = row.querySelector('form[data-type="decrease"] input[name="quantity"]');
+                  if (decInput) decInput.value = updatedItem.quantity - 1;
+
+                  const incInput = row.querySelector('form[data-type="increase"] input[name="quantity"]');
+                  if (incInput) incInput.value = updatedItem.quantity + 1;
+
+                  // Enable/disable increase button based on stock limit
+                  const maxStock = parseInt(row.getAttribute('data-stock')) || 999;
+                  const btnInc = row.querySelector('.btn-increase');
+                  if (btnInc) {
+                    btnInc.disabled = (updatedItem.quantity >= maxStock);
+                  }
+
+                  // Update wholesale status and unit price display
+                  const isWholesale = updatedItem.quantity >= 6;
+                  const price = parseFloat(row.getAttribute('data-price'));
+                  const wholesalePrice = parseFloat(row.getAttribute('data-wholesale-price'));
+                  const activeUnitPrice = isWholesale ? wholesalePrice : price;
+
+                  const unitPriceDisplay = row.querySelector('.unit-price-display');
+                  if (unitPriceDisplay) {
+                    unitPriceDisplay.textContent = formatPriceJS(activeUnitPrice);
+                  }
+
+                  const badge = row.querySelector('.wholesale-badge');
+                  if (badge) {
+                    if (isWholesale) {
+                      badge.classList.remove('hidden');
+                    } else {
+                      badge.classList.add('hidden');
+                    }
+                  }
+
+                  // Update subtotal display of item
+                  const subtotalDisplay = row.querySelector('.item-subtotal-display');
+                  if (subtotalDisplay) {
+                    subtotalDisplay.textContent = formatPriceJS(activeUnitPrice * updatedItem.quantity);
+                  }
+
+                  updateSummary(data);
+                }
+              }
+            }
+          } catch (error) {
+            console.error(error);
+            if (row) row.classList.remove('opacity-50');
+          }
+        };
+
+        const updateSummary = (data) => {
+          // Update subtotal and total displays in summary card
+          const subtotalElems = document.querySelectorAll('.summary-subtotal');
+          subtotalElems.forEach(el => el.textContent = data.formattedTotal);
+
+          const totalElems = document.querySelectorAll('.summary-total');
+          totalElems.forEach(el => el.textContent = data.formattedTotal);
+
+          // Recalculate potential savings
+          const rows = document.querySelectorAll('.cart-item-row');
+          let potentialSavings = 0;
+
+          rows.forEach(row => {
+            const qtyInput = row.querySelector('.qty-num-input');
+            if (qtyInput) {
+              const qty = parseInt(qtyInput.value) || 0;
+              if (qty < 6) {
+                const price = parseFloat(row.getAttribute('data-price'));
+                const wholesalePrice = parseFloat(row.getAttribute('data-wholesale-price'));
+                potentialSavings += (price - wholesalePrice) * qty;
+              }
+            }
+          });
+
+          const savingsContainer = document.getElementById('savings-banner-container');
+          if (savingsContainer) {
+            if (potentialSavings > 0) {
+              savingsContainer.innerHTML = `
+                <div class="bg-amber-50 border border-amber-100 rounded-xl p-3 text-[11px] text-amber-700 leading-normal flex gap-1.5 items-start">
+                  <i class="fa-solid fa-circle-info mt-0.5 text-amber-600"></i>
+                  <span>
+                    ¡Tip de Ahorro! Agregando más unidades hasta llegar a 6 en tus productos, podrías ahorrar un extra de <strong class="savings-amount">${formatPriceJS(potentialSavings)}</strong> en esta compra.
+                  </span>
+                </div>
+              `;
+            } else {
+              savingsContainer.innerHTML = '';
+            }
+          }
+        };
+
+        // Attach listener for quantity adjustments
+        document.querySelectorAll('.qty-form').forEach(form => {
+          form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const row = form.closest('.cart-item-row');
+            const productId = form.querySelector('input[name="productId"]').value;
+            let quantity;
+
+            if (form.getAttribute('data-type') === 'change') {
+              const numInput = form.querySelector('.qty-num-input');
+              quantity = parseInt(numInput.value) || 1;
+            } else {
+              quantity = parseInt(form.querySelector('input[name="quantity"]').value) || 1;
+            }
+
+            handleCartAction(form, '/cart/update', { productId, quantity }, row);
+          });
+        });
+
+        // Attach listener to quantity text input change
+        document.querySelectorAll('.qty-num-input').forEach(input => {
+          input.addEventListener('change', () => {
+            // Enforce min/max boundaries
+            const min = parseInt(input.min) || 1;
+            const max = parseInt(input.max) || 999;
+            let val = parseInt(input.value) || 1;
+            if (val < min) val = min;
+            if (val > max) val = max;
+            input.value = val;
+
+            // Submit form programmatically to trigger listener
+            const form = input.closest('form');
+            if (form) {
+              form.dispatchEvent(new Event('submit', { cancelable: true }));
+            }
+          });
+        });
+
+        // Attach listener for remove action
+        document.querySelectorAll('.cart-remove-form').forEach(form => {
+          form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const row = form.closest('.cart-item-row');
+            const productId = form.querySelector('input[name="productId"]').value;
+            handleCartAction(form, '/cart/remove', { productId }, row);
+          });
+        });
+      });
+    </script>
   <% } else { %>
     <!-- Empty Cart State -->
     <div class="max-w-md mx-auto text-center py-16 px-4">

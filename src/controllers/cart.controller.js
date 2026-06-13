@@ -67,6 +67,9 @@ const addToCart = async (req, res, next) => {
 
     const product = await Product.findById(productId);
     if (!product || !product.active) {
+      if (req.accepts('html', 'json') === 'json') {
+        return res.status(404).json({ success: false, error: 'El producto no está disponible.' });
+      }
       return res.status(404).render('pages/error', {
         title: 'Error',
         status: 404,
@@ -100,6 +103,15 @@ const addToCart = async (req, res, next) => {
     calculateCartTotal(cart);
     await cart.save();
 
+    if (req.accepts('html', 'json') === 'json') {
+      const cartCount = cart.products.reduce((sum, item) => sum + item.quantity, 0);
+      return res.json({
+        success: true,
+        message: 'Producto agregado al carrito',
+        cartCount
+      });
+    }
+
     res.redirect('/cart');
   } catch (error) {
     next(error);
@@ -118,7 +130,12 @@ const updateCartQuantity = async (req, res, next) => {
     }
 
     const cart = await Cart.findOne({ user: req.user.id });
-    if (!cart) return res.redirect('/cart');
+    if (!cart) {
+      if (req.accepts('html', 'json') === 'json') {
+        return res.json({ success: false, error: 'Carrito no encontrado' });
+      }
+      return res.redirect('/cart');
+    }
 
     const itemIndex = cart.products.findIndex(
       item => item.product.toString() === productId
@@ -131,6 +148,16 @@ const updateCartQuantity = async (req, res, next) => {
       await cart.populate('products.product');
       calculateCartTotal(cart);
       await cart.save();
+    }
+
+    if (req.accepts('html', 'json') === 'json') {
+      const cartCount = cart.products.reduce((sum, item) => sum + item.quantity, 0);
+      return res.json({
+        success: true,
+        cart,
+        cartCount,
+        formattedTotal: formatPrice(cart.total)
+      });
     }
 
     res.redirect('/cart');
@@ -152,7 +179,12 @@ const removeFromCart = async (req, res, next) => {
 // Shared handler to remove an item from the cart
 const removeFromCartHandler = async (req, res, next, productId) => {
   const cart = await Cart.findOne({ user: req.user.id });
-  if (!cart) return res.redirect('/cart');
+  if (!cart) {
+    if (req.accepts('html', 'json') === 'json') {
+      return res.json({ success: false, error: 'Carrito no encontrado' });
+    }
+    return res.redirect('/cart');
+  }
 
   cart.products = cart.products.filter(
     item => item.product.toString() !== productId
@@ -161,6 +193,16 @@ const removeFromCartHandler = async (req, res, next, productId) => {
   await cart.populate('products.product');
   calculateCartTotal(cart);
   await cart.save();
+
+  if (req.accepts('html', 'json') === 'json') {
+    const cartCount = cart.products.reduce((sum, item) => sum + item.quantity, 0);
+    return res.json({
+      success: true,
+      cart,
+      cartCount,
+      formattedTotal: formatPrice(cart.total)
+    });
+  }
 
   res.redirect('/cart');
 };
