@@ -2427,16 +2427,20 @@
 
       // Show temporary download action for the receipt
       const ticketUrl = `/partner/orders/${result.orderId}/ticket`;
+      
+      // Auto-open in separate window/tab
+      window.open(ticketUrl, '_blank');
+
       const toastContainer = document.querySelector('.toast-container') || document.body;
       const downloadNotice = document.createElement('div');
       downloadNotice.className = 'fixed bottom-20 right-5 z-55 bg-indigo-650 border border-indigo-750 text-white px-5 py-4 rounded-2xl shadow-xl flex items-center justify-between gap-4 font-bold text-xs max-w-sm';
       downloadNotice.innerHTML = `
         <div class="flex items-center gap-2">
           <i class="fa-solid fa-file-pdf text-base"></i>
-          <span>¿Deseas descargar el remito/ticket de venta?</span>
+          <span>El ticket se ha abierto en una nueva pestaña.</span>
         </div>
         <div class="flex gap-2">
-          <a href="${ticketUrl}" target="_blank" onclick="this.parentElement.parentElement.remove()" class="bg-white text-indigo-700 hover:bg-slate-100 px-3 py-1.5 rounded-xl transition-all">Descargar</a>
+          <a href="${ticketUrl}" target="_blank" onclick="this.parentElement.parentElement.remove()" class="bg-white text-indigo-700 hover:bg-slate-100 px-3 py-1.5 rounded-xl transition-all">Ver de nuevo</a>
           <button onclick="this.parentElement.parentElement.remove()" class="text-white/85 hover:text-white px-2 font-normal">Cerrar</button>
         </div>
       `;
