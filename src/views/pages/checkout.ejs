@@ -357,7 +357,7 @@
           <span id="summary-shipping-cost" class="font-medium text-emerald-600">A coordinar</span>
         </div>
         <div class="flex justify-between text-slate-500 hidden" id="tax-row">
-          <span>IVA y Recargos MP (19%)</span>
+          <span id="tax-label">Cargo por uso de plataforma (5%)</span>
           <span id="tax-amount" class="font-semibold text-rose-600">+$0.00</span>
         </div>
       </div>
@@ -590,9 +590,13 @@
       instructions.classList.remove('hidden');
       receiptInput.setAttribute('required', 'required');
 
-      // Update Summary: hide tax and set base total
-      taxRow.classList.add('hidden');
-      summaryTotalSpan.textContent = formatPriceJS(baseTotal);
+      // Update Summary: calculate 5% platform fee and update total
+      const tax = baseTotal * 0.05;
+      const finalTotal = baseTotal + tax;
+      taxAmountSpan.textContent = `+ ` + formatPriceJS(tax);
+      document.getElementById('tax-label').textContent = 'Cargo Administrativo (5%)';
+      taxRow.classList.remove('hidden');
+      summaryTotalSpan.textContent = formatPriceJS(finalTotal);
 
       // Update Info box text
       secureInfoBox.innerHTML = '<i class="fa-solid fa-clock text-indigo-600 text-base mt-0.5"></i><span>Una vez realizado el pago de transferencia, recuerda <strong>subir la captura del comprobante</strong> de pago para que el administrador valide tu compra.</span>';
@@ -607,10 +611,11 @@
       instructions.classList.add('hidden');
       receiptInput.removeAttribute('required');
 
-      // Update Summary: calculate 19% tax and update total
-      const tax = baseTotal * 0.19;
+      // Update Summary: calculate 5% tax/charge and update total
+      const tax = baseTotal * 0.05;
       const finalTotal = baseTotal + tax;
       taxAmountSpan.textContent = `+ ` + formatPriceJS(tax);
+      document.getElementById('tax-label').textContent = 'Uso de Plataforma (5%)';
       taxRow.classList.remove('hidden');
       summaryTotalSpan.textContent = formatPriceJS(finalTotal);
 

@@ -103,7 +103,7 @@ const processCheckout = async (req, res, next) => {
     }
 
     // 2. Create Order in Database (Pending status)
-    const orderTotal = paymentMethod === 'mercadopago' ? Number((total * 1.19).toFixed(2)) : total;
+    const orderTotal = Number((total * 1.05).toFixed(2));
 
     const newOrder = new Order({
       user: req.user.id,
