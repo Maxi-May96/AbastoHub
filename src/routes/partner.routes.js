@@ -36,6 +36,7 @@ router.post('/partner/orders/:id/assign-driver', isPartnerAuthenticated, partner
 router.post('/partner/orders/dispatch-route', isPartnerAuthenticated, partnerController.dispatchPartnerRoute);
 router.post('/partner/orders/:id/ship', isPartnerAuthenticated, partnerController.shipOrder);
 router.get('/partner/orders/:id/ticket', isPartnerAuthenticated, partnerController.generatePartnerPDFTicket);
+router.get('/partner/orders/:id/thermal', isPartnerAuthenticated, partnerController.getPartnerThermalTicket);
 router.get('/partner/download-summary', isPartnerAuthenticated, partnerController.downloadMonthlySummary);
 router.get('/partner/statistics/pdf', isPartnerAuthenticated, partnerController.generatePartnerStatisticsPDF);
 router.get('/partner/pos', isPartnerAuthenticated, partnerController.getPOSView);

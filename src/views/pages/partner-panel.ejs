@@ -677,6 +677,61 @@
         </div>
       </div>
 
+      <!-- Banner de Aviso de Comisiones POS (5%) -->
+      <% if (posCommissionsOwed > 0) { %>
+        <div class="bg-gradient-to-r from-rose-50 to-amber-50 border-l-4 border-rose-500 rounded-2xl p-4 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center text-lg shrink-0">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <div>
+              <h4 class="font-bold text-slate-800 text-xs uppercase tracking-wider">Comisiones POS Pendientes de Pago (5%)</h4>
+              <p class="text-slate-550 text-[11px] mt-0.5">
+                Debes abonar la comisión correspondiente al uso de plataforma por ventas POS registradas en mostrador.
+              </p>
+            </div>
+          </div>
+          <div class="flex items-center gap-4 shrink-0 w-full sm:w-auto justify-between sm:justify-end">
+            <div class="text-left sm:text-right">
+              <span class="text-[9px] font-bold text-slate-400 block uppercase">Monto a pagar</span>
+              <span class="text-base font-extrabold text-rose-600"><%= formatPrice(posCommissionsOwed) %></span>
+            </div>
+            <button onclick="scrollToPOSCommissionForm()" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-[10px] uppercase tracking-wider rounded-xl transition-all shadow-xs shadow-rose-500/10">
+              Pagar Ahora
+            </button>
+          </div>
+        </div>
+      <% } else if (posCommissionsPending > 0) { %>
+        <div class="bg-gradient-to-r from-amber-50 to-white border-l-4 border-amber-500 rounded-2xl p-4 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center text-lg shrink-0">
+              <i class="fa-solid fa-clock"></i>
+            </div>
+            <div>
+              <h4 class="font-bold text-slate-800 text-xs uppercase tracking-wider">Pago de Comisión POS en Revisión</h4>
+              <p class="text-slate-550 text-[11px] mt-0.5">
+                El comprobante del pago de comisiones POS está pendiente de aprobación por la administración.
+              </p>
+            </div>
+          </div>
+          <div class="text-left sm:text-right shrink-0">
+            <span class="text-[9px] font-bold text-slate-400 block uppercase">Monto en revisión</span>
+            <span class="text-base font-extrabold text-amber-600"><%= formatPrice(posCommissionsPending) %></span>
+          </div>
+        </div>
+      <% } else { %>
+        <div class="bg-gradient-to-r from-slate-50 to-white border border-slate-200 rounded-2xl p-4 flex items-center gap-3 shadow-2xs">
+          <div class="w-9 h-9 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center text-sm">
+            <i class="fa-solid fa-circle-info"></i>
+          </div>
+          <div>
+            <p class="text-slate-550 text-[11px]">
+              El uso de la terminal POS de venta en mostrador tiene una comisión fija de <strong>5%</strong>. No registras comisiones vencidas o pendientes.
+            </p>
+          </div>
+        </div>
+      <% } %>
+
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         <!-- Left Column: Bank Coordinates & Payout Forms -->
@@ -2431,6 +2486,21 @@
       }
     }
   });
+
+  function scrollToPOSCommissionForm() {
+    const el = document.getElementById('method-balance-label');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Visual feedback: brief highlight
+      const box = el.closest('.bg-white');
+      if (box) {
+        box.classList.add('ring-2', 'ring-indigo-650', 'scale-[1.01]');
+        setTimeout(() => {
+          box.classList.remove('ring-2', 'ring-indigo-650', 'scale-[1.01]');
+        }, 1500);
+      }
+    }
+  }
 </script>
 
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCBMrNLZp5utwO_ecNIxd2srSxU_LWE2OA&libraries=places&callback=initMaps" async defer></script>

@@ -1259,6 +1259,50 @@ const generatePartnerPDFTicket = async (req, res, next) => {
   }
 };
 
+const getPartnerThermalTicket = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const partnerId = req.partner.id;
+
+    const partner = await Partner.findById(partnerId);
+    if (!partner) {
+      return res.status(404).send('Socio no encontrado');
+    }
+
+    const order = await Order.findById(id)
+      .populate('user')
+      .populate({
+        path: 'products.product',
+        populate: { path: 'partner' }
+      });
+
+    if (!order) {
+      return res.status(404).send('Pedido no encontrado');
+    }
+
+    // Filter items belonging to this partner
+    const partnerItems = order.products.filter(item => {
+      if (!item.product) return false;
+      const partnerRef = item.product.partner;
+      if (!partnerRef) return false;
+      const itemPartnerId = partnerRef._id ? partnerRef._id.toString() : partnerRef.toString();
+      return itemPartnerId === partnerId;
+    });
+
+    if (partnerItems.length === 0) {
+      return res.status(403).send('No autorizado para ver este ticket (no contiene tus productos)');
+    }
+
+    res.render('pages/partner-thermal-ticket', {
+      partner,
+      order,
+      partnerItems
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const downloadMonthlySummary = async (req, res, next) => {
   try {
     const partnerId = req.partner.id;
@@ -2222,6 +2266,7 @@ module.exports = {
   dispatchPartnerRoute,
   shipOrder,
   generatePartnerPDFTicket,
+  getPartnerThermalTicket,
   downloadMonthlySummary,
   getRegister,
   postRegister,

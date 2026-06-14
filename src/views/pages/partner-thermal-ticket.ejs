@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ticket de Venta - <%= order._id.toString().substring(18).toUpperCase() %></title>
+  <style>
+    /* Premium Monospace / Thermal Print Design */
+    @page {
+      margin: 0;
+      size: auto;
+    }
+    
+    body {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 12px;
+      line-height: 1.4;
+      color: #000;
+      background-color: #fff;
+      margin: 0 auto;
+      padding: 15px 10px;
+      width: 290px; /* Standard 80mm printable width is ~72mm/280px */
+      box-sizing: border-box;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .text-center {
+      text-align: center;
+    }
+    .text-right {
+      text-align: right;
+    }
+    .bold {
+      font-weight: bold;
+    }
+    .uppercase {
+      text-transform: uppercase;
+    }
+    
+    .divider {
+      border-top: 1px dashed #000;
+      margin: 10px 0;
+      height: 0;
+    }
+
+    .double-divider {
+      border-top: 2px double #000;
+      margin: 10px 0;
+      height: 0;
+    }
+
+    .header-logo {
+      font-size: 16px;
+      font-weight: 900;
+      margin-bottom: 2px;
+      letter-spacing: 1px;
+    }
+
+    .partner-name {
+      font-size: 13px;
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+
+    .meta-table, .items-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 8px 0;
+    }
+
+    .meta-table td {
+      padding: 1.5px 0;
+      vertical-align: top;
+      font-size: 11px;
+    }
+
+    .items-table th {
+      border-bottom: 1px dashed #000;
+      padding: 4px 0;
+      font-size: 11px;
+      text-align: left;
+    }
+
+    .items-table td {
+      padding: 5px 0;
+      font-size: 11px;
+      vertical-align: top;
+    }
+
+    .total-section {
+      margin-top: 10px;
+      font-size: 12px;
+    }
+
+    .total-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 2px 0;
+    }
+
+    .grand-total {
+      font-size: 14px;
+      font-weight: bold;
+      border-top: 1px dashed #000;
+      border-bottom: 1px dashed #000;
+      padding: 4px 0;
+      margin-top: 4px;
+    }
+
+    .raffle-container {
+      border: 1px dashed #000;
+      padding: 8px;
+      margin: 15px 0;
+      background-color: #fff;
+    }
+
+    .raffle-title {
+      font-size: 10px;
+      font-weight: bold;
+      margin-bottom: 3px;
+    }
+
+    .raffle-code {
+      font-size: 15px;
+      font-weight: bold;
+      letter-spacing: 2px;
+    }
+
+    .footer-msg {
+      font-size: 10px;
+      margin-top: 15px;
+      color: #333;
+    }
+
+    /* Print action buttons (hidden when printing) */
+    .no-print-actions {
+      margin-top: 25px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      text-align: center;
+      text-decoration: none;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: 12px;
+      font-weight: bold;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      box-sizing: border-box;
+    }
+
+    .btn-primary {
+      background-color: #10b981;
+      color: #fff;
+    }
+
+    .btn-secondary {
+      background-color: #f1f5f9;
+      color: #334155;
+      border: 1px solid #cbd5e1;
+    }
+
+    @media print {
+      body {
+        width: 100%;
+        margin: 0;
+        padding: 10px;
+      }
+      .no-print-actions {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="text-center">
+    <div class="header-logo uppercase">ABASTOHUB</div>
+    <div class="divider"></div>
+    <div class="partner-name uppercase"><%= partner.name %></div>
+    <% if (partner.address) { %>
+      <div><%= partner.address %></div>
+    <% } %>
+    <% if (partner.province) { %>
+      <div><%= partner.province %></div>
+    <% } %>
+    <% if (partner.phone) { %>
+      <div>Tel: <%= partner.phone %></div>
+    <% } %>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Meta Info -->
+  <table class="meta-table">
+    <tr>
+      <td class="bold" style="width: 35%;">TICKET N°:</td>
+      <td><%= order._id.toString().substring(12).toUpperCase() %></td>
+    </tr>
+    <tr>
+      <td class="bold">FECHA:</td>
+      <td><%= new Date(order.createdAt).toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' }) %></td>
+    </tr>
+    <tr>
+      <td class="bold">CLIENTE:</td>
+      <td class="uppercase"><%= order.shippingDetails.name || 'CLIENTE GENERAL' %></td>
+    </tr>
+    <% if (order.shippingDetails.phone && order.shippingDetails.phone !== 'N/A') { %>
+      <tr>
+        <td class="bold">TELÉFONO:</td>
+        <td><%= order.shippingDetails.phone %></td>
+      </tr>
+    <% } %>
+    <tr>
+      <td class="bold">PAGO:</td>
+      <td class="uppercase">
+        <% if (order.paymentMethod === 'cash') { %>
+          EFECTIVO
+        <% } else if (order.paymentMethod === 'transfer') { %>
+          TRANSFERENCIA
+        <% } else if (order.paymentMethod === 'mercadopago') { %>
+          MERCADO PAGO
+        <% } else { %>
+          <%= order.paymentMethod %>
+        <% } %>
+      </td>
+    </tr>
+    <% if (order.issueInvoice) { %>
+      <tr>
+        <td class="bold">COMPROBANTE:</td>
+        <td class="uppercase bold">FACTURA SOLICITADA</td>
+      </tr>
+    <% } %>
+  </table>
+
+  <div class="divider"></div>
+
+  <!-- Items Table -->
+  <table class="items-table">
+    <thead>
+      <tr>
+        <th style="width: 50%;">PRODUCTO</th>
+        <th style="width: 15%; text-align: center;">CANT</th>
+        <th style="width: 35%; text-align: right;">TOTAL</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% partnerItems.forEach(item => { %>
+        <tr>
+          <td>
+            <div class="bold"><%= item.title %></div>
+            <div style="font-size: 10px; color: #555;"><%= item.quantity %> <%= item.unit %> x $<%= item.price.toFixed(2) %></div>
+          </td>
+          <td class="text-center" style="vertical-align: middle;"><%= item.quantity %></td>
+          <td class="text-right" style="vertical-align: middle;">$<%= (item.price * item.quantity).toFixed(2) %></td>
+        </tr>
+      <% }); %>
+    </tbody>
+  </table>
+
+  <div class="divider"></div>
+
+  <!-- Total Summary -->
+  <div class="total-section">
+    <% 
+      // Calculate base subtotal for this partner's items
+      let partnerSubtotal = 0;
+      partnerItems.forEach(item => {
+        partnerSubtotal += item.price * item.quantity;
+      });
+
+      // Since commission is 5%, we calculate:
+      // Note: If discount or surcharge was applied overall, it was saved in order notes.
+      // Let's parse discount/surcharge from order notes if present, or apply proportional if they exist
+      // Since it's stored in notes: "Descuento aplicado: X%." and "Recargo aplicado: Y%."
+      let discVal = 0;
+      let surchVal = 0;
+      const notes = order.shippingDetails.notes || '';
+      const discMatch = notes.match(/Descuento aplicado:\s*(\d+(\.\d+)?)%/);
+      const surchMatch = notes.match(/Recargo aplicado:\s*(\d+(\.\d+)?)%/);
+      if (discMatch) discVal = parseFloat(discMatch[1]);
+      if (surchMatch) surchVal = parseFloat(surchMatch[1]);
+
+      let partnerFinalSub = partnerSubtotal;
+      if (discVal > 0) partnerFinalSub = partnerFinalSub * (1 - discVal / 100);
+      if (surchVal > 0) partnerFinalSub = partnerFinalSub * (1 + surchVal / 100);
+
+      // POS Fee (5%)
+      let posFee = partnerFinalSub * 0.05;
+      let partnerTotal = partnerFinalSub + posFee;
+    %>
+    <div class="total-row">
+      <span>Subtotal Base:</span>
+      <span>$<%= partnerSubtotal.toFixed(2) %></span>
+    </div>
+    
+    <% if (discVal > 0) { %>
+      <div class="total-row">
+        <span>Descuento (<%= discVal %>%):</span>
+        <span>-$<%= (partnerSubtotal * (discVal / 100)).toFixed(2) %></span>
+      </div>
+    <% } %>
+
+    <% if (surchVal > 0) { %>
+      <div class="total-row">
+        <% let baseAfterDisc = partnerSubtotal * (1 - discVal / 100); %>
+        <span>Recargo (<%= surchVal %>%):</span>
+        <span>+$<%= (baseAfterDisc * (surchVal / 100)).toFixed(2) %></span>
+      </div>
+    <% } %>
+
+    <div class="total-row">
+      <span>Comisión POS (5%):</span>
+      <span>$<%= posFee.toFixed(2) %></span>
+    </div>
+
+    <div class="total-row grand-total bold">
+      <span>TOTAL GENERAL:</span>
+      <span>$<%= partnerTotal.toFixed(2) %></span>
+    </div>
+  </div>
+
+  <!-- Raffle Section -->
+  <% if (order.raffleCode) { %>
+    <div class="raffle-container text-center">
+      <div class="raffle-title uppercase">Código Sorteo Mensual</div>
+      <div class="raffle-code"><%= order.raffleCode %></div>
+    </div>
+  <% } %>
+
+  <!-- Footer messages -->
+  <div class="text-center footer-msg">
+    <div>¡Gracias por tu compra!</div>
+    <div class="bold" style="margin-top: 4px;">ABASTOHUB</div>
+    <div style="font-size: 8px; margin-top: 2px; color: #666;">Sistema POS AbastoHub</div>
+  </div>
+
+  <!-- Print actions -->
+  <div class="no-print-actions">
+    <button onclick="window.print()" class="btn btn-primary">
+      Imprimir Ticket
+    </button>
+    <button onclick="window.close()" class="btn btn-secondary">
+      Cerrar Ventana
+    </button>
+  </div>
+
+  <!-- Auto-trigger print -->
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      // Auto print after a short delay
+      setTimeout(() => {
+        window.print();
+      }, 500);
+    });
+  </script>
+</body>
+</html>
