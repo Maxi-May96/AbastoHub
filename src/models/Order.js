@@ -116,6 +116,18 @@ const OrderSchema = new mongoose.Schema({
     enum: ['unpaid', 'pending', 'paid'],
     default: 'unpaid'
   },
+  subtotal: {
+    type: Number,
+    default: 0
+  },
+  couponCode: {
+    type: String,
+    default: null
+  },
+  discountAmount: {
+    type: Number,
+    default: 0
+  },
   createdAt: {
     type: Date,
     default: Date.now

@@ -8,18 +8,50 @@ const { mpClient, mpEnabled } = require('../config/mercadopago');
  * @returns {Promise<{ initPoint: string, preferenceId: string }>}
  */
 const createOrderPreference = async (order, hostUrl) => {
-  const items = order.products.map(item => ({
-    id: item.product.toString(),
-    title: item.title,
-    quantity: item.quantity,
-    unit_price: Number(item.price),
-    currency_id: 'ARS'
-  }));
+  const productsSubtotal = order.products.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  
+  // Calculate proportional discount for each item if there is a discount
+  let items = [];
+  if (order.discountAmount > 0 && order.couponCode) {
+    const Coupon = require('../models/Coupon');
+    const Product = require('../models/Product');
+    const coupon = await Coupon.findOne({ code: order.couponCode });
+    
+    let eligibleSubtotal = 0;
+    const itemsWithEligibility = await Promise.all(order.products.map(async (item) => {
+      const dbProduct = await Product.findById(item.product);
+      const isEligible = dbProduct && (coupon && (coupon.partner === null || coupon.partner.toString() === dbProduct.partner.toString()));
+      if (isEligible) {
+        eligibleSubtotal += item.price * item.quantity;
+      }
+      return { item, isEligible };
+    }));
+    
+    const partnerDiscountFactor = eligibleSubtotal > 0 ? (1 - order.discountAmount / eligibleSubtotal) : 1;
+    
+    items = itemsWithEligibility.map(({ item, isEligible }) => {
+      const priceToUse = isEligible ? Number((item.price * partnerDiscountFactor).toFixed(2)) : Number(item.price);
+      return {
+        id: item.product.toString(),
+        title: item.title,
+        quantity: item.quantity,
+        unit_price: priceToUse,
+        currency_id: 'ARS'
+      };
+    });
+  } else {
+    items = order.products.map(item => ({
+      id: item.product.toString(),
+      title: item.title,
+      quantity: item.quantity,
+      unit_price: Number(item.price),
+      currency_id: 'ARS'
+    }));
+  }
 
   // If the payment method is Mercado Pago, add the 5% Platform fee item
   if (order.paymentMethod === 'mercadopago') {
-    const productsSubtotal = order.products.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const taxAmount = Number((productsSubtotal * 0.05).toFixed(2));
+    const taxAmount = Number(((productsSubtotal - order.discountAmount) * 0.05).toFixed(2));
     
     items.push({
       id: 'fee_mp_5',

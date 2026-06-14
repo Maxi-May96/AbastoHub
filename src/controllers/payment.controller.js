@@ -5,6 +5,7 @@ const Product = require('../models/Product');
 const { createOrderPreference } = require('../services/mercadopago.service');
 const { mpClient, mpEnabled } = require('../config/mercadopago');
 const { Payment } = require('mercadopago');
+const Coupon = require('../models/Coupon');
 const formatPrice = require('../utils/formatPrice');
 const { uploadImage } = require('../services/firebase.service');
 
@@ -52,7 +53,7 @@ const getCheckout = async (req, res, next) => {
 // POST Process Checkout Action
 const processCheckout = async (req, res, next) => {
   try {
-    const { name, phone, deliveryType, street, city, province, zipCode, notes, scheduledDate, latitude, longitude, paymentMethod } = req.body;
+    const { name, phone, deliveryType, street, city, province, zipCode, notes, scheduledDate, latitude, longitude, paymentMethod, couponCode } = req.body;
 
     const cart = await Cart.findOne({ user: req.user.id }).populate('products.product');
     if (!cart || cart.products.length === 0) {
@@ -79,6 +80,80 @@ const processCheckout = async (req, res, next) => {
       };
     });
 
+    // 1b. Validate Coupon and Calculate Discount
+    let discountAmount = 0;
+    let appliedCode = null;
+
+    if (couponCode && couponCode.trim() !== '') {
+      const uppercaseCode = couponCode.toUpperCase().trim();
+      const coupon = await Coupon.findOne({ code: uppercaseCode });
+
+      if (!coupon || !coupon.active) {
+        return res.redirect('/checkout?error=' + encodeURIComponent('El cupón no es válido o ha sido desactivado.'));
+      }
+
+      // Check dates
+      const now = new Date();
+      if (coupon.startDate && coupon.startDate > now) {
+        return res.redirect('/checkout?error=' + encodeURIComponent('El cupón no está disponible actualmente.'));
+      }
+      if (coupon.endDate && coupon.endDate < now) {
+        return res.redirect('/checkout?error=' + encodeURIComponent('El cupón ha vencido.'));
+      }
+
+      // Check usage limit
+      if (coupon.usageLimit !== null && coupon.usedCount >= coupon.usageLimit) {
+        return res.redirect('/checkout?error=' + encodeURIComponent('El cupón ha alcanzado su límite de usos.'));
+      }
+
+      // Check user usage
+      if (coupon.usedBy.some(id => id.toString() === req.user.id.toString())) {
+        return res.redirect('/checkout?error=' + encodeURIComponent('Ya has utilizado este cupón anteriormente.'));
+      }
+
+      // Calculate eligible subtotal
+      let eligibleSubtotal = 0;
+      cart.products.forEach(item => {
+        const isWholesale = item.quantity >= 6;
+        const discountFactor = 1 - (item.product.discount || 0) / 100;
+        const basePrice = item.product.price * discountFactor;
+        const baseWholesalePrice = item.product.wholesalePrice * discountFactor;
+        const priceToUse = isWholesale ? baseWholesalePrice : basePrice;
+        const subtotal = priceToUse * item.quantity;
+
+        if (coupon.partner === null || coupon.partner.toString() === item.product.partner.toString()) {
+          eligibleSubtotal += subtotal;
+        }
+      });
+
+      if (eligibleSubtotal === 0) {
+        return res.redirect('/checkout?error=' + encodeURIComponent('Tu carrito no incluye productos elegibles para este cupón.'));
+      }
+
+      if (eligibleSubtotal < coupon.minPurchase) {
+        return res.redirect('/checkout?error=' + encodeURIComponent(`Compra mínima no alcanzada para este cupón (Mínimo: ${formatPrice(coupon.minPurchase)}).`));
+      }
+
+      // Calculate discount
+      if (coupon.discountType === 'percentage') {
+        discountAmount = eligibleSubtotal * (coupon.discountValue / 100);
+      } else {
+        discountAmount = coupon.discountValue;
+      }
+
+      if (discountAmount > eligibleSubtotal) {
+        discountAmount = eligibleSubtotal;
+      }
+
+      discountAmount = Math.round(discountAmount * 100) / 100;
+      appliedCode = coupon.code;
+
+      // Update coupon usage
+      coupon.usedCount += 1;
+      coupon.usedBy.push(req.user.id);
+      await coupon.save();
+    }
+
     // Handle receipt upload for bank transfers
     let receiptUrl = null;
     if (paymentMethod === 'transfer') {
@@ -103,11 +178,15 @@ const processCheckout = async (req, res, next) => {
     }
 
     // 2. Create Order in Database (Pending status)
-    const orderTotal = Number((total * 1.05).toFixed(2));
+    const discountedTotal = total - discountAmount;
+    const orderTotal = Number((discountedTotal * 1.05).toFixed(2));
 
     const newOrder = new Order({
       user: req.user.id,
       products: orderProducts,
+      subtotal: total,
+      couponCode: appliedCode,
+      discountAmount: discountAmount,
       total: orderTotal,
       paymentStatus: 'pending',
       paymentMethod: paymentMethod || 'mercadopago',

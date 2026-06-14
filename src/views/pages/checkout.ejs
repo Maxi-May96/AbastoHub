@@ -19,6 +19,7 @@
     <!-- Delivery Details Form (Col Span 2) -->
     <div class="lg:col-span-2">
       <form action="/checkout" method="POST" id="checkout-form" enctype="multipart/form-data" class="space-y-6">
+        <input type="hidden" name="couponCode" id="hidden-coupon-code" value="">
         
         <!-- Section 1: Customer Contact Details -->
         <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
@@ -350,7 +351,11 @@
       <div class="space-y-2 text-xs">
         <div class="flex justify-between text-slate-500">
           <span>Subtotal</span>
-          <span><%= formatPrice(total) %></span>
+          <span id="summary-subtotal"><%= formatPrice(total) %></span>
+        </div>
+        <div class="flex justify-between text-slate-500 hidden" id="discount-row">
+          <span>Descuento</span>
+          <span id="discount-amount" class="font-bold text-emerald-600">-$0.00</span>
         </div>
         <div class="flex justify-between text-slate-500">
           <span>Envío</span>
@@ -360,6 +365,22 @@
           <span id="tax-label">Cargo por uso de plataforma (5%)</span>
           <span id="tax-amount" class="font-semibold text-rose-600">+$0.00</span>
         </div>
+      </div>
+
+      <hr class="border-slate-100">
+
+      <!-- Coupon section -->
+      <div class="space-y-2.5">
+        <label class="block text-xs font-bold uppercase tracking-wider text-slate-500">¿Tienes un cupón de descuento?</label>
+        <div class="flex gap-2">
+          <input type="text" id="coupon-input" placeholder="Ingresa el código" 
+            class="flex-grow bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-3 py-2.5 rounded-xl outline-none text-xs font-mono font-bold uppercase">
+          <button type="button" onclick="applyCoupon()" 
+            class="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-950 text-white font-bold text-xs shadow-sm transition-all whitespace-nowrap">
+            Aplicar
+          </button>
+        </div>
+        <div id="coupon-message" class="text-[10.5px] font-semibold hidden"></div>
       </div>
 
       <hr class="border-slate-100">
@@ -568,15 +589,109 @@
     }).format(val);
   }
 
+  let appliedDiscountAmount = 0;
+  let currentPaymentMethod = 'mercadopago';
+
+  function updateOrderTotals() {
+    const discountedSubtotal = baseTotal - appliedDiscountAmount;
+    
+    // Update Subtotal element
+    const subtotalEl = document.getElementById('summary-subtotal');
+    if (subtotalEl) {
+      subtotalEl.textContent = formatPriceJS(baseTotal);
+    }
+    
+    // Update Discount row
+    const discountRow = document.getElementById('discount-row');
+    const discountAmountEl = document.getElementById('discount-amount');
+    if (appliedDiscountAmount > 0) {
+      discountRow.classList.remove('hidden');
+      discountAmountEl.textContent = `-${formatPriceJS(appliedDiscountAmount)}`;
+    } else {
+      discountRow.classList.add('hidden');
+    }
+
+    // Calculate Platform fee (5%) on the discounted subtotal
+    const tax = discountedSubtotal * 0.05;
+    const finalTotal = discountedSubtotal + tax;
+
+    // Update Platform fee element
+    const taxRow = document.getElementById('tax-row');
+    const taxAmountSpan = document.getElementById('tax-amount');
+    const taxLabelSpan = document.getElementById('tax-label');
+    
+    if (taxAmountSpan) {
+      taxAmountSpan.textContent = `+ ` + formatPriceJS(tax);
+    }
+    if (taxLabelSpan) {
+      taxLabelSpan.textContent = currentPaymentMethod === 'transfer' ? 'Cargo Administrativo (5%)' : 'Uso de Plataforma (5%)';
+    }
+    if (taxRow) {
+      taxRow.classList.remove('hidden');
+    }
+
+    // Update Grand Total element
+    const summaryTotalSpan = document.getElementById('summary-total');
+    if (summaryTotalSpan) {
+      summaryTotalSpan.textContent = formatPriceJS(finalTotal);
+    }
+  }
+
+  async function applyCoupon() {
+    const input = document.getElementById('coupon-input');
+    const messageEl = document.getElementById('coupon-message');
+    const hiddenInput = document.getElementById('hidden-coupon-code');
+    
+    const code = input.value.trim().toUpperCase();
+    if (!code) {
+      messageEl.textContent = 'Por favor ingresa un código.';
+      messageEl.className = 'text-[10.5px] font-semibold text-rose-600';
+      messageEl.classList.remove('hidden');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/coupons/apply', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ code })
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        appliedDiscountAmount = result.discountAmount;
+        hiddenInput.value = code;
+        
+        messageEl.textContent = `Cupón "${code}" aplicado con éxito. Descuento: -${formatPriceJS(result.discountAmount)}`;
+        messageEl.className = 'text-[10.5px] font-semibold text-emerald-600';
+        messageEl.classList.remove('hidden');
+      } else {
+        appliedDiscountAmount = 0;
+        hiddenInput.value = '';
+        
+        messageEl.textContent = result.message || 'Error al aplicar cupón.';
+        messageEl.className = 'text-[10.5px] font-semibold text-rose-600';
+        messageEl.classList.remove('hidden');
+      }
+      updateOrderTotals();
+    } catch (err) {
+      console.error(err);
+      messageEl.textContent = 'Error de conexión con el servidor.';
+      messageEl.className = 'text-[10.5px] font-semibold text-rose-600';
+      messageEl.classList.remove('hidden');
+    }
+  }
+
   function togglePaymentMethod(method) {
+    currentPaymentMethod = method;
     const cardMp = document.getElementById('card-mp');
     const cardTransfer = document.getElementById('card-transfer');
     const instructions = document.getElementById('transfer-instructions');
     const receiptInput = document.getElementById('receipt');
     
-    const taxRow = document.getElementById('tax-row');
-    const taxAmountSpan = document.getElementById('tax-amount');
-    const summaryTotalSpan = document.getElementById('summary-total');
     const secureInfoBox = document.getElementById('secure-info-box');
 
     if (method === 'transfer') {
@@ -589,14 +704,6 @@
       
       instructions.classList.remove('hidden');
       receiptInput.setAttribute('required', 'required');
-
-      // Update Summary: calculate 5% platform fee and update total
-      const tax = baseTotal * 0.05;
-      const finalTotal = baseTotal + tax;
-      taxAmountSpan.textContent = `+ ` + formatPriceJS(tax);
-      document.getElementById('tax-label').textContent = 'Cargo Administrativo (5%)';
-      taxRow.classList.remove('hidden');
-      summaryTotalSpan.textContent = formatPriceJS(finalTotal);
 
       // Update Info box text
       secureInfoBox.innerHTML = '<i class="fa-solid fa-clock text-indigo-600 text-base mt-0.5"></i><span>Una vez realizado el pago de transferencia, recuerda <strong>subir la captura del comprobante</strong> de pago para que el administrador valide tu compra.</span>';
@@ -611,17 +718,10 @@
       instructions.classList.add('hidden');
       receiptInput.removeAttribute('required');
 
-      // Update Summary: calculate 5% tax/charge and update total
-      const tax = baseTotal * 0.05;
-      const finalTotal = baseTotal + tax;
-      taxAmountSpan.textContent = `+ ` + formatPriceJS(tax);
-      document.getElementById('tax-label').textContent = 'Uso de Plataforma (5%)';
-      taxRow.classList.remove('hidden');
-      summaryTotalSpan.textContent = formatPriceJS(finalTotal);
-
       // Update Info box text
       secureInfoBox.innerHTML = '<i class="fa-solid fa-shield-halved text-brand-600 text-base mt-0.5"></i><span>Serás redirigido a <strong>MercadoPago</strong> de forma 100% segura para abonar tu orden. Aceptamos tarjetas de débito/crédito y dinero en cuenta.</span>';
     }
+    updateOrderTotals();
   }
 
   window.onload = function() {

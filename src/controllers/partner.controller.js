@@ -6,6 +6,7 @@ const Order = require('../models/Order');
 const Withdrawal = require('../models/Withdrawal');
 const Driver = require('../models/Driver');
 const CommissionPayment = require('../models/CommissionPayment');
+const Coupon = require('../models/Coupon');
 const { uploadImage } = require('../services/firebase.service');
 const { generatePartnerToken } = require('../services/auth.service');
 const formatPrice = require('../utils/formatPrice');
@@ -214,6 +215,9 @@ const getPanel = async (req, res, next) => {
       console.error('Error fetching partner active chats:', err.message);
     }
 
+    // Load partner coupons
+    const coupons = await Coupon.find({ partner: partnerId }).sort({ createdAt: -1 });
+
     res.render('pages/partner-panel', {
       title: 'Panel de Socio - AbastoHub',
       partner: partnerDoc,
@@ -239,6 +243,7 @@ const getPanel = async (req, res, next) => {
       activeChats,
       bestSellers,
       partnerStats,
+      coupons,
       formatPrice,
       success: req.query.success,
       error: req.query.error

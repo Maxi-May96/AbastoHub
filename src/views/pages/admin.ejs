@@ -86,6 +86,13 @@
           <span class="ml-1 bg-indigo-100 text-indigo-700 text-[10px] px-2 py-0.5 rounded-full font-bold"><%= raffleCount %></span>
         <% } %>
       </button>
+      <button onclick="switchTab('coupons-tab', this)" class="tab-btn pb-4 border-b-2 border-transparent text-slate-400 hover:text-slate-600 flex items-center gap-1">
+        <i class="fa-solid fa-tags text-xs text-rose-500"></i>
+        Cupones & Descuentos
+        <% if (coupons && coupons.length > 0) { %>
+          <span class="ml-1 bg-rose-50 text-rose-700 text-[10px] px-2 py-0.5 rounded-full font-bold"><%= coupons.length %></span>
+        <% } %>
+      </button>
       <button onclick="switchTab('stats-tab', this)" class="tab-btn pb-4 border-b-2 border-transparent text-slate-400 hover:text-slate-650 transition-all">
         <i class="fa-solid fa-chart-pie mr-1.5 text-xs text-brand-650"></i>
         Estadísticas (Más Vendidos)
@@ -1464,6 +1471,163 @@
 
     </div>
 
+    <!-- Coupons & Discounts Tab -->
+    <div id="coupons-tab" class="tab-panel hidden space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        
+        <!-- Left Column: Create Coupon Form (col-span-1) -->
+        <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
+          <h2 class="display-font text-base font-extrabold text-slate-950 flex items-center gap-2 border-b border-slate-100 pb-3">
+            <span class="text-rose-500"><i class="fa-solid fa-tag"></i></span>
+            Crear Cupón Global
+          </h2>
+          
+          <form action="/admin/coupons" method="POST" class="space-y-4">
+            <div>
+              <label for="c_code" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Código del Cupón</label>
+              <input type="text" id="c_code" name="code" required placeholder="EJ: INVIERNO20"
+                class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-xs font-mono font-bold uppercase">
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label for="c_type" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Tipo</label>
+                <select id="c_type" name="discountType" required
+                  class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 px-3 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-xs">
+                  <option value="percentage">Porcentaje (%)</option>
+                  <option value="fixed">Monto Fijo ($)</option>
+                </select>
+              </div>
+              <div>
+                <label for="c_val" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Valor Descuento</label>
+                <input type="number" id="c_val" name="discountValue" required min="0.01" step="0.01" placeholder="10"
+                  class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-xs font-bold">
+              </div>
+            </div>
+
+            <div>
+              <label for="c_min" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Compra Mínima Requerida ($)</label>
+              <input type="number" id="c_min" name="minPurchase" min="0" step="1" placeholder="0" value="0"
+                class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-xs font-bold">
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label for="c_start" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Fecha Inicio</label>
+                <input type="date" id="c_start" name="startDate"
+                  class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 px-3 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-xs">
+              </div>
+              <div>
+                <label for="c_end" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Fecha Vencimiento</label>
+                <input type="date" id="c_end" name="endDate"
+                  class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 px-3 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-xs">
+              </div>
+            </div>
+
+            <div>
+              <label for="c_limit" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Límite Total de Usos (Opcional)</label>
+              <input type="number" id="c_limit" name="usageLimit" min="1" placeholder="Sin límite"
+                class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-xs font-bold">
+            </div>
+
+            <button type="submit"
+              class="w-full py-3 rounded-xl bg-slate-900 hover:bg-slate-950 text-white font-bold text-xs shadow-md transition-all uppercase flex items-center justify-center gap-1.5 mt-2">
+              <i class="fa-solid fa-circle-check"></i>
+              Crear Cupón Global
+            </button>
+          </form>
+        </div>
+
+        <!-- Right Column: Coupons List (col-span-2) -->
+        <div class="lg:col-span-2 bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm flex flex-col">
+          <div class="px-6 py-5 border-b border-slate-100 bg-slate-50/50">
+            <h3 class="text-sm font-black text-slate-800 flex items-center gap-2">
+              <i class="fa-solid fa-tags text-rose-500"></i>
+              <span>Todos los Cupones Vigentes</span>
+            </h3>
+            <p class="text-[10px] text-slate-400 mt-1">Gestión general de cupones globales (Admin) y cupones específicos creados por Socios.</p>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr class="bg-slate-50 border-b border-slate-150 text-slate-500 font-bold uppercase tracking-wider text-[9px]">
+                  <th class="px-6 py-3.5">Código</th>
+                  <th class="px-6 py-3.5">Creador / Ámbito</th>
+                  <th class="px-6 py-3.5 text-center">Descuento</th>
+                  <th class="px-6 py-3.5 text-center">Compra Mín.</th>
+                  <th class="px-6 py-3.5 text-center">Usos / Límite</th>
+                  <th class="px-6 py-3.5 text-center">Vencimiento</th>
+                  <th class="px-6 py-3.5 text-center">Estado</th>
+                  <th class="px-6 py-3.5 text-right">Acción</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 font-medium text-slate-700 animate-fade-in">
+                <% if (typeof coupons !== 'undefined' && coupons && coupons.length > 0) { %>
+                  <% coupons.forEach(coupon => { %>
+                    <tr class="hover:bg-slate-50/50 transition-colors">
+                      <td class="px-6 py-3.5 font-mono font-black text-slate-900 text-sm">
+                        <%= coupon.code %>
+                      </td>
+                      <td class="px-6 py-3.5">
+                        <% if (coupon.partner) { %>
+                          <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                            <i class="fa-solid fa-store text-[9px]"></i>
+                            <%= coupon.partner.name %> (Socio)
+                          </span>
+                        <% } else { %>
+                          <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                            <i class="fa-solid fa-shield-halved text-[9px]"></i>
+                            Global (Admin)
+                          </span>
+                        <% } %>
+                      </td>
+                      <td class="px-6 py-3.5 text-center font-bold text-rose-600">
+                        <%= coupon.discountType === 'percentage' ? `${coupon.discountValue}%` : formatPrice(coupon.discountValue) %>
+                      </td>
+                      <td class="px-6 py-3.5 text-center font-bold text-slate-800">
+                        <%= formatPrice(coupon.minPurchase) %>
+                      </td>
+                      <td class="px-6 py-3.5 text-center text-slate-600">
+                        <%= coupon.usedCount %> / <%= coupon.usageLimit !== null ? coupon.usageLimit : '∞' %>
+                      </td>
+                      <td class="px-6 py-3.5 text-center text-[10px] text-slate-500">
+                        <% if (coupon.endDate) { %>
+                          <%= new Date(coupon.endDate).toLocaleDateString('es-AR', { timeZone: 'UTC' }) %>
+                        <% } else { %>
+                          <span class="text-slate-400 italic">No vence</span>
+                        <% } %>
+                      </td>
+                      <td class="px-6 py-3.5 text-center">
+                        <button type="button" onclick="toggleCouponActive('<%= coupon._id %>', this)" 
+                          class="px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all border <%= coupon.active ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100' %>">
+                          <%= coupon.active ? 'Activo' : 'Inactivo' %>
+                        </button>
+                      </td>
+                      <td class="px-6 py-3.5 text-right">
+                        <form action="/admin/coupons/<%= coupon._id %>/delete" method="POST" onsubmit="return confirm('¿Seguro deseas eliminar este cupón?');" class="inline">
+                          <button type="submit" class="p-1.5 text-rose-600 hover:text-rose-800 hover:bg-rose-50 rounded-lg transition-all" title="Eliminar Cupón">
+                            <i class="fa-solid fa-trash-can text-sm"></i>
+                          </button>
+                        </form>
+                      </td>
+                    </tr>
+                  <% }); %>
+                <% } else { %>
+                  <tr>
+                    <td colspan="8" class="px-6 py-12 text-center text-slate-400">
+                      No hay cupones creados en la plataforma.
+                    </td>
+                  </tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
   </div>
 
 </div>
@@ -2188,6 +2352,46 @@
       } catch (err) {
         console.error(err);
         showToast('Error de red o conexión al servidor.', 'error');
+      }
+    }
+  });
+
+  async function toggleCouponActive(couponId, button) {
+    try {
+      const response = await fetch(`/admin/coupons/${couponId}/toggle`, {
+        method: 'POST',
+        headers: { 'Accept': 'application/json' }
+      });
+      const result = await response.json();
+      if (result.success) {
+        if (result.active) {
+          button.textContent = 'Activo';
+          button.className = 'px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all border bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100';
+          showToast('Cupón activado con éxito.', 'success');
+        } else {
+          button.textContent = 'Inactivo';
+          button.className = 'px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all border bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100';
+          showToast('Cupón desactivado con éxito.', 'success');
+        }
+      } else {
+        showToast(result.message || 'Error al cambiar estado del cupón.', 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Error al conectar con el servidor.', 'error');
+    }
+  }
+
+  window.addEventListener('DOMContentLoaded', () => {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get('tab');
+    if (tab) {
+      const btn = Array.from(document.querySelectorAll('.tab-btn')).find(b => {
+        const onc = b.getAttribute('onclick');
+        return onc && onc.includes(tab + '-tab');
+      });
+      if (btn) {
+        btn.click();
       }
     }
   });

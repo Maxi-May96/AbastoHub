@@ -6,6 +6,7 @@ const RaffleParticipant = require('../models/RaffleParticipant');
 const Driver = require('../models/Driver');
 const Withdrawal = require('../models/Withdrawal');
 const CommissionPayment = require('../models/CommissionPayment');
+const Coupon = require('../models/Coupon');
 const { uploadImage } = require('../services/firebase.service');
 const formatPrice = require('../utils/formatPrice');
 const PDFDocument = require('pdfkit');
@@ -235,6 +236,9 @@ const getAdminPanel = async (req, res, next) => {
     // Load global drivers to assign to partners
     const drivers = await Driver.find({ partner: null }).sort({ name: 1 });
 
+    // Load all coupons
+    const coupons = await Coupon.find({}).populate('partner').sort({ createdAt: -1 });
+
     // Calculate best selling statistics (Top Products & Top Partners)
     const bestSellingStats = await Order.aggregate([
       { $match: { paymentStatus: 'paid' } },
@@ -298,6 +302,7 @@ const getAdminPanel = async (req, res, next) => {
       bestSellers,
       bestPartners,
       globalStats,
+      coupons,
       formatPrice,
       partnerInviteToken: config.partnerInviteToken,
       success: req.query.success || null,
