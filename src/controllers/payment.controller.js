@@ -179,7 +179,9 @@ const processCheckout = async (req, res, next) => {
 
     // 2. Create Order in Database (Pending status)
     const discountedTotal = total - discountAmount;
-    const orderTotal = Number((discountedTotal * 1.05).toFixed(2));
+    const isMp = (paymentMethod || 'mercadopago') === 'mercadopago';
+    const taxFactor = isMp ? 1.15 : 1.00;
+    const orderTotal = Number((discountedTotal * taxFactor).toFixed(2));
 
     const newOrder = new Order({
       user: req.user.id,

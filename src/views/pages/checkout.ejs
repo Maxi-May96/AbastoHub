@@ -362,7 +362,7 @@
           <span id="summary-shipping-cost" class="font-medium text-emerald-600">A coordinar</span>
         </div>
         <div class="flex justify-between text-slate-500 hidden" id="tax-row">
-          <span id="tax-label">Cargo por uso de plataforma (5%)</span>
+          <span id="tax-label">Cargo por uso de plataforma (15%)</span>
           <span id="tax-amount" class="font-semibold text-rose-600">+$0.00</span>
         </div>
       </div>
@@ -611,8 +611,10 @@
       discountRow.classList.add('hidden');
     }
 
-    // Calculate Platform fee (5%) on the discounted subtotal
-    const tax = discountedSubtotal * 0.05;
+    // Calculate Platform fee (15% for Mercado Pago, 0% for transfers) on the discounted subtotal
+    const isMp = currentPaymentMethod === 'mercadopago';
+    const taxRate = isMp ? 0.15 : 0;
+    const tax = discountedSubtotal * taxRate;
     const finalTotal = discountedSubtotal + tax;
 
     // Update Platform fee element
@@ -624,10 +626,14 @@
       taxAmountSpan.textContent = `+ ` + formatPriceJS(tax);
     }
     if (taxLabelSpan) {
-      taxLabelSpan.textContent = currentPaymentMethod === 'transfer' ? 'Cargo Administrativo (5%)' : 'Uso de Plataforma (5%)';
+      taxLabelSpan.textContent = 'Uso de Plataforma (15%)';
     }
     if (taxRow) {
-      taxRow.classList.remove('hidden');
+      if (isMp) {
+        taxRow.classList.remove('hidden');
+      } else {
+        taxRow.classList.add('hidden');
+      }
     }
 
     // Update Grand Total element

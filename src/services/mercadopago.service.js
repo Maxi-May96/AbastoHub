@@ -49,13 +49,13 @@ const createOrderPreference = async (order, hostUrl) => {
     }));
   }
 
-  // If the payment method is Mercado Pago, add the 5% Platform fee item
+  // If the payment method is Mercado Pago, add the 15% Platform fee item
   if (order.paymentMethod === 'mercadopago') {
-    const taxAmount = Number(((productsSubtotal - order.discountAmount) * 0.05).toFixed(2));
+    const taxAmount = Number(((productsSubtotal - order.discountAmount) * 0.15).toFixed(2));
     
     items.push({
-      id: 'fee_mp_5',
-      title: 'Uso de Plataforma (5%)',
+      id: 'fee_mp_15',
+      title: 'Uso de Plataforma (15%)',
       quantity: 1,
       unit_price: taxAmount,
       currency_id: 'ARS'
