@@ -64,5 +64,106 @@
     </div>
   </footer>
 
+  <!-- Socket.io & Notification Client -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    // Initialize Socket.io connection safely
+    let globalSocket = null;
+    try {
+      globalSocket = io({
+        autoConnect: true,
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
+        reconnectionAttempts: Infinity
+      });
+
+      // Request Web Notification permissions
+      if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+      }
+
+      // Notification listener
+      globalSocket.on('notification', function(data) {
+        console.log('🔔 Notification received:', data);
+
+        // 1. Show emerging Toast / Alert on the page
+        showEmergingToast(data);
+
+        // 2. Show native browser push notification
+        showNativePushNotification(data);
+      });
+    } catch(err) {
+      console.warn('Socket.io client loading failed or not available in this view.', err);
+    }
+
+    function showEmergingToast(data) {
+      // Create element
+      const toast = document.createElement('div');
+      toast.className = 'fixed bottom-5 right-5 bg-slate-900 border border-slate-800 text-white rounded-2xl p-4 shadow-2xl z-[99999] flex gap-3 max-w-sm transition-all duration-500 transform translate-y-10 opacity-0';
+      
+      let icon = 'fa-bell';
+      let iconColor = 'text-emerald-500';
+      if (data.type === 'order_confirmed' || data.type === 'admin_order_confirmed' || data.type === 'partner_order_received') {
+        icon = 'fa-box-open';
+        iconColor = 'text-emerald-500';
+      } else if (data.type === 'order_shipped' || data.type === 'order_delivered' || data.type === 'admin_order_status') {
+        icon = 'fa-truck';
+        iconColor = 'text-indigo-500';
+      } else if (data.type === 'raffle_code') {
+        icon = 'fa-ticket-simple';
+        iconColor = 'text-amber-500';
+      } else if (data.type === 'commission_pending') {
+        icon = 'fa-money-bill-wave';
+        iconColor = 'text-emerald-500';
+      }
+
+      toast.innerHTML = `
+        <div class="flex-shrink-0 w-10 h-10 bg-slate-805/80 rounded-xl flex items-center justify-center ${iconColor} text-lg shadow-inner">
+          <i class="fa-solid ${icon}"></i>
+        </div>
+        <div class="flex-1">
+          <h4 class="font-bold text-xs text-slate-100 flex items-center gap-1.5 justify-between">
+            <span>${data.title}</span>
+            <span class="text-[8px] text-slate-500 font-medium">${new Date().toLocaleTimeString('es-AR', {hour: '2-digit', minute:'2-digit'})}</span>
+          </h4>
+          <p class="text-[11px] text-slate-400 mt-1 leading-relaxed">${data.message}</p>
+        </div>
+        <button onclick="this.parentElement.remove()" class="text-slate-500 hover:text-slate-300 text-xs self-start p-1 transition-colors">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      `;
+
+      document.body.appendChild(toast);
+      
+      // Animate entry
+      setTimeout(() => {
+        toast.classList.remove('translate-y-10', 'opacity-0');
+      }, 50);
+
+      // Auto remove after 7 seconds
+      setTimeout(() => {
+        toast.classList.add('translate-y-10', 'opacity-0');
+        setTimeout(() => toast.remove(), 550);
+      }, 7000);
+    }
+
+    function showNativePushNotification(data) {
+      if ('Notification' in window && Notification.permission === 'granted') {
+        try {
+          const options = {
+            body: data.message,
+            icon: '/img/logo.png',
+            badge: '/img/logo.png',
+            tag: data.orderId || 'abastohub-notif',
+            renotify: true
+          };
+          new Notification(data.title, options);
+        } catch(e) {
+          console.error('Push Notification error:', e);
+        }
+      }
+    }
+  </script>
 </body>
 </html>

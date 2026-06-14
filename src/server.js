@@ -28,7 +28,10 @@ function parseCookies(cookieHeader) {
   return list;
 }
 
-// Socket.io Real-time Chat Controller
+// Bind io to Express app to make it accessible in controllers
+app.set('io', io);
+
+// Socket.io Real-time Chat & Notification Controller
 io.on('connection', async (socket) => {
   try {
     const cookieHeader = socket.handshake.headers.cookie;
@@ -47,6 +50,17 @@ io.on('connection', async (socket) => {
     if (!user && !partner) {
       socket.disconnect(true);
       return;
+    }
+
+    // Join automatic room for real-time notifications
+    if (user) {
+      socket.join(`user_${user.id}`);
+      if (user.role === 'admin') {
+        socket.join('admins');
+      }
+    }
+    if (partner) {
+      socket.join(`partner_${partner.id}`);
     }
 
     // Join room event

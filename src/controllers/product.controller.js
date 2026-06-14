@@ -311,7 +311,7 @@ const getAdminPanel = async (req, res, next) => {
 // POST Create Product Action (Admin Only)
 const createProduct = async (req, res, next) => {
   try {
-    const { title, description, price, wholesalePrice, stock, categoryId, unit, featured, discount } = req.body;
+    const { title, description, price, wholesalePrice, stock, categoryId, unit, featured, discount, barcode, aisle, col, row } = req.body;
     
     if (!title || !price || !stock || !categoryId) {
       return res.redirect('/admin?error=' + encodeURIComponent('Por favor complete todos los campos obligatorios.'));
@@ -342,7 +342,13 @@ const createProduct = async (req, res, next) => {
       unit: unit || 'unidades',
       featured: featured === 'on' || featured === 'true',
       discount: discount ? Number(discount) : 0,
-      active: true
+      active: true,
+      barcode: (barcode || '').trim(),
+      warehouseLocation: {
+        aisle: (aisle || '').trim().toUpperCase(),
+        col: (col || '').trim(),
+        row: (row || '').trim()
+      }
     });
 
     await newProduct.save();
@@ -412,7 +418,7 @@ const updatePrice = async (req, res, next) => {
 const updateProductDetails = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { title, description } = req.body;
+    const { title, description, barcode, aisle, col, row } = req.body;
     
     if (!title || !title.trim()) {
       return res.redirect('/admin?error=' + encodeURIComponent('El nombre del producto no puede estar vacío.'));
@@ -425,6 +431,12 @@ const updateProductDetails = async (req, res, next) => {
 
     product.title = title.trim();
     product.description = (description || '').trim();
+    product.barcode = (barcode || '').trim();
+    product.warehouseLocation = {
+      aisle: (aisle || '').trim().toUpperCase(),
+      col: (col || '').trim(),
+      row: (row || '').trim()
+    };
     
     await product.save();
 
@@ -1335,6 +1347,39 @@ const markOrderAsPaid = async (req, res, next) => {
     }
 
     await order.save();
+
+    // Real-time notifications for manual approval
+    try {
+      const io = req.app.get('io');
+      if (io) {
+        const formattedTotal = formatPrice(order.total);
+        
+        // 1. Notify Client (user_[userId])
+        io.to(`user_${order.user}`).emit('notification', {
+          title: '📦 Pedido acreditado',
+          message: `Tu pedido por ${formattedTotal} ha sido acreditado por administración. Código del Sorteo: ${order.raffleCode}`,
+          type: 'order_confirmed',
+          orderId: order._id,
+          raffleCode: order.raffleCode
+        });
+
+        // 2. Notify Partners of the products in this order
+        const productsWithPartners = await Order.findById(order._id).populate('products.product');
+        if (productsWithPartners && productsWithPartners.products) {
+          const partnerIds = [...new Set(productsWithPartners.products.map(p => p.product && p.product.partner && p.product.partner.toString()).filter(Boolean))];
+          partnerIds.forEach(pId => {
+            io.to(`partner_${pId}`).emit('notification', {
+              title: '📦 Pedido acreditado',
+              message: `El pedido (#${order._id.toString().substring(12).toUpperCase()}) ha sido marcado como pagado por administración.`,
+              type: 'partner_order_received',
+              orderId: order._id
+            });
+          });
+        }
+      }
+    } catch (socketErr) {
+      console.error('Error emitting manual approval notifications:', socketErr.message);
+    }
     if (req.accepts('html', 'json') === 'json') {
       return res.json({ success: true, message: `El pedido #${order._id.toString().substring(12).toUpperCase()} ha sido acreditado exitosamente.` });
     }
@@ -1383,6 +1428,54 @@ const updateOrderStatus = async (req, res, next) => {
     }
 
     await order.save();
+
+    // Emit real-time notifications for status update
+    try {
+      const io = req.app.get('io');
+      if (io) {
+        let statusTitle = '🚚 Actualización de Pedido';
+        let statusMessage = `El estado de tu pedido #${order._id.toString().substring(12).toUpperCase()} ahora es: ${order.status}`;
+        let statusType = 'order_status_update';
+
+        if (order.status === 'shipped') {
+          statusTitle = '🚚 Pedido en camino';
+          statusMessage = 'Tu pedido está en camino a tu domicilio.';
+          statusType = 'order_shipped';
+        } else if (order.status === 'delivered') {
+          statusTitle = '📦 Pedido entregado';
+          statusMessage = 'Tu pedido ha sido marcado como entregado.';
+          statusType = 'order_delivered';
+        } else if (order.status === 'cancelled') {
+          statusTitle = '❌ Pedido cancelado';
+          statusMessage = 'Tu pedido ha sido cancelado.';
+          statusType = 'order_cancelled';
+        }
+
+        // 1. Notify Client (user_[userId])
+        io.to(`user_${order.user}`).emit('notification', {
+          title: statusTitle,
+          message: statusMessage,
+          type: statusType,
+          orderId: order._id
+        });
+
+        // 2. Notify Partners of the products
+        const productsWithPartners = await Order.findById(order._id).populate('products.product');
+        if (productsWithPartners && productsWithPartners.products) {
+          const partnerIds = [...new Set(productsWithPartners.products.map(p => p.product && p.product.partner && p.product.partner.toString()).filter(Boolean))];
+          partnerIds.forEach(pId => {
+            io.to(`partner_${pId}`).emit('notification', {
+              title: '🚚 Estado del pedido actualizado',
+              message: `El pedido (#${order._id.toString().substring(12).toUpperCase()}) fue actualizado a: ${order.status}.`,
+              type: 'partner_order_status_update',
+              orderId: order._id
+            });
+          });
+        }
+      }
+    } catch (socketErr) {
+      console.error('Error emitting status update notifications:', socketErr.message);
+    }
     if (req.accepts('html', 'json') === 'json') {
       return res.json({ success: true, message: `Estado del pedido #${order._id.toString().substring(12).toUpperCase()} actualizado exitosamente.` });
     }
@@ -2036,6 +2129,27 @@ const updateCommissionPaymentStatus = async (req, res, next) => {
     const msg = status === 'approved'
       ? 'Pago de comisión aprobado con éxito.'
       : 'Pago de comisión rechazado. Las ventas POS correspondientes han vuelto a quedar pendientes de pago.';
+
+    // Emit real-time notifications to the partner
+    try {
+      const io = req.app.get('io');
+      if (io) {
+        const formattedAmount = formatPrice(payment.amount);
+        const titleText = status === 'approved' ? '💰 Pago de Comisión Aprobado' : '❌ Pago de Comisión Rechazado';
+        const messageText = status === 'approved' 
+          ? `Tu pago de comisión POS por ${formattedAmount} ha sido verificado y aprobado.`
+          : `Tu pago de comisión POS por ${formattedAmount} ha sido rechazado. Motivo: ${notes || 'Sin observaciones'}`;
+
+        io.to(`partner_${payment.partner}`).emit('notification', {
+          title: titleText,
+          message: messageText,
+          type: status === 'approved' ? 'commission_approved' : 'commission_rejected',
+          amount: payment.amount
+        });
+      }
+    } catch (socketErr) {
+      console.error('Error emitting commission status notifications:', socketErr.message);
+    }
 
     return res.redirect('/admin?success=' + encodeURIComponent(msg));
   } catch (error) {

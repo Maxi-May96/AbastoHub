@@ -70,6 +70,28 @@ const ProductSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  barcode: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  warehouseLocation: {
+    aisle: {
+      type: String,
+      trim: true,
+      default: ''
+    },
+    col: {
+      type: String,
+      trim: true,
+      default: ''
+    },
+    row: {
+      type: String,
+      trim: true,
+      default: ''
+    }
+  },
   createdAt: {
     type: Date,
     default: Date.now

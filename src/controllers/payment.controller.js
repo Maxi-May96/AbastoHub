@@ -255,6 +255,47 @@ const getFeedback = async (req, res, next) => {
         
         // Subtract stock upon successful payment
         await subtractOrderStock(order);
+
+        // Real-time notifications
+        try {
+          const io = req.app.get('io');
+          if (io) {
+            const formattedTotal = formatPrice(order.total);
+            
+            // 1. Notify Client (user_[userId])
+            io.to(`user_${order.user._id}`).emit('notification', {
+              title: '📦 Pedido confirmado',
+              message: `Tu pedido por ${formattedTotal} ha sido confirmado. Código del Sorteo: ${order.raffleCode}`,
+              type: 'order_confirmed',
+              orderId: order._id,
+              raffleCode: order.raffleCode
+            });
+
+            // 2. Notify Admins (admins)
+            io.to('admins').emit('notification', {
+              title: '📦 Nuevo pedido confirmado',
+              message: `El pedido #${order._id.toString().substring(12).toUpperCase()} de ${order.shippingDetails.name} por ${formattedTotal} fue acreditado.`,
+              type: 'admin_order_confirmed',
+              orderId: order._id
+            });
+
+            // 3. Notify Partners of the products
+            const productsWithPartners = await Order.findById(order._id).populate('products.product');
+            if (productsWithPartners && productsWithPartners.products) {
+              const partnerIds = [...new Set(productsWithPartners.products.map(p => p.product && p.product.partner && p.product.partner.toString()).filter(Boolean))];
+              partnerIds.forEach(pId => {
+                io.to(`partner_${pId}`).emit('notification', {
+                  title: '📦 Nuevo pedido recibido',
+                  message: `Has recibido un nuevo pedido (#${order._id.toString().substring(12).toUpperCase()}) de ${order.shippingDetails.name}.`,
+                  type: 'partner_order_received',
+                  orderId: order._id
+                });
+              });
+            }
+          }
+        } catch (socketErr) {
+          console.error('Error emitting checkout payment notifications:', socketErr.message);
+        }
       } else if (normalizedStatus === 'pending') {
         order.paymentStatus = 'pending';
         await order.save();

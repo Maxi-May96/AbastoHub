@@ -171,10 +171,20 @@
                         <div>
                           <p class="font-bold text-slate-800 line-clamp-1"><%= prod.title %></p>
                           <div class="flex items-center gap-1.5 flex-wrap mt-0.5">
-                            <span class="text-[10px] text-slate-400">Venta por <%= prod.unit %></span>
+                            <span class="text-[10px] text-slate-400 font-semibold">Venta por <%= prod.unit %></span>
                             <% if (prod.partner) { %>
                               <span class="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold bg-indigo-50 text-indigo-750 border border-indigo-100 uppercase">
                                 Socio: <%= prod.partner.name %>
+                              </span>
+                            <% } %>
+                            <% if (prod.barcode) { %>
+                              <span class="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded bg-slate-100 border border-slate-200 text-slate-500 text-[9px] font-mono" title="Código de barras">
+                                <i class="fa-solid fa-barcode text-[8px]"></i> <%= prod.barcode %>
+                              </span>
+                            <% } %>
+                            <% if (prod.warehouseLocation && (prod.warehouseLocation.aisle || prod.warehouseLocation.col || prod.warehouseLocation.row)) { %>
+                              <span class="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded bg-emerald-50 border border-emerald-100 text-emerald-700 text-[9px] font-bold" title="Ubicación física en depósito">
+                                <i class="fa-solid fa-boxes-stacked text-[8px]"></i> Dep: <%= prod.warehouseLocation.aisle || '-' %>-<%= prod.warehouseLocation.col || '-' %>-<%= prod.warehouseLocation.row || '-' %>
                               </span>
                             <% } %>
                           </div>
@@ -242,9 +252,13 @@
                                 data-id="<%= prod._id %>"
                                 data-title="<%= prod.title %>"
                                 data-description="<%= prod.description || '' %>"
+                                data-barcode="<%= prod.barcode || '' %>"
+                                data-aisle="<%= prod.warehouseLocation ? prod.warehouseLocation.aisle || '' : '' %>"
+                                data-col="<%= prod.warehouseLocation ? prod.warehouseLocation.col || '' : '' %>"
+                                data-row="<%= prod.warehouseLocation ? prod.warehouseLocation.row || '' : '' %>"
                                 onclick="triggerEditProduct(this)"
                                 class="px-3 py-1.5 rounded-xl border border-indigo-100 hover:bg-indigo-50 text-indigo-650 text-xs font-bold transition-all flex items-center gap-1" 
-                                title="Editar Nombre y Descripción">
+                                title="Editar Nombre, Descripción y Ubicación">
                           <i class="fa-solid fa-pen-to-square text-[11px]"></i> Editar
                         </button>
 
@@ -357,6 +371,30 @@
                   <option value="<%= cat._id %>"><%= cat.name %></option>
                 <% }); %>
               </select>
+            </div>
+          </div>
+
+          <!-- Barcode & Warehouse Location (Optional) -->
+          <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+            <div>
+              <label for="barcode" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Código de Barras (Opcional)</label>
+              <input type="text" id="barcode" name="barcode" placeholder="E.g. 7791234567890"
+                class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-sm font-semibold">
+            </div>
+            <div>
+              <label for="aisle" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Pasillo (A-Z) (Opcional)</label>
+              <input type="text" id="aisle" name="aisle" placeholder="E.g. A" maxlength="2"
+                class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-sm uppercase text-center font-bold">
+            </div>
+            <div>
+              <label for="col" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Columna (Opcional)</label>
+              <input type="text" id="col" name="col" placeholder="E.g. 3"
+                class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-sm text-center font-bold">
+            </div>
+            <div>
+              <label for="row" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Fila (Opcional)</label>
+              <input type="text" id="row" name="row" placeholder="E.g. 5"
+                class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-400 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-sm text-center font-bold">
             </div>
           </div>
 
@@ -1437,7 +1475,7 @@
     <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
       <h3 class="display-font text-base font-extrabold text-slate-900 flex items-center gap-2">
         <i class="fa-solid fa-pen-to-square text-brand-650"></i>
-        <span>Editar Nombre y Descripción</span>
+        <span>Editar Detalles del Producto</span>
       </h3>
       <button onclick="closeEditModal()" class="text-slate-400 hover:text-slate-650 p-1.5 rounded-lg hover:bg-slate-100 transition-all">
         <i class="fa-solid fa-xmark text-sm"></i>
@@ -1450,6 +1488,33 @@
         <input type="text" id="edit-title" name="title" required
           class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-450 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-xs font-medium">
       </div>
+
+      <!-- Barcode & Warehouse Location (Optional) -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label for="edit-barcode" class="block text-[10px] font-bold uppercase tracking-wider text-slate-450 mb-1.5">Código de Barras (Opcional)</label>
+          <input type="text" id="edit-barcode" name="barcode" placeholder="E.g. 7791234567890"
+            class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-450 px-4 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-xs font-semibold">
+        </div>
+        <div class="grid grid-cols-3 gap-2">
+          <div>
+            <label for="edit-aisle" class="block text-[9px] font-bold uppercase tracking-wider text-slate-450 mb-1.5 text-center">Pasillo</label>
+            <input type="text" id="edit-aisle" name="aisle" placeholder="A" maxlength="2"
+              class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-450 px-2 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-xs font-bold uppercase text-center">
+          </div>
+          <div>
+            <label for="edit-col" class="block text-[9px] font-bold uppercase tracking-wider text-slate-450 mb-1.5 text-center">Columna</label>
+            <input type="text" id="edit-col" name="col" placeholder="3"
+              class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-450 px-2 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-xs font-bold text-center">
+          </div>
+          <div>
+            <label for="edit-row" class="block text-[9px] font-bold uppercase tracking-wider text-slate-450 mb-1.5 text-center">Fila</label>
+            <input type="text" id="edit-row" name="row" placeholder="5"
+              class="w-full bg-slate-50 border border-slate-200 focus:border-brand-500/40 focus:bg-white text-slate-800 placeholder-slate-450 px-2 py-2.5 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/10 transition-all text-xs font-bold text-center">
+          </div>
+        </div>
+      </div>
+
       <div>
         <label for="edit-description" class="block text-[10px] font-bold uppercase tracking-wider text-slate-450 mb-1.5">Descripción</label>
         <textarea id="edit-description" name="description" rows="5"
@@ -1852,6 +1917,10 @@
     const id = button.getAttribute('data-id');
     const title = button.getAttribute('data-title');
     const description = button.getAttribute('data-description');
+    const barcode = button.getAttribute('data-barcode') || '';
+    const aisle = button.getAttribute('data-aisle') || '';
+    const col = button.getAttribute('data-col') || '';
+    const row = button.getAttribute('data-row') || '';
     
     const modal = document.getElementById('edit-product-modal');
     const card = document.getElementById('edit-modal-card');
@@ -1860,6 +1929,19 @@
     form.action = `/admin/products/${id}/edit-details`;
     document.getElementById('edit-title').value = title;
     document.getElementById('edit-description').value = description || '';
+    
+    if (document.getElementById('edit-barcode')) {
+      document.getElementById('edit-barcode').value = barcode;
+    }
+    if (document.getElementById('edit-aisle')) {
+      document.getElementById('edit-aisle').value = aisle;
+    }
+    if (document.getElementById('edit-col')) {
+      document.getElementById('edit-col').value = col;
+    }
+    if (document.getElementById('edit-row')) {
+      document.getElementById('edit-row').value = row;
+    }
     
     modal.classList.remove('hidden');
     setTimeout(() => {

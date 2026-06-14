@@ -251,7 +251,7 @@ const getPanel = async (req, res, next) => {
 // POST Partner Create Product
 const createProduct = async (req, res, next) => {
   try {
-    const { title, description, price, wholesalePrice, stock, categoryId, unit, locationId } = req.body;
+    const { title, description, price, wholesalePrice, stock, categoryId, unit, locationId, barcode, aisle, col, row } = req.body;
     
     if (!title || !price || !stock || !categoryId) {
       return res.redirect('/partner/panel?error=' + encodeURIComponent('Por favor complete todos los campos obligatorios.'));
@@ -271,6 +271,13 @@ const createProduct = async (req, res, next) => {
       imageUrls.push('/img/placeholder-product.png');
     }
 
+    const prodBarcode = (barcode || '').trim();
+    const prodWarehouseLocation = {
+      aisle: (aisle || '').trim().toUpperCase(),
+      col: (col || '').trim(),
+      row: (row || '').trim()
+    };
+
     if (locationId === 'all') {
       // Create primary location product
       const mainProduct = new Product({
@@ -284,7 +291,9 @@ const createProduct = async (req, res, next) => {
         unit: unit || 'unidades',
         partner: req.partner.id,
         location: null,
-        active: true
+        active: true,
+        barcode: prodBarcode,
+        warehouseLocation: prodWarehouseLocation
       });
       await mainProduct.save();
 
@@ -303,7 +312,9 @@ const createProduct = async (req, res, next) => {
             unit: unit || 'unidades',
             partner: req.partner.id,
             location: loc._id,
-            active: true
+            active: true,
+            barcode: prodBarcode,
+            warehouseLocation: prodWarehouseLocation
           });
           await duplicateProduct.save();
         }
@@ -322,7 +333,9 @@ const createProduct = async (req, res, next) => {
       unit: unit || 'unidades',
       partner: req.partner.id, // Associated with partner!
       location: locationId && locationId !== '' ? locationId : null, // Associated with branch/location!
-      active: true
+      active: true,
+      barcode: prodBarcode,
+      warehouseLocation: prodWarehouseLocation
     });
 
     await newProduct.save();
@@ -412,7 +425,7 @@ const updatePrice = async (req, res, next) => {
 const updateProductDetails = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { title, description, categoryId, locationId } = req.body;
+    const { title, description, categoryId, locationId, barcode, aisle, col, row } = req.body;
     
     if (!title || !title.trim() || !categoryId) {
       return res.redirect('/partner/panel?error=' + encodeURIComponent('El nombre y la categoría del producto son obligatorios.'));
@@ -427,6 +440,12 @@ const updateProductDetails = async (req, res, next) => {
     product.description = (description || '').trim();
     product.category = categoryId;
     product.location = locationId && locationId !== '' ? locationId : null;
+    product.barcode = (barcode || '').trim();
+    product.warehouseLocation = {
+      aisle: (aisle || '').trim().toUpperCase(),
+      col: (col || '').trim(),
+      row: (row || '').trim()
+    };
     
     await product.save();
 
@@ -830,6 +849,36 @@ const shipOrder = async (req, res, next) => {
     }
     order.dispatchedAt = new Date();
     await order.save();
+
+    // Emit real-time notifications for status update from partner
+    try {
+      const io = req.app.get('io');
+      if (io) {
+        const titleText = isPickup ? '📦 Pedido entregado' : '🚚 Pedido en camino';
+        const messageText = isPickup 
+          ? `Tu pedido #${order._id.toString().substring(12).toUpperCase()} ha sido entregado en el local del productor.` 
+          : `Tu pedido #${order._id.toString().substring(12).toUpperCase()} está en camino a tu domicilio.`;
+        const typeText = isPickup ? 'order_delivered' : 'order_shipped';
+
+        // 1. Notify Client (user_[userId])
+        io.to(`user_${order.user}`).emit('notification', {
+          title: titleText,
+          message: messageText,
+          type: typeText,
+          orderId: order._id
+        });
+
+        // 2. Notify Admins (admins)
+        io.to('admins').emit('notification', {
+          title: titleText,
+          message: `El socio actualizó el pedido #${order._id.toString().substring(12).toUpperCase()} a: ${order.status}.`,
+          type: 'admin_order_status',
+          orderId: order._id
+        });
+      }
+    } catch (socketErr) {
+      console.error('Error emitting partner shipping notifications:', socketErr.message);
+    }
     
     const successMsg = isPickup 
       ? 'El pedido ha sido marcado como entregado.' 
@@ -1884,7 +1933,7 @@ const generatePartnerStatisticsPDF = async (req, res, next) => {
 const postPOSSale = async (req, res, next) => {
   try {
     const partnerId = req.partner.id;
-    const { products: items, paymentMethod, customerName, customerPhone, issueInvoice } = req.body;
+    const { products: items, paymentMethod, customerName, customerPhone, issueInvoice, discountPercent, surchargePercent } = req.body;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ success: false, message: 'El carrito de ventas no puede estar vacío.' });
@@ -1941,6 +1990,12 @@ const postPOSSale = async (req, res, next) => {
       subtotal += dbProduct.price * item.quantity;
     }
 
+    // Calculate subtotal after discount and surcharge
+    const discVal = Number(discountPercent) || 0;
+    const surchVal = Number(surchargePercent) || 0;
+    const finalSubtotal = subtotal * (1 - discVal / 100) * (1 + surchVal / 100);
+    const orderTotal = Number((finalSubtotal * 1.05).toFixed(2));
+
     // 3. Deduct stock
     for (const item of items) {
       await Product.findByIdAndUpdate(item.productId, {
@@ -1948,7 +2003,9 @@ const postPOSSale = async (req, res, next) => {
       });
     }
 
-    const orderTotal = Number((subtotal * 1.05).toFixed(2));
+    let notesText = 'Registrado directamente a través de Punto de Venta (POS).';
+    if (discVal > 0) notesText += ` Descuento aplicado: ${discVal}%.`;
+    if (surchVal > 0) notesText += ` Recargo aplicado: ${surchVal}%.`;
 
     // 4. Create Order (Since it's a direct POS sale, we set status to delivered and paid)
     const newOrder = new Order({
@@ -1970,7 +2027,7 @@ const postPOSSale = async (req, res, next) => {
         city: '',
         province: '',
         zipCode: '',
-        notes: 'Registrado directamente a través de Punto de Venta (POS)'
+        notes: notesText
       }
     });
 
@@ -2105,6 +2162,38 @@ const payPOSCommissions = async (req, res, next) => {
     const msg = paymentMethod === 'balance'
       ? 'Comisiones del POS pagadas con éxito usando tu saldo disponible.'
       : 'Comprobante de transferencia subido correctamente. Tu pago está pendiente de verificación por la administración.';
+
+    // Emit real-time notifications for POS commission payment
+    try {
+      const io = req.app.get('io');
+      if (io) {
+        const partnerDoc = await Partner.findById(partnerId);
+        const storeName = partnerDoc ? partnerDoc.storeName : 'Socio Comercial';
+        const formattedAmount = formatPrice(totalOwed);
+
+        if (paymentMethod === 'transfer') {
+          // Notify Admin of pending commission payment
+          io.to('admins').emit('notification', {
+            title: '💰 Comisión POS pendiente',
+            message: `El socio "${storeName}" ha subido un comprobante de pago de comisión por ${formattedAmount}.`,
+            type: 'commission_pending',
+            amount: totalOwed,
+            partnerName: storeName
+          });
+        } else {
+          // Notify Admin of approved/credited commission payment
+          io.to('admins').emit('notification', {
+            title: '💰 Comisión POS cobrada',
+            message: `El socio "${storeName}" pagó comisiones por ${formattedAmount} usando su saldo.`,
+            type: 'commission_paid',
+            amount: totalOwed,
+            partnerName: storeName
+          });
+        }
+      }
+    } catch (socketErr) {
+      console.error('Error emitting POS commission notifications:', socketErr.message);
+    }
 
     return res.redirect('/partner/panel?success=' + encodeURIComponent(msg));
   } catch (error) {
