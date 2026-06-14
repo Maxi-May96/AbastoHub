@@ -361,9 +361,13 @@
           <span>Envío</span>
           <span id="summary-shipping-cost" class="font-medium text-emerald-600">A coordinar</span>
         </div>
-        <div class="flex justify-between text-slate-500 hidden" id="tax-row">
-          <span id="tax-label">Cargo por uso de plataforma (20%)</span>
-          <span id="tax-amount" class="font-semibold text-rose-600">+$0.00</span>
+        <div class="flex justify-between text-slate-500 hidden" id="platform-fee-row">
+          <span>Uso de plataforma (5%)</span>
+          <span id="platform-fee-amount" class="font-semibold text-rose-600">+$0.00</span>
+        </div>
+        <div class="flex justify-between text-slate-500 hidden" id="gateway-fee-row">
+          <span>Tarifa de procesamiento Mercado Pago (15%)</span>
+          <span id="gateway-fee-amount" class="font-semibold text-rose-600">+$0.00</span>
         </div>
       </div>
 
@@ -611,25 +615,34 @@
       discountRow.classList.add('hidden');
     }
 
-    // Calculate Platform fee (20% for Mercado Pago, 5% for transfers) on the discounted subtotal
+    // Calculate Platform fee (5%) and Payment Gateway fee (15% only for Mercado Pago) on the discounted subtotal
     const isMp = currentPaymentMethod === 'mercadopago';
-    const taxRate = isMp ? 0.20 : 0.05;
-    const tax = discountedSubtotal * taxRate;
-    const finalTotal = discountedSubtotal + tax;
+    const platformFee = discountedSubtotal * 0.05;
+    const gatewayFee = isMp ? (discountedSubtotal * 0.15) : 0;
+    const finalTotal = discountedSubtotal + platformFee + gatewayFee;
 
-    // Update Platform fee element
-    const taxRow = document.getElementById('tax-row');
-    const taxAmountSpan = document.getElementById('tax-amount');
-    const taxLabelSpan = document.getElementById('tax-label');
-    
-    if (taxAmountSpan) {
-      taxAmountSpan.textContent = `+ ` + formatPriceJS(tax);
+    // Update Platform fee elements
+    const platformFeeRow = document.getElementById('platform-fee-row');
+    const platformFeeAmountSpan = document.getElementById('platform-fee-amount');
+    if (platformFeeAmountSpan) {
+      platformFeeAmountSpan.textContent = `+ ` + formatPriceJS(platformFee);
     }
-    if (taxLabelSpan) {
-      taxLabelSpan.textContent = isMp ? 'Uso de Plataforma y Pago (20%)' : 'Cargo Administrativo (5%)';
+    if (platformFeeRow) {
+      platformFeeRow.classList.remove('hidden');
     }
-    if (taxRow) {
-      taxRow.classList.remove('hidden');
+
+    // Update Gateway fee elements
+    const gatewayFeeRow = document.getElementById('gateway-fee-row');
+    const gatewayFeeAmountSpan = document.getElementById('gateway-fee-amount');
+    if (gatewayFeeAmountSpan) {
+      gatewayFeeAmountSpan.textContent = `+ ` + formatPriceJS(gatewayFee);
+    }
+    if (gatewayFeeRow) {
+      if (isMp) {
+        gatewayFeeRow.classList.remove('hidden');
+      } else {
+        gatewayFeeRow.classList.add('hidden');
+      }
     }
 
     // Update Grand Total element
