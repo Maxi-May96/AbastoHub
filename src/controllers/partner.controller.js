@@ -2107,7 +2107,7 @@ const getPOSView = async (req, res, next) => {
     const products = await Product.find({ partner: partnerId, active: true }).populate('category');
 
     res.render('pages/partner-pos', {
-      title: 'Punto de Venta - ' + partner.storeName,
+      title: 'Punto de Venta - ' + partner.name,
       partner,
       products,
       formatPrice
@@ -2217,7 +2217,7 @@ const payPOSCommissions = async (req, res, next) => {
       const io = req.app.get('io');
       if (io) {
         const partnerDoc = await Partner.findById(partnerId);
-        const storeName = partnerDoc ? partnerDoc.storeName : 'Socio Comercial';
+        const storeName = partnerDoc ? partnerDoc.name : 'Socio Comercial';
         const formattedAmount = formatPrice(totalOwed);
 
         if (paymentMethod === 'transfer') {

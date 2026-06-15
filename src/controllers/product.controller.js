@@ -977,8 +977,12 @@ const createPartner = async (req, res, next) => {
 const deletePartner = async (req, res, next) => {
   try {
     const { id } = req.params;
+    const isJson = req.accepts('html', 'json') === 'json';
     const partner = await Partner.findByIdAndDelete(id);
     if (!partner) {
+      if (isJson) {
+        return res.status(404).json({ success: false, error: 'Socio/Afiliado no encontrado.' });
+      }
       return res.redirect('/admin?tab=partners&error=' + encodeURIComponent('Socio/Afiliado no encontrado.'));
     }
     
@@ -993,8 +997,15 @@ const deletePartner = async (req, res, next) => {
     await Withdrawal.deleteMany({ partner: id });
     await CommissionPayment.deleteMany({ partner: id });
 
-    res.redirect('/admin?tab=partners&success=' + encodeURIComponent('Socio/Afiliado y todos sus datos asociados (productos, cupones, retiros, comisiones) han sido eliminados exitosamente.'));
+    const msg = 'Socio/Afiliado y todos sus datos asociados (productos, cupones, retiros, comisiones) han sido eliminados exitosamente.';
+    if (isJson) {
+      return res.json({ success: true, message: msg });
+    }
+    res.redirect('/admin?tab=partners&success=' + encodeURIComponent(msg));
   } catch (error) {
+    if (req.accepts('html', 'json') === 'json') {
+      return res.status(500).json({ success: false, error: 'Error al eliminar el socio/afiliado: ' + error.message });
+    }
     res.redirect('/admin?tab=partners&error=' + encodeURIComponent('Error al eliminar el socio/afiliado: ' + error.message));
   }
 };
@@ -2113,21 +2124,38 @@ const generateStatisticsPDF = async (req, res, next) => {
 };
 
 const updateCommissionPaymentStatus = async (req, res, next) => {
+  console.log('[ADMIN COMMISSIONS] Initiating commission status update request...');
   try {
     const { id } = req.params;
     const { status, notes } = req.body;
+    console.log(`[ADMIN COMMISSIONS] Request params - ID: ${id}, Status: ${status}, Notes: ${notes}`);
+
+    const isJson = req.accepts('html', 'json') === 'json';
 
     if (!['approved', 'rejected'].includes(status)) {
+      console.warn(`[ADMIN COMMISSIONS] Invalid status received: ${status}`);
+      if (isJson) {
+        return res.status(400).json({ success: false, error: 'Estado inválido.' });
+      }
       return res.redirect('/admin?tab=commissions&error=' + encodeURIComponent('Estado inválido.'));
     }
 
     const payment = await CommissionPayment.findById(id).populate('orders');
     if (!payment) {
+      console.error(`[ADMIN COMMISSIONS] Commission payment not found for ID: ${id}`);
+      if (isJson) {
+        return res.status(404).json({ success: false, error: 'Pago de comisión no encontrado.' });
+      }
       return res.redirect('/admin?tab=commissions&error=' + encodeURIComponent('Pago de comisión no encontrado.'));
     }
+    console.log(`[ADMIN COMMISSIONS] Found payment: Amount = ${payment.amount}, Current Status = ${payment.status}, Orders count = ${payment.orders ? payment.orders.length : 0}`);
 
     // If it's already processed, avoid reprocessing
     if (payment.status !== 'pending') {
+      console.warn(`[ADMIN COMMISSIONS] Payment ID: ${id} has already been processed (status: ${payment.status}). Aborting.`);
+      if (isJson) {
+        return res.status(400).json({ success: false, error: 'Este pago ya fue procesado.' });
+      }
       return res.redirect('/admin?tab=commissions&error=' + encodeURIComponent('Este pago ya fue procesado.'));
     }
 
@@ -2135,12 +2163,23 @@ const updateCommissionPaymentStatus = async (req, res, next) => {
     payment.notes = notes || '';
     payment.processedAt = new Date();
     await payment.save();
+    console.log('[ADMIN COMMISSIONS] Commission Payment document status successfully updated and saved.');
 
     // Update the associated orders
     const targetOrderFeePaidStatus = status === 'approved' ? 'paid' : 'unpaid';
-    for (const order of payment.orders) {
-      order.posFeePaid = targetOrderFeePaidStatus;
-      await order.save();
+    console.log(`[ADMIN COMMISSIONS] Updating associated orders posFeePaid status to: "${targetOrderFeePaidStatus}"`);
+    if (payment.orders && payment.orders.length > 0) {
+      for (const order of payment.orders) {
+        if (!order) {
+          console.warn('[ADMIN COMMISSIONS] Found a null or undefined order reference in payment orders list. Skipping.');
+          continue;
+        }
+        order.posFeePaid = targetOrderFeePaidStatus;
+        await order.save();
+        console.log(`[ADMIN COMMISSIONS] Order ${order._id} successfully updated and saved.`);
+      }
+    } else {
+      console.log('[ADMIN COMMISSIONS] No orders were associated with this commission payment.');
     }
 
     const msg = status === 'approved'
@@ -2149,6 +2188,7 @@ const updateCommissionPaymentStatus = async (req, res, next) => {
 
     // Emit real-time notifications to the partner
     try {
+      console.log(`[ADMIN COMMISSIONS] Emitting live Socket.io notification to partner: ${payment.partner}`);
       const io = req.app.get('io');
       if (io) {
         const formattedAmount = formatPrice(payment.amount);
@@ -2163,53 +2203,95 @@ const updateCommissionPaymentStatus = async (req, res, next) => {
           type: status === 'approved' ? 'commission_approved' : 'commission_rejected',
           amount: payment.amount
         });
+        console.log('[ADMIN COMMISSIONS] Notification emitted successfully.');
+      } else {
+        console.warn('[ADMIN COMMISSIONS] Socket.io instance (io) not found in app configuration.');
       }
     } catch (socketErr) {
-      console.error('Error emitting commission status notifications:', socketErr.message);
+      console.error('[ADMIN COMMISSIONS] Error emitting commission status notifications:', socketErr.message);
     }
 
+    console.log('[ADMIN COMMISSIONS] Status update process completed successfully.');
+    if (isJson) {
+      return res.json({ success: true, message: msg });
+    }
     return res.redirect('/admin?tab=commissions&success=' + encodeURIComponent(msg));
   } catch (error) {
+    console.error('[ADMIN COMMISSIONS] Crash/error during commission status update:', error);
+    if (req.accepts('html', 'json') === 'json') {
+      return res.status(500).json({ success: false, error: 'Error interno: ' + error.message });
+    }
     return res.redirect('/admin?tab=commissions&error=' + encodeURIComponent(error.message));
   }
 };
 
 const deleteCommissionPayment = async (req, res, next) => {
+  console.log('[ADMIN COMMISSIONS] Initiating delete commission payment request...');
   try {
     const { id } = req.params;
+    console.log(`[ADMIN COMMISSIONS] Request params - ID: ${id}`);
+    const isJson = req.accepts('html', 'json') === 'json';
+
     const payment = await CommissionPayment.findById(id);
     if (!payment) {
+      console.error(`[ADMIN COMMISSIONS] Commission payment not found for delete ID: ${id}`);
+      if (isJson) {
+        return res.status(404).json({ success: false, error: 'Pago de comisión no encontrado.' });
+      }
       return res.redirect('/admin?tab=commissions&error=' + encodeURIComponent('Pago de comisión no encontrado.'));
     }
 
     // Restore associated orders to unpaid status
     const Order = require('../models/Order');
     if (payment.orders && payment.orders.length > 0) {
+      console.log(`[ADMIN COMMISSIONS] Restoring ${payment.orders.length} orders back to "unpaid" posFeePaid status...`);
       await Order.updateMany(
         { _id: { $in: payment.orders } },
         { $set: { posFeePaid: 'unpaid' } }
       );
+      console.log('[ADMIN COMMISSIONS] Associated orders restored successfully.');
     }
 
     await CommissionPayment.findByIdAndDelete(id);
+    console.log(`[ADMIN COMMISSIONS] Commission payment document ${id} successfully deleted from MongoDB.`);
+    
+    if (isJson) {
+      return res.json({ success: true, message: 'Registro de comisión eliminado y órdenes correspondientes restablecidas a impagas.' });
+    }
     res.redirect('/admin?tab=commissions&success=' + encodeURIComponent('Registro de comisión eliminado y órdenes correspondientes restablecidas a impagas.'));
   } catch (error) {
+    console.error('[ADMIN COMMISSIONS] Error during commission deletion:', error);
+    if (req.accepts('html', 'json') === 'json') {
+      return res.status(500).json({ success: false, error: 'Error interno: ' + error.message });
+    }
     res.redirect('/admin?tab=commissions&error=' + encodeURIComponent(error.message));
   }
 };
 
 const deleteAllCommissionPayments = async (req, res, next) => {
+  console.log('[ADMIN COMMISSIONS] Initiating delete all commission payments request...');
   try {
+    const isJson = req.accepts('html', 'json') === 'json';
     const Order = require('../models/Order');
     // Reset all POS orders back to unpaid status
     await Order.updateMany(
       { isPOS: true },
       { $set: { posFeePaid: 'unpaid' } }
     );
+    console.log('[ADMIN COMMISSIONS] Restored all POS orders to unpaid.');
 
-    await CommissionPayment.deleteMany({});
+    const result = await CommissionPayment.deleteMany({});
+    console.log(`[ADMIN COMMISSIONS] Deleted ${result.deletedCount} commission payments from MongoDB.`);
+    
+    if (isJson) {
+      return res.json({ success: true, message: 'Todos los registros de comisiones han sido eliminados y las órdenes restablecidas a impagas.' });
+    }
     res.redirect('/admin?tab=commissions&success=' + encodeURIComponent('Todos los registros de comisiones han sido eliminados y las órdenes restablecidas a impagas.'));
   } catch (error) {
+    console.error('[ADMIN COMMISSIONS] Error deleting all commission payments:', error);
+    if (req.accepts('html', 'json') === 'json') {
+      return res.status(500).json({ success: false, error: 'Error interno: ' + error.message });
+    }
     res.redirect('/admin?tab=commissions&error=' + encodeURIComponent(error.message));
   }
 };

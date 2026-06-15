@@ -1143,8 +1143,8 @@
                   <tr class="hover:bg-slate-50/20 transition-colors">
                     <td class="px-6 py-4">
                       <% if (cp.partner) { %>
-                        <div class="font-extrabold text-slate-800 text-[13px]"><%= cp.partner.storeName %></div>
-                        <div class="text-[10px] text-slate-400">Titular: <%= cp.partner.ownerName %></div>
+                        <div class="font-extrabold text-slate-800 text-[13px]"><%= cp.partner.name %></div>
+                        <div class="text-[10px] text-slate-400">Tel: <%= cp.partner.phone || 'N/A' %></div>
                         <div class="text-[10px] text-slate-400">Email: <%= cp.partner.email %></div>
                       <% } else { %>
                         <span class="text-slate-400 italic">Socio desconocido/eliminado</span>
@@ -2201,6 +2201,7 @@
   document.addEventListener('submit', async (e) => {
     const form = e.target;
     const action = form.getAttribute('action') || '';
+    console.log('[ADMIN WEB] Form submission intercepted. Action URL:', action);
     
     const isPrice = action.match(/^\/admin\/products\/[a-f0-9]{24}\/price$/);
     const isStock = action.match(/^\/admin\/products\/[a-f0-9]{24}\/stock$/);
@@ -2213,8 +2214,18 @@
     const isOrderMarkPaid = action.match(/^\/admin\/orders\/[a-f0-9]{24}\/mark-paid$/);
     const isDeleteOrder = action.match(/^\/admin\/orders\/[a-f0-9]{24}\/delete$/);
 
-    if (isPrice || isStock || isToggle || isToggleFeatured || isDiscount || isDeleteProduct || isOrderStatus || isOrderMarkPaid || isDeleteOrder) {
+    const isCommissionStatus = action.match(/^\/admin\/commissions\/[a-f0-9]{24}\/status$/);
+    const isCommissionDelete = action.match(/^\/admin\/commissions\/[a-f0-9]{24}\/delete$/);
+
+    const isDeletePartner = action.match(/^\/admin\/partners\/[a-f0-9]{24}\/delete$/);
+    
+    const shouldIntercept = isPrice || isStock || isToggle || isToggleFeatured || isDiscount || isDeleteProduct || 
+                            isOrderStatus || isOrderMarkPaid || isDeleteOrder || isCommissionStatus || isCommissionDelete ||
+                            isDeletePartner;
+
+    if (shouldIntercept) {
       e.preventDefault();
+      console.log('[ADMIN WEB] Intercepted form submission. Sending fetch request...');
       
       const formData = new FormData(form);
       const urlEncoded = new URLSearchParams(formData);
@@ -2229,7 +2240,9 @@
           body: urlEncoded.toString()
         });
         
+        console.log('[ADMIN WEB] Server responded with status:', response.status);
         const result = await response.json();
+        console.log('[ADMIN WEB] Response JSON payload:', result);
         if (result.success) {
           if (isPrice) {
             showToast(result.message || 'Precios actualizados exitosamente.', 'success');
@@ -2345,12 +2358,50 @@
               row.remove();
             }
             showToast(result.message, 'success');
+          } else if (isCommissionStatus) {
+            console.log('[ADMIN WEB] Commission status update success. Reloading to sync metrics...');
+            showToast(result.message || 'Pago de comisión verificado.', 'success');
+            if (typeof closeCommissionRejectModal === 'function') {
+              closeCommissionRejectModal();
+            }
+            setTimeout(() => {
+              window.location.reload();
+            }, 1000);
+          } else if (isCommissionDelete) {
+            console.log('[ADMIN WEB] Commission deletion success. Removing row and reloading to sync metrics...');
+            showToast(result.message || 'Registro de comisión eliminado.', 'success');
+            const row = form.closest('tr');
+            if (row) {
+              row.style.transition = 'all 0.5s ease';
+              row.style.opacity = '0';
+              setTimeout(() => {
+                row.remove();
+              }, 500);
+            }
+            setTimeout(() => {
+              window.location.reload();
+            }, 1000);
+          } else if (isDeletePartner) {
+            console.log('[ADMIN WEB] Partner deletion success. Removing row and reloading to sync partners...');
+            showToast(result.message || 'Socio eliminado con éxito.', 'success');
+            const row = form.closest('tr');
+            if (row) {
+              row.style.transition = 'all 0.5s ease';
+              row.style.opacity = '0';
+              setTimeout(() => {
+                row.remove();
+              }, 500);
+            }
+            setTimeout(() => {
+              window.location.reload();
+            }, 1000);
           }
         } else {
-          showToast(result.error || 'Ocurrió un error inesperado.', 'error');
+          console.warn('[ADMIN WEB] Action failed. Server returned error:', result.error || result.message);
+          showToast(result.error || result.message || 'Ocurrió un error inesperado.', 'error');
         }
       } catch (err) {
-        console.error(err);
+        console.error('[ADMIN WEB] Exception caught during submit listener execution:', err);
         showToast('Error de red o conexión al servidor.', 'error');
       }
     }

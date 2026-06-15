@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
+const morgan = require('morgan');
 const env = require('./config/env');
 const connectDB = require('./config/db');
 
@@ -24,6 +25,9 @@ const couponRoutes = require('./routes/coupon.routes');
 
 const app = express();
 app.set('trust proxy', true);
+
+// Use morgan for HTTP request logging
+app.use(morgan('dev'));
 
 // View engine setup
 app.set('view engine', 'ejs');
