@@ -61,8 +61,8 @@ const createOrderPreference = async (order, hostUrl) => {
       unit_price: platformFee,
       currency_id: 'ARS'
     }, {
-      id: 'fee_gateway_15',
-      title: 'Tarifa de procesamiento Mercado Pago (15%)',
+      id: 'fee_tax_15',
+      title: 'Impuestos + IVA (15%)',
       quantity: 1,
       unit_price: gatewayFee,
       currency_id: 'ARS'
