@@ -966,10 +966,10 @@ const createPartner = async (req, res, next) => {
     });
 
     await newPartner.save();
-    res.redirect('/admin?success=' + encodeURIComponent('Socio/Afiliado creado exitosamente.'));
+    res.redirect('/admin?tab=partners&success=' + encodeURIComponent('Socio/Afiliado creado exitosamente.'));
   } catch (error) {
     console.error('Create partner error:', error.message);
-    res.redirect('/admin?error=' + encodeURIComponent('Error al agregar el socio/afiliado: ' + error.message));
+    res.redirect('/admin?tab=partners&error=' + encodeURIComponent('Error al agregar el socio/afiliado: ' + error.message));
   }
 };
 
@@ -979,7 +979,7 @@ const deletePartner = async (req, res, next) => {
     const { id } = req.params;
     const partner = await Partner.findByIdAndDelete(id);
     if (!partner) {
-      return res.redirect('/admin?error=' + encodeURIComponent('Socio/Afiliado no encontrado.'));
+      return res.redirect('/admin?tab=partners&error=' + encodeURIComponent('Socio/Afiliado no encontrado.'));
     }
     
     // Clean up all data associated with this partner
@@ -993,9 +993,9 @@ const deletePartner = async (req, res, next) => {
     await Withdrawal.deleteMany({ partner: id });
     await CommissionPayment.deleteMany({ partner: id });
 
-    res.redirect('/admin?success=' + encodeURIComponent('Socio/Afiliado y todos sus datos asociados (productos, cupones, retiros, comisiones) han sido eliminados exitosamente.'));
+    res.redirect('/admin?tab=partners&success=' + encodeURIComponent('Socio/Afiliado y todos sus datos asociados (productos, cupones, retiros, comisiones) han sido eliminados exitosamente.'));
   } catch (error) {
-    res.redirect('/admin?error=' + encodeURIComponent('Error al eliminar el socio/afiliado: ' + error.message));
+    res.redirect('/admin?tab=partners&error=' + encodeURIComponent('Error al eliminar el socio/afiliado: ' + error.message));
   }
 };
 
@@ -1005,7 +1005,7 @@ const resetPartnerPassword = async (req, res, next) => {
     const { id } = req.params;
     const partner = await Partner.findById(id);
     if (!partner) {
-      return res.redirect('/admin?error=' + encodeURIComponent('Socio/Afiliado no encontrado.'));
+      return res.redirect('/admin?tab=partners&error=' + encodeURIComponent('Socio/Afiliado no encontrado.'));
     }
 
     // Generate random password: 6 letters, 4 numbers, 1 symbol
@@ -1035,10 +1035,10 @@ const resetPartnerPassword = async (req, res, next) => {
     partner.password = generatedPassword;
     await partner.save();
 
-    res.redirect('/admin?success=' + encodeURIComponent(`Contraseña para "${partner.name}" restablecida con éxito. Nueva contraseña: ${generatedPassword}`));
+    res.redirect('/admin?tab=partners&success=' + encodeURIComponent(`Contraseña para "${partner.name}" restablecida con éxito. Nueva contraseña: ${generatedPassword}`));
   } catch (error) {
     console.error('Reset partner password error:', error.message);
-    res.redirect('/admin?error=' + encodeURIComponent('Error al restablecer la contraseña: ' + error.message));
+    res.redirect('/admin?tab=partners&error=' + encodeURIComponent('Error al restablecer la contraseña: ' + error.message));
   }
 };
 
@@ -1048,22 +1048,22 @@ const togglePartnerFeatured72h = async (req, res, next) => {
     const { id } = req.params;
     const partner = await Partner.findById(id);
     if (!partner) {
-      return res.redirect('/admin?error=' + encodeURIComponent('Socio/Afiliado no encontrado.'));
+      return res.redirect('/admin?tab=partners&error=' + encodeURIComponent('Socio/Afiliado no encontrado.'));
     }
 
     const isFeatured = partner.featuredUntil && partner.featuredUntil > new Date();
     if (isFeatured) {
       partner.featuredUntil = null;
       await partner.save();
-      res.redirect('/admin?success=' + encodeURIComponent(`Destacado removido para "${partner.name}".`));
+      res.redirect('/admin?tab=partners&success=' + encodeURIComponent(`Destacado removido para "${partner.name}".`));
     } else {
       partner.featuredUntil = new Date(Date.now() + 72 * 60 * 60 * 1000);
       await partner.save();
-      res.redirect('/admin?success=' + encodeURIComponent(`"${partner.name}" destacado por 72 horas con éxito.`));
+      res.redirect('/admin?tab=partners&success=' + encodeURIComponent(`"${partner.name}" destacado por 72 horas con éxito.`));
     }
   } catch (error) {
     console.error('Toggle partner featured 72h error:', error.message);
-    res.redirect('/admin?error=' + encodeURIComponent('Error al destacar el socio: ' + error.message));
+    res.redirect('/admin?tab=partners&error=' + encodeURIComponent('Error al destacar el socio: ' + error.message));
   }
 };
 
@@ -1075,7 +1075,7 @@ const assignDriverToPartner = async (req, res, next) => {
 
     const partner = await Partner.findById(id);
     if (!partner) {
-      return res.redirect('/admin?error=' + encodeURIComponent('Socio/Afiliado no encontrado.'));
+      return res.redirect('/admin?tab=partners&error=' + encodeURIComponent('Socio/Afiliado no encontrado.'));
     }
 
     if (!driverId || driverId.trim() === '') {
@@ -1085,10 +1085,10 @@ const assignDriverToPartner = async (req, res, next) => {
     }
 
     await partner.save();
-    res.redirect('/admin?success=' + encodeURIComponent(`Conductor asignado correctamente a ${partner.name}.`));
+    res.redirect('/admin?tab=partners&success=' + encodeURIComponent(`Conductor asignado correctamente a ${partner.name}.`));
   } catch (error) {
     console.error('Assign driver to partner error:', error.message);
-    res.redirect('/admin?error=' + encodeURIComponent('Error al asignar el conductor: ' + error.message));
+    res.redirect('/admin?tab=partners&error=' + encodeURIComponent('Error al asignar el conductor: ' + error.message));
   }
 };
 
@@ -1827,12 +1827,12 @@ const updateWithdrawalStatus = async (req, res, next) => {
     const { status, notes } = req.body;
 
     if (!['approved', 'rejected'].includes(status)) {
-      return res.redirect('/admin?error=' + encodeURIComponent('Estado de retiro no válido.'));
+      return res.redirect('/admin?tab=withdrawals&error=' + encodeURIComponent('Estado de retiro no válido.'));
     }
 
     const withdrawal = await Withdrawal.findById(id);
     if (!withdrawal) {
-      return res.redirect('/admin?error=' + encodeURIComponent('Solicitud de retiro no encontrada.'));
+      return res.redirect('/admin?tab=withdrawals&error=' + encodeURIComponent('Solicitud de retiro no encontrada.'));
     }
 
     withdrawal.status = status;
@@ -1840,10 +1840,10 @@ const updateWithdrawalStatus = async (req, res, next) => {
     withdrawal.processedAt = new Date();
     await withdrawal.save();
 
-    res.redirect('/admin?success=' + encodeURIComponent(`Solicitud de retiro actualizada a [${status === 'approved' ? 'Aprobada/Pagada' : 'Rechazada'}] con éxito.`));
+    res.redirect('/admin?tab=withdrawals&success=' + encodeURIComponent(`Solicitud de retiro actualizada a [${status === 'approved' ? 'Aprobada/Pagada' : 'Rechazada'}] con éxito.`));
   } catch (error) {
     console.error('Update withdrawal status error:', error.message);
-    res.redirect('/admin?error=' + encodeURIComponent('Error al actualizar el estado del retiro: ' + error.message));
+    res.redirect('/admin?tab=withdrawals&error=' + encodeURIComponent('Error al actualizar el estado del retiro: ' + error.message));
   }
 };
 
@@ -2118,17 +2118,17 @@ const updateCommissionPaymentStatus = async (req, res, next) => {
     const { status, notes } = req.body;
 
     if (!['approved', 'rejected'].includes(status)) {
-      return res.redirect('/admin?error=' + encodeURIComponent('Estado inválido.'));
+      return res.redirect('/admin?tab=commissions&error=' + encodeURIComponent('Estado inválido.'));
     }
 
     const payment = await CommissionPayment.findById(id).populate('orders');
     if (!payment) {
-      return res.redirect('/admin?error=' + encodeURIComponent('Pago de comisión no encontrado.'));
+      return res.redirect('/admin?tab=commissions&error=' + encodeURIComponent('Pago de comisión no encontrado.'));
     }
 
     // If it's already processed, avoid reprocessing
     if (payment.status !== 'pending') {
-      return res.redirect('/admin?error=' + encodeURIComponent('Este pago ya fue procesado.'));
+      return res.redirect('/admin?tab=commissions&error=' + encodeURIComponent('Este pago ya fue procesado.'));
     }
 
     payment.status = status;
@@ -2168,9 +2168,9 @@ const updateCommissionPaymentStatus = async (req, res, next) => {
       console.error('Error emitting commission status notifications:', socketErr.message);
     }
 
-    return res.redirect('/admin?success=' + encodeURIComponent(msg));
+    return res.redirect('/admin?tab=commissions&success=' + encodeURIComponent(msg));
   } catch (error) {
-    next(error);
+    return res.redirect('/admin?tab=commissions&error=' + encodeURIComponent(error.message));
   }
 };
 
@@ -2179,7 +2179,7 @@ const deleteCommissionPayment = async (req, res, next) => {
     const { id } = req.params;
     const payment = await CommissionPayment.findById(id);
     if (!payment) {
-      return res.redirect('/admin?error=' + encodeURIComponent('Pago de comisión no encontrado.'));
+      return res.redirect('/admin?tab=commissions&error=' + encodeURIComponent('Pago de comisión no encontrado.'));
     }
 
     // Restore associated orders to unpaid status
@@ -2192,9 +2192,9 @@ const deleteCommissionPayment = async (req, res, next) => {
     }
 
     await CommissionPayment.findByIdAndDelete(id);
-    res.redirect('/admin?success=' + encodeURIComponent('Registro de comisión eliminado y órdenes correspondientes restablecidas a impagas.'));
+    res.redirect('/admin?tab=commissions&success=' + encodeURIComponent('Registro de comisión eliminado y órdenes correspondientes restablecidas a impagas.'));
   } catch (error) {
-    next(error);
+    res.redirect('/admin?tab=commissions&error=' + encodeURIComponent(error.message));
   }
 };
 
@@ -2208,9 +2208,9 @@ const deleteAllCommissionPayments = async (req, res, next) => {
     );
 
     await CommissionPayment.deleteMany({});
-    res.redirect('/admin?success=' + encodeURIComponent('Todos los registros de comisiones han sido eliminados y las órdenes restablecidas a impagas.'));
+    res.redirect('/admin?tab=commissions&success=' + encodeURIComponent('Todos los registros de comisiones han sido eliminados y las órdenes restablecidas a impagas.'));
   } catch (error) {
-    next(error);
+    res.redirect('/admin?tab=commissions&error=' + encodeURIComponent(error.message));
   }
 };
 
