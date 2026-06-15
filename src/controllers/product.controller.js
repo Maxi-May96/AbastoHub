@@ -981,7 +981,19 @@ const deletePartner = async (req, res, next) => {
     if (!partner) {
       return res.redirect('/admin?error=' + encodeURIComponent('Socio/Afiliado no encontrado.'));
     }
-    res.redirect('/admin?success=' + encodeURIComponent('Socio/Afiliado eliminado exitosamente.'));
+    
+    // Clean up all data associated with this partner
+    const Product = require('../models/Product');
+    const Coupon = require('../models/Coupon');
+    const Withdrawal = require('../models/Withdrawal');
+    const CommissionPayment = require('../models/CommissionPayment');
+    
+    await Product.deleteMany({ partner: id });
+    await Coupon.deleteMany({ partner: id });
+    await Withdrawal.deleteMany({ partner: id });
+    await CommissionPayment.deleteMany({ partner: id });
+
+    res.redirect('/admin?success=' + encodeURIComponent('Socio/Afiliado y todos sus datos asociados (productos, cupones, retiros, comisiones) han sido eliminados exitosamente.'));
   } catch (error) {
     res.redirect('/admin?error=' + encodeURIComponent('Error al eliminar el socio/afiliado: ' + error.message));
   }
